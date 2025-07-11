@@ -1,0 +1,62 @@
+# Navigate to root directory
+cd D:/Git-REPOs/Sparkathon_2025/smart-vendor-compliance
+
+# Create or overwrite .gitignore
+echo '# Node.js and npm
+node_modules/
+npm-debug.log
+package-lock.json
+yarn.lock
+
+# Environment variables
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+
+# Frontend (Vite/React)
+frontend/dist/
+frontend/.vite/
+frontend/build/
+frontend/coverage/
+
+# Backend (Express)
+backend/dist/
+backend/logs/
+backend/*.log
+
+# Mobile (React Native/Expo)
+mobile/.expo/
+mobile/build/
+mobile/dist/
+mobile/assets/*.png
+mobile/assets/*.jpg
+mobile/.DS_Store
+
+# Blockchain (Hardhat)
+blockchain/artifacts/
+blockchain/cache/
+blockchain/coverage/
+blockchain/typechain/
+blockchain/deployments/
+
+# Editor and IDE files
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# Miscellaneous
+*.log
+*.cache
+*.swp
+*.bak
+*.tmp
+coverage/
+dist/
+build/' > .gitignore
