@@ -1,7 +1,8 @@
 import React from 'react';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { AlertCircle, LucideIcon } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
+import type  { LucideIcon } from 'lucide-react';
 
 interface BaseFieldProps {
   label: string;

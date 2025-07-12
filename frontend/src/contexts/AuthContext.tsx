@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
-import { User, AuthState, LoginCredentials, AuthToken } from '../types/common';
+import type { User, AuthState, LoginCredentials, AuthToken } from '../types/common';
 
 interface AuthContextValue {
   state: AuthState;

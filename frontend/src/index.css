@@ -1,143 +1,431 @@
 /* frontend/src/index.css */
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* Import global styles from globals.css */
+@import './styles/globals.css';
 
-:root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
+/* Import component-specific styles */
+@import './styles/components.css';
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+/* Import animation styles */
+@import './styles/animations.css';
 
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
-}
-
-body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
-}
-
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
-}
-
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
+/* Recharts custom styles */
+.recharts-wrapper {
   font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
+.recharts-default-tooltip {
+  @apply bg-card border border-border rounded-lg shadow-medium;
+}
+
+.recharts-tooltip-wrapper {
+  @apply text-sm;
+}
+
+.recharts-cartesian-axis-tick-value {
+  @apply text-muted-foreground;
+}
+
+.recharts-legend-wrapper {
+  @apply text-sm;
+}
+
+/* React Query Devtools custom styles */
+.react-query-devtools-panel {
+  @apply bg-card border-border;
+}
+
+/* Framer Motion custom styles */
+.motion-div {
+  @apply will-change-transform;
+}
+
+/* Custom chart colors for better visibility */
+.chart-container {
+  @apply bg-card rounded-lg border border-border p-4;
+}
+
+.chart-title {
+  @apply text-lg font-semibold mb-4 text-foreground;
+}
+
+.chart-subtitle {
+  @apply text-sm text-muted-foreground mb-2;
+}
+
+/* Data table custom styles */
+.data-table {
+  @apply border-collapse border-spacing-0 w-full;
+}
+
+.data-table th {
+  @apply bg-muted/50 text-left font-medium text-muted-foreground px-4 py-3 border-b border-border;
+}
+
+.data-table td {
+  @apply px-4 py-3 border-b border-border/50;
+}
+
+.data-table tr:hover {
+  @apply bg-muted/20;
+}
+
+/* Loading states */
+.loading-overlay {
+  @apply fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center;
+}
+
+.loading-content {
+  @apply flex flex-col items-center gap-4 p-8 bg-card rounded-lg border border-border shadow-medium;
+}
+
+/* Toast notifications */
+.toast-container {
+  @apply fixed top-4 right-4 z-50 flex flex-col gap-2;
+}
+
+.toast {
+  @apply bg-card border border-border rounded-lg shadow-medium p-4 min-w-80 animate-in slide-in-from-right;
+}
+
+.toast-success {
+  @apply border-success/20 bg-success/5;
+}
+
+.toast-error {
+  @apply border-error/20 bg-error/5;
+}
+
+.toast-warning {
+  @apply border-warning/20 bg-warning/5;
+}
+
+.toast-info {
+  @apply border-primary/20 bg-primary/5;
+}
+
+/* Form validation styles */
+.form-field {
+  @apply space-y-2;
+}
+
+.form-label {
+  @apply text-sm font-medium text-foreground;
+}
+
+.form-input {
+  @apply input;
+}
+
+.form-input.error {
+  @apply border-error focus-visible:ring-error;
+}
+
+.form-error {
+  @apply text-sm text-error;
+}
+
+.form-description {
+  @apply text-sm text-muted-foreground;
+}
+
+/* Status indicators */
+.status-indicator {
+  @apply inline-flex items-center gap-2 px-2 py-1 rounded-full text-xs font-medium;
+}
+
+.status-active {
+  @apply bg-success/10 text-success border border-success/20;
+}
+
+.status-inactive {
+  @apply bg-muted text-muted-foreground border border-border;
+}
+
+.status-pending {
+  @apply bg-warning/10 text-warning border border-warning/20;
+}
+
+.status-error {
+  @apply bg-error/10 text-error border border-error/20;
+}
+
+/* Card hover effects */
+.card-hover {
+  @apply card transition-all duration-200 hover:shadow-medium hover:scale-[1.02];
+}
+
+.card-interactive {
+  @apply card-hover cursor-pointer;
+}
+
+/* Sidebar styles */
+.sidebar {
+  @apply border-r border-border bg-card;
+}
+
+.sidebar-collapsed {
+  @apply w-16;
+}
+
+.sidebar-expanded {
+  @apply w-64;
+}
+
+.sidebar-nav-item {
+  @apply flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors;
+}
+
+.sidebar-nav-item.active {
+  @apply bg-primary text-primary-foreground;
+}
+
+.sidebar-nav-item:hover:not(.active) {
+  @apply bg-accent text-accent-foreground;
+}
+
+/* Header styles */
+.header {
+  @apply border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-40;
+}
+
+.header-content {
+  @apply flex items-center justify-between px-4 py-3;
+}
+
+.header-title {
+  @apply text-lg font-semibold text-foreground;
+}
+
+.header-actions {
+  @apply flex items-center gap-2;
+}
+
+/* Breadcrumb styles */
+.breadcrumb {
+  @apply flex items-center gap-2 text-sm text-muted-foreground;
+}
+
+.breadcrumb-item {
+  @apply hover:text-foreground transition-colors;
+}
+
+.breadcrumb-separator {
+  @apply text-muted-foreground/50;
+}
+
+/* Dashboard grid */
+.dashboard-grid {
+  @apply grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4;
+}
+
+.dashboard-card {
+  @apply card p-6;
+}
+
+.dashboard-metric {
+  @apply text-2xl font-bold text-foreground;
+}
+
+.dashboard-metric-label {
+  @apply text-sm text-muted-foreground;
+}
+
+.dashboard-metric-change {
+  @apply text-xs font-medium;
+}
+
+.dashboard-metric-up {
+  @apply text-success;
+}
+
+.dashboard-metric-down {
+  @apply text-error;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .sidebar {
+    @apply fixed inset-y-0 left-0 z-40 transform transition-transform duration-300;
   }
-  a:hover {
-    color: #747bff;
+
+  .sidebar.closed {
+    @apply -translate-x-full;
   }
-  button {
-    background-color: #f9f9f9;
+
+  .sidebar-overlay {
+    @apply fixed inset-0 bg-background/80 backdrop-blur-sm z-30;
+  }
+
+  .header-mobile {
+    @apply block md:hidden;
+  }
+
+  .dashboard-grid {
+    @apply grid-cols-1 gap-4;
+  }
+
+  .toast-container {
+    @apply left-4 right-4 top-4;
+  }
+
+  .toast {
+    @apply min-w-0 w-full;
   }
 }
 
-
-
-@layer base {
-  :root {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 3.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 3.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 3.9%;
-    --primary: 0 0% 9%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 96.1%;
-    --secondary-foreground: 0 0% 9%;
-    --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45.1%;
-    --accent: 0 0% 96.1%;
-    --accent-foreground: 0 0% 9%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
-    --ring: 0 0% 3.9%;
-    --chart-1: 12 76% 61%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
-    --radius: 0.5rem;
+/* Print styles */
+@media print {
+  .no-print {
+    display: none !important;
   }
-  .dark {
-    --background: 0 0% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 0 0% 9%;
-    --secondary: 0 0% 14.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
-    --accent: 0 0% 14.9%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
-    --ring: 0 0% 83.1%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
+
+  .print-only {
+    display: block !important;
   }
-}
 
-
-
-@layer base {
-  * {
-    @apply border-border;
+  .card {
+    @apply border border-gray-300 shadow-none;
   }
+
+  .sidebar {
+    display: none !important;
+  }
+
+  .header {
+    display: none !important;
+  }
+
   body {
-    @apply bg-background text-foreground;
+    font-size: 12px;
+    line-height: 1.4;
   }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .card {
+    @apply border-2 border-foreground/20;
+  }
+
+  .btn {
+    @apply border-2 border-current;
+  }
+
+  .form-input {
+    @apply border-2 border-foreground/20;
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .loading-spinner {
+    animation: none;
+  }
+
+  .animate-in,
+  .animate-out,
+  .animate-slide-in,
+  .animate-slide-out {
+    animation: none;
+  }
+}
+
+/* Focus management */
+.focus-visible {
+  @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+}
+
+/* Skip link for accessibility */
+.skip-link {
+  @apply absolute left-0 top-0 z-50 bg-primary text-primary-foreground px-4 py-2 text-sm font-medium rounded-br-lg transform -translate-y-full focus:translate-y-0 transition-transform;
+}
+
+/* Screen reader only */
+.sr-only {
+  @apply absolute w-px h-px p-0 -m-px overflow-hidden whitespace-nowrap border-0;
+}
+
+/* Custom scrollbar for webkit browsers */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  @apply bg-muted rounded-full;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  @apply bg-muted-foreground/30 rounded-full hover:bg-muted-foreground/50;
+}
+
+/* Utility classes for spacing */
+.space-y-1 > * + * {
+  margin-top: 0.25rem;
+}
+
+.space-y-2 > * + * {
+  margin-top: 0.5rem;
+}
+
+.space-y-3 > * + * {
+  margin-top: 0.75rem;
+}
+
+.space-y-4 > * + * {
+  margin-top: 1rem;
+}
+
+.space-y-6 > * + * {
+  margin-top: 1.5rem;
+}
+
+.space-y-8 > * + * {
+  margin-top: 2rem;
+}
+
+/* Utility classes for responsive design */
+.container-responsive {
+  @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+}
+
+.section-responsive {
+  @apply py-8 sm:py-12 lg:py-16;
+}
+
+/* Performance optimizations */
+.will-change-transform {
+  will-change: transform;
+}
+
+.will-change-opacity {
+  will-change: opacity;
+}
+
+.will-change-contents {
+  will-change: contents;
+}
+
+/* GPU acceleration for smooth animations */
+.gpu-accelerated {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+/* Final optimization classes */
+.optimized-rendering {
+  @apply gpu-accelerated will-change-transform;
+}
+
+.smooth-transitions {
+  @apply transition-all duration-300 ease-in-out;
 }
