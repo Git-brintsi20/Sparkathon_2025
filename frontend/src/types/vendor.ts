@@ -52,7 +52,7 @@ export interface VendorMetrics {
   highRiskVendors: number;
   averageComplianceScore: number;
   complianceRate: number;
-  avgCompliance?: number;
+  
 }
 
 export interface VendorPerformance {
@@ -66,7 +66,10 @@ export interface VendorPerformance {
   period: string;
 }
 
+// In src/types/vendor.ts
+
 export interface VendorFormData {
+  // Fields from your original master type
   name: string;
   email: string;
   phone: string;
@@ -77,6 +80,22 @@ export interface VendorFormData {
   contactPhone: string;
   documents?: File[];
   notes?: string;
+  
+  // New fields from your form component (added as optional)
+  city?: string;
+  state?: string;
+  zipCode?: string;
+  country?: string;
+  website?: string;
+  taxId?: string;
+  businessType?: string;
+  complianceLevel?: string;
+  certifications?: string[];
+  primaryContact?: string;
+  secondaryContact?: string;
+  paymentTerms?: string;
+  logo?: File | null;
+  complianceDocument?: File | null;
 }
 
 export interface VendorFilters {

@@ -3,31 +3,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Building2, Mail, Phone, MapPin, Shield, Upload, CheckCircle2, AlertCircle, X, Globe, CreditCard } from 'lucide-react';
+import type { VendorFormData } from '@/types/vendor';
 
-interface VendorFormData {
-  name: string;
-  email: string;
-  phone: string;
-  address: string;
-  city: string;
-  state: string;
-  zipCode: string;
-  country: string;
-  website: string;
-  taxId: string;
-  businessType: string;
-  complianceLevel: string;
-  certifications: string[];
-  primaryContact: string;
-  secondaryContact: string;
-  paymentTerms: string;
-  notes: string;
-  logo: File | null;
-  complianceDocument: File | null;
-}
 
 interface VendorFormProps {
-  onSubmit: (data: VendorFormData) => void;
+   onSubmit: (data: VendorFormData) => void | Promise<void>;
   loading?: boolean;
   initialData?: Partial<VendorFormData>;
   mode?: 'create' | 'edit';
@@ -39,11 +19,18 @@ const VendorForm: React.FC<VendorFormProps> = ({
   initialData = {},
   mode = 'create'
 }) => {
-  const [formData, setFormData] = useState<VendorFormData>({
+const [formData, setFormData] = useState<VendorFormData>({
+    // Required fields from your master type
     name: '',
     email: '',
     phone: '',
     address: '',
+    category: '', // <-- FIX: Add default
+    contactName: '', // <-- FIX: Add default
+    contactEmail: '', // <-- FIX: Add default
+    contactPhone: '', // <-- FIX: Add default
+
+    // Optional fields from your form
     city: '',
     state: '',
     zipCode: '',
@@ -61,7 +48,6 @@ const VendorForm: React.FC<VendorFormProps> = ({
     complianceDocument: null,
     ...initialData
   });
-
   const [errors, setErrors] = useState<Partial<VendorFormData>>({});
   const [logoPreview, setLogoPreview] = useState<string | undefined>();
   const [docPreview, setDocPreview] = useState<string | undefined>();
@@ -140,8 +126,9 @@ const VendorForm: React.FC<VendorFormProps> = ({
     }
   };
 
-  const toggleCertification = (cert: string) => {
-    const current = formData.certifications;
+ const toggleCertification = (cert: string) => {
+    // FIX: Use || [] to provide a fallback empty array if certifications is undefined
+    const current = formData.certifications || []; 
     const updated = current.includes(cert) 
       ? current.filter(c => c !== cert)
       : [...current, cert];
@@ -393,7 +380,7 @@ const VendorForm: React.FC<VendorFormProps> = ({
               <label key={cert} className="flex items-center space-x-2">
                 <input
                   type="checkbox"
-                  checked={formData.certifications.includes(cert)}
+                checked={(formData.certifications || []).includes(cert)}
                   onChange={() => toggleCertification(cert)}
                   className="rounded border-gray-300"
                 />

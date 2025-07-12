@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import type { Vendor, VendorFormData } from '@/types/vendor';
 import { 
   Search, 
   Filter, 
@@ -14,7 +15,6 @@ import {
   Building2
 } from 'lucide-react';
 import { Layout } from '@/components/layout/Layout';
-import { DataTable, Column } from '@/components/common/DataTable';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -22,20 +22,11 @@ import { Badge } from '@/components/ui/badge';
 import { useVendors } from '@/hooks/useVendors';
 import  VendorForm from '@/components/forms/VendorForm';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { DataTable } from '@/components/common/DataTable';
+import type { Column } from '@/components/common/DataTable';
 import { cn } from '@/components/lib/utils';
 
-interface Vendor {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  status: 'active' | 'inactive' | 'suspended';
-  complianceScore: number;
-  riskLevel: 'low' | 'medium' | 'high';
-  totalDeliveries: number;
-  lastDelivery: string;
-  createdAt: string;
-}
+
 
 const VendorList: React.FC = () => {
   const {
@@ -286,7 +277,7 @@ const VendorList: React.FC = () => {
     },
     {
       title: 'Avg Compliance',
-      value: `${metrics?.avgCompliance || 0}%`,
+      value: `${metrics?.averageComplianceScore || 0}%`,
       change: '+5%',
       positive: true
     }
@@ -348,23 +339,32 @@ const VendorList: React.FC = () => {
         </motion.div>
 
         {/* Edit Dialog */}
-        <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>Edit Vendor</DialogTitle>
             </DialogHeader>
-            {selectedVendor && (
-              <VendorForm
-                mode="edit"
-                initialData={selectedVendor}
-                onSubmit={async (data: VendorFormData) => { 
-                  await updateVendor(selectedVendor.id, data);
-                  setShowEditDialog(false);
-                  setSelectedVendor(null);
-                  refreshVendors();
-                }}
-              />
-            )}
+            {selectedVendor && (() => {
+             
+              const initialFormDataForEdit: Partial<VendorFormData> = {
+                ...selectedVendor,
+                
+                documents: undefined, 
+              };
+
+              return (
+                <VendorForm
+                  mode="edit"
+                  initialData={initialFormDataForEdit}
+                  onSubmit={async (data: VendorFormData) => { 
+                    await updateVendor(selectedVendor.id, data);
+                    setShowEditDialog(false);
+                    setSelectedVendor(null);
+                    refreshVendors();
+                  }}
+                />
+              );
+            })()}
           </DialogContent>
         </Dialog>
       </div>
