@@ -13,10 +13,17 @@
     "build": "cd frontend && npm run build",
     "start": "cd backend && npm start"
   },
-  "keywords": ["vendor", "compliance", "fraud-detection", "blockchain", "mern"],
+  "keywords": [
+    "vendor",
+    "compliance",
+    "fraud-detection",
+    "blockchain",
+    "mern"
+  ],
   "author": "Your Team",
   "license": "MIT",
   "devDependencies": {
+    "@types/node": "^24.0.13",
     "concurrently": "^8.2.2"
   }
 }
