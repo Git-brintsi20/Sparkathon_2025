@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { LoadingSpinner } from './LoadingSpinner';
-import { cn } from '@/lib/utils';
+import { cn } from '@/components/lib/utils';
 
 export interface Column<T> {
   key: keyof T;

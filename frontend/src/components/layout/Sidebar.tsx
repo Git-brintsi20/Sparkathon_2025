@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { cn } from '@/lib/utils';
+import { cn } from '@/components/lib/utils';
 import { Button } from '@/components/ui/button';
 import {
   LayoutDashboard,

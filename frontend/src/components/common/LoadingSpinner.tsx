@@ -1,5 +1,5 @@
 import React from 'react';
-import { cn } from '@/lib/utils';
+import { cn } from '@/components/lib/utils';
 
 interface LoadingSpinnerProps {
   variant?: 'default' | 'dots' | 'pulse' | 'bars';

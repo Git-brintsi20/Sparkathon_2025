@@ -1,15 +1,16 @@
 // frontend/src/hooks/useVendors.ts
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import vendorService from '../services/vendorService';
-import { 
-  Vendor, 
-  VendorFormData, 
-  VendorFilters, 
+// FIX: Use 'import type' for imports that only contain types.
+import type {
+  Vendor,
+  VendorFormData,
+  VendorFilters,
   VendorMetrics,
   VendorPerformance,
-  VendorAnalytics 
+  VendorAnalytics,
 } from '../types/vendor';
-import { PaginationParams } from '../types/common';
+import type { PaginationParams } from '../types/common';
 
 interface UseVendorsState {
   vendors: Vendor[];
@@ -66,7 +67,7 @@ export const useVendors = (): UseVendorsState & UseVendorsActions => {
   // Fetch vendors with pagination and filters
   const fetchVendors = useCallback(async (params?: PaginationParams & VendorFilters) => {
     setState(prev => ({ ...prev, loading: true, error: null }));
-    
+
     try {
       const finalParams = {
         ...state.pagination,
@@ -75,7 +76,7 @@ export const useVendors = (): UseVendorsState & UseVendorsActions => {
       };
 
       const response = await vendorService.getVendors(finalParams);
-      
+
       if (response.success && response.data) {
         setState(prev => ({
           ...prev,
@@ -107,10 +108,10 @@ export const useVendors = (): UseVendorsState & UseVendorsActions => {
   // Fetch single vendor by ID
   const fetchVendorById = useCallback(async (id: string): Promise<Vendor | null> => {
     setState(prev => ({ ...prev, loading: true, error: null }));
-    
+
     try {
       const response = await vendorService.getVendorById(id);
-      
+
       if (response.success && response.data) {
         setState(prev => ({
           ...prev,
@@ -139,10 +140,10 @@ export const useVendors = (): UseVendorsState & UseVendorsActions => {
   // Create new vendor
   const createVendor = useCallback(async (data: VendorFormData): Promise<Vendor | null> => {
     setState(prev => ({ ...prev, loading: true, error: null }));
-    
+
     try {
       const response = await vendorService.createVendor(data);
-      
+
       if (response.success && response.data) {
         setState(prev => ({
           ...prev,
@@ -171,10 +172,10 @@ export const useVendors = (): UseVendorsState & UseVendorsActions => {
   // Update vendor
   const updateVendor = useCallback(async (id: string, data: Partial<VendorFormData>): Promise<Vendor | null> => {
     setState(prev => ({ ...prev, loading: true, error: null }));
-    
+
     try {
       const response = await vendorService.updateVendor(id, data);
-      
+
       if (response.success && response.data) {
         setState(prev => ({
           ...prev,
@@ -206,10 +207,10 @@ export const useVendors = (): UseVendorsState & UseVendorsActions => {
   // Delete vendor
   const deleteVendor = useCallback(async (id: string): Promise<boolean> => {
     setState(prev => ({ ...prev, loading: true, error: null }));
-    
+
     try {
       const response = await vendorService.deleteVendor(id);
-      
+
       if (response.success) {
         setState(prev => ({
           ...prev,
@@ -239,10 +240,10 @@ export const useVendors = (): UseVendorsState & UseVendorsActions => {
   // Bulk delete vendors
   const bulkDeleteVendors = useCallback(async (ids: string[]): Promise<boolean> => {
     setState(prev => ({ ...prev, loading: true, error: null }));
-    
+
     try {
       const response = await vendorService.bulkDeleteVendors(ids);
-      
+
       if (response.success) {
         setState(prev => ({
           ...prev,
@@ -270,18 +271,18 @@ export const useVendors = (): UseVendorsState & UseVendorsActions => {
 
   // Update vendor status
   const updateVendorStatus = useCallback(async (
-    id: string, 
+    id: string,
     status: 'active' | 'inactive' | 'suspended'
   ): Promise<boolean> => {
     setState(prev => ({ ...prev, loading: true, error: null }));
-    
+
     try {
       const response = await vendorService.updateVendorStatus(id, status);
-      
+
       if (response.success && response.data) {
         setState(prev => ({
           ...prev,
-          vendors: prev.vendors.map(vendor => 
+          vendors: prev.vendors.map(vendor =>
             vendor.id === id ? { ...vendor, status } : vendor
           ),
           loading: false,
@@ -308,10 +309,10 @@ export const useVendors = (): UseVendorsState & UseVendorsActions => {
   // Search vendors
   const searchVendors = useCallback(async (query: string, filters?: VendorFilters) => {
     setState(prev => ({ ...prev, loading: true, error: null }));
-    
+
     try {
       const response = await vendorService.searchVendors(query, filters);
-      
+
       if (response.success && response.data) {
         setState(prev => ({
           ...prev,
@@ -340,17 +341,19 @@ export const useVendors = (): UseVendorsState & UseVendorsActions => {
     }
   }, []);
 
-  // Fetch metrics - FIX: Handle undefined response.data properly
+  // Fetch metrics
   const fetchMetrics = useCallback(async () => {
     try {
       const response = await vendorService.getVendorMetrics();
-      
-      if (response.success && response.data) {
-        setState(prev => ({
-          ...prev,
-          metrics: response.data || null, // Convert undefined to null
-        }));
-      }
+
+if (response.success) { // The check for response.data is no longer needed here
+  setState(prev => ({
+    ...prev,
+    // FIX: Use the logical OR operator to provide `null` as a fallback
+    // if response.data is undefined, satisfying the state's type.
+    metrics: response.data || null,
+  }));
+}
     } catch (error) {
       console.error('Failed to fetch vendor metrics:', error);
     }
@@ -358,12 +361,12 @@ export const useVendors = (): UseVendorsState & UseVendorsActions => {
 
   // Fetch performance data
   const fetchPerformance = useCallback(async (
-    vendorId: string, 
+    vendorId: string,
     period: string = '30d'
   ): Promise<VendorPerformance | null> => {
     try {
       const response = await vendorService.getVendorPerformance(vendorId, period);
-      
+
       if (response.success && response.data) {
         return response.data;
       }
@@ -380,7 +383,7 @@ export const useVendors = (): UseVendorsState & UseVendorsActions => {
   ): Promise<VendorAnalytics | null> => {
     try {
       const response = await vendorService.getVendorAnalytics(dateRange);
-      
+
       if (response.success && response.data) {
         return response.data;
       }
@@ -396,7 +399,7 @@ export const useVendors = (): UseVendorsState & UseVendorsActions => {
     setState(prev => ({
       ...prev,
       filters: { ...prev.filters, ...filters },
-      pagination: { ...prev.pagination, page: 1 }, // Reset to first page
+      pagination: { ...prev.pagination, page: 1 },
     }));
   }, []);
 
@@ -429,14 +432,14 @@ export const useVendors = (): UseVendorsState & UseVendorsActions => {
   // Auto-fetch vendors on mount and when pagination/filters change
   useEffect(() => {
     fetchVendors();
-  }, [state.pagination.page, state.pagination.limit, state.filters]);
+  }, [state.pagination.page, state.pagination.limit, state.filters, fetchVendors]);
 
   // Memoized computed values
-  const activeVendors = useMemo(() => 
+  const activeVendors = useMemo(() =>
     state.vendors.filter(vendor => vendor.status === 'active'), [state.vendors]
   );
 
-  const highRiskVendors = useMemo(() => 
+  const highRiskVendors = useMemo(() =>
     state.vendors.filter(vendor => vendor.riskLevel === 'high'), [state.vendors]
   );
 

@@ -15,7 +15,14 @@ export interface Vendor {
   contacts: VendorContact[];
   createdAt: string;
   updatedAt: string;
+  industry: string;
   notes?: string;
+  website?: string;
+  contactPerson?: string;
+  taxId?: string;
+  totalDeliveries?: number;
+  successfulDeliveries?: number;
+  lastDelivery?: string;
 }
 
 export interface VendorDocument {
@@ -45,6 +52,7 @@ export interface VendorMetrics {
   highRiskVendors: number;
   averageComplianceScore: number;
   complianceRate: number;
+  avgCompliance?: number;
 }
 
 export interface VendorPerformance {

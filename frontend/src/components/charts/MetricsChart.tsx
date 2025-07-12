@@ -17,7 +17,7 @@ import {
   Cell,
 } from 'recharts';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { cn } from '@/lib/utils';
+import { cn } from '@/components/lib/utils';
 
 export type ChartType = 'line' | 'area' | 'bar' | 'pie';
 
