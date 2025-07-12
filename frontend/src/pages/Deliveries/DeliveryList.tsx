@@ -1,111 +1,112 @@
 import React, { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { 
-  Package, 
-  Search, 
-  Filter, 
-  Download, 
-  Eye, 
-  CheckCircle2, 
-  AlertCircle, 
-  Clock, 
-  Truck,
-  MoreHorizontal,
-  RefreshCw
-} from 'lucide-react';
+import { Package, Search, Filter, Plus, Eye, Edit, Trash2, CheckCircle, Clock, AlertTriangle } from 'lucide-react';
 import { Layout } from '@/components/layout/Layout';
-import { DataTable, Column } from '@/components/common/DataTable';
-
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { DataTable } from '@/components/common/DataTable';
+import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { useDeliveries } from '@/hooks/useDeliveries';
+import { cn } from '@/components/lib/utils';
 
 interface Delivery {
   id: string;
   barcode: string;
-  purchaseOrderId: string;
+  poNumber: string;
   vendorName: string;
-  vendorId: string;
+  status: 'pending' | 'verified' | 'rejected' | 'in_transit';
   weight: number;
   quantity: number;
   condition: string;
-  status: 'pending' | 'verified' | 'rejected' | 'processing';
-  deliveryDate: string;
-  verificationDate?: string;
+  createdAt: string;
+  verifiedAt?: string;
   notes?: string;
-  deliveryPhoto?: string;
-  packagingPhoto?: string;
-  complianceScore?: number;
 }
 
+const statusColors = {
+  pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+  verified: 'bg-green-100 text-green-800 border-green-200',
+  rejected: 'bg-red-100 text-red-800 border-red-200',
+  in_transit: 'bg-blue-100 text-blue-800 border-blue-200'
+};
+
+const statusIcons = {
+  pending: Clock,
+  verified: CheckCircle,
+  rejected: AlertTriangle,
+  in_transit: Package
+};
+
 const DeliveryList: React.FC = () => {
+  const { deliveries, loading, error, refreshDeliveries } = useDeliveries();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [dateRange, setDateRange] = useState<string>('all');
-  const [selectedDeliveries, setSelectedDeliveries] = useState<string[]>([]);
+  const [conditionFilter, setConditionFilter] = useState<string>('all');
 
-  // Mock data - replace with actual hook
-  const { deliveries, loading, error, refetch } = useDeliveries();
-
-  // Mock data for demo
+  // Mock data for demonstration
   const mockDeliveries: Delivery[] = [
     {
       id: '1',
       barcode: 'BC123456789',
-      purchaseOrderId: 'PO-2024-001',
+      poNumber: 'PO-2024-001',
       vendorName: 'ABC Suppliers Ltd',
-      vendorId: 'vendor1',
-      weight: 15.5,
-      quantity: 100,
-      condition: 'good',
       status: 'verified',
-      deliveryDate: '2024-01-15T10:30:00Z',
-      verificationDate: '2024-01-15T10:45:00Z',
-      complianceScore: 95
+      weight: 15.5,
+      quantity: 10,
+      condition: 'good',
+      createdAt: '2024-01-15T10:30:00Z',
+      verifiedAt: '2024-01-15T11:00:00Z',
+      notes: 'All items in perfect condition'
     },
     {
       id: '2',
       barcode: 'BC987654321',
-      purchaseOrderId: 'PO-2024-002',
+      poNumber: 'PO-2024-002',
       vendorName: 'XYZ Manufacturing',
-      vendorId: 'vendor2',
-      weight: 8.2,
-      quantity: 50,
-      condition: 'excellent',
       status: 'pending',
-      deliveryDate: '2024-01-15T14:20:00Z',
-      complianceScore: 88
+      weight: 8.2,
+      quantity: 5,
+      condition: 'excellent',
+      createdAt: '2024-01-15T14:20:00Z'
     },
     {
       id: '3',
       barcode: 'BC456789123',
-      purchaseOrderId: 'PO-2024-003',
+      poNumber: 'PO-2024-003',
       vendorName: 'Global Trade Corp',
-      vendorId: 'vendor3',
+      status: 'in_transit',
       weight: 22.8,
-      quantity: 200,
-      condition: 'fair',
+      quantity: 15,
+      condition: 'good',
+      createdAt: '2024-01-15T09:15:00Z'
+    },
+    {
+      id: '4',
+      barcode: 'BC789123456',
+      poNumber: 'PO-2024-004',
+      vendorName: 'Tech Solutions Inc',
       status: 'rejected',
-      deliveryDate: '2024-01-14T16:45:00Z',
-      verificationDate: '2024-01-14T17:00:00Z',
-      notes: 'Packaging damaged during transport',
-      complianceScore: 65
+      weight: 3.1,
+      quantity: 2,
+      condition: 'damaged',
+      createdAt: '2024-01-15T16:45:00Z',
+      notes: 'Packaging damaged during transport'
     }
   ];
 
-  const deliveryData = deliveries || mockDeliveries;
+  const displayDeliveries = deliveries?.length ? deliveries : mockDeliveries;
 
   // Filter deliveries
   const filteredDeliveries = useMemo(() => {
-    let filtered = [...deliveryData];
+    let filtered = [...displayDeliveries];
 
     // Search filter
     if (searchTerm) {
       filtered = filtered.filter(delivery =>
         delivery.barcode.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        delivery.purchaseOrderId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        delivery.poNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
         delivery.vendorName.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
@@ -115,301 +116,336 @@ const DeliveryList: React.FC = () => {
       filtered = filtered.filter(delivery => delivery.status === statusFilter);
     }
 
-    // Date range filter
-    if (dateRange !== 'all') {
-      const now = new Date();
-      const deliveryDate = new Date(delivery.deliveryDate);
-      
-      switch (dateRange) {
-        case 'today':
-          filtered = filtered.filter(delivery => 
-            new Date(delivery.deliveryDate).toDateString() === now.toDateString()
-          );
-          break;
-        case 'week':
-          const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-          filtered = filtered.filter(delivery => 
-            new Date(delivery.deliveryDate) >= weekAgo
-          );
-          break;
-        case 'month':
-          const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-          filtered = filtered.filter(delivery => 
-            new Date(delivery.deliveryDate) >= monthAgo
-          );
-          break;
-      }
+    // Condition filter
+    if (conditionFilter !== 'all') {
+      filtered = filtered.filter(delivery => delivery.condition === conditionFilter);
     }
 
     return filtered;
-  }, [deliveryData, searchTerm, statusFilter, dateRange]);
+  }, [displayDeliveries, searchTerm, statusFilter, conditionFilter]);
 
-  // Status badge component
+  const handleRowClick = (delivery: Delivery) => {
+    // Navigate to delivery detail page
+    console.log('Navigate to delivery:', delivery.id);
+  };
+
+  const handleEdit = (delivery: Delivery) => {
+    console.log('Edit delivery:', delivery.id);
+  };
+
+  const handleDelete = (delivery: Delivery) => {
+    console.log('Delete delivery:', delivery.id);
+  };
+
   const StatusBadge = ({ status }: { status: string }) => {
-    const getStatusConfig = (status: string) => {
-      switch (status) {
-        case 'verified':
-          return { icon: CheckCircle2, color: 'text-green-600 bg-green-50', label: 'Verified' };
-        case 'rejected':
-          return { icon: AlertCircle, color: 'text-red-600 bg-red-50', label: 'Rejected' };
-        case 'processing':
-          return { icon: RefreshCw, color: 'text-blue-600 bg-blue-50', label: 'Processing' };
-        default:
-          return { icon: Clock, color: 'text-yellow-600 bg-yellow-50', label: 'Pending' };
-      }
-    };
-
-    const config = getStatusConfig(status);
-    const Icon = config.icon;
-
+    const Icon = statusIcons[status as keyof typeof statusIcons];
     return (
-      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${config.color}`}>
+      <div className={cn(
+        'inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border',
+        statusColors[status as keyof typeof statusColors]
+      )}>
         <Icon className="h-3 w-3" />
-        {config.label}
-      </span>
+        {status.replace('_', ' ').toUpperCase()}
+      </div>
     );
   };
 
-  // Compliance score badge
-  const ComplianceScore = ({ score }: { score?: number }) => {
-    if (!score) return <span className="text-gray-400">-</span>;
-    
-    const getScoreColor = (score: number) => {
-      if (score >= 90) return 'text-green-600 bg-green-50';
-      if (score >= 70) return 'text-yellow-600 bg-yellow-50';
-      return 'text-red-600 bg-red-50';
-    };
-
-    return (
-      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getScoreColor(score)}`}>
-        {score}%
-      </span>
-    );
-  };
-
-  // Table columns
-  const columns: Column<Delivery>[] = [
+  const columns = [
     {
-      key: 'barcode',
+      key: 'barcode' as keyof Delivery,
       label: 'Barcode',
-      render: (value, row) => (
-        <div className="font-mono text-sm">
-          {value}
-        </div>
+      sortable: true,
+      render: (value: string) => (
+        <div className="font-mono text-sm">{value}</div>
       )
     },
     {
-      key: 'purchaseOrderId',
+      key: 'poNumber' as keyof Delivery,
       label: 'PO Number',
-      render: (value) => (
-        <div className="font-medium text-sm">
-          {value}
-        </div>
+      sortable: true,
+      render: (value: string) => (
+        <div className="font-medium">{value}</div>
       )
     },
     {
-      key: 'vendorName',
+      key: 'vendorName' as keyof Delivery,
       label: 'Vendor',
-      render: (value) => (
-        <div className="text-sm">
-          {value}
-        </div>
-      )
+      sortable: true
     },
     {
-      key: 'weight',
-      label: 'Weight',
-      render: (value, row) => (
-        <div className="text-sm">
-          {value}kg / {row.quantity} items
-        </div>
-      )
-    },
-    {
-      key: 'status',
+      key: 'status' as keyof Delivery,
       label: 'Status',
-      render: (value) => <StatusBadge status={value} />
+      sortable: true,
+      render: (value: string) => <StatusBadge status={value} />
     },
     {
-      key: 'complianceScore',
-      label: 'Compliance',
-      render: (value) => <ComplianceScore score={value} />
+      key: 'weight' as keyof Delivery,
+      label: 'Weight (kg)',
+      sortable: true,
+      render: (value: number) => (
+        <div className="text-right font-mono">{value.toFixed(1)}</div>
+      )
     },
     {
-      key: 'deliveryDate',
-      label: 'Delivery Date',
-      render: (value) => (
-        <div className="text-sm">
+      key: 'quantity' as keyof Delivery,
+      label: 'Quantity',
+      sortable: true,
+      render: (value: number) => (
+        <div className="text-right font-mono">{value}</div>
+      )
+    },
+    {
+      key: 'condition' as keyof Delivery,
+      label: 'Condition',
+      sortable: true,
+      render: (value: string) => (
+        <div className="capitalize">{value}</div>
+      )
+    },
+    {
+      key: 'createdAt' as keyof Delivery,
+      label: 'Created',
+      sortable: true,
+      render: (value: string) => (
+        <div className="text-sm text-muted-foreground">
           {new Date(value).toLocaleDateString()}
         </div>
       )
     }
   ];
 
-  const handleRowClick = (delivery: Delivery) => {
-    // Navigate to delivery detail
-    console.log('Navigate to delivery:', delivery.id);
-  };
-
-  const handleBulkAction = (action: string) => {
-    console.log(`Bulk action: ${action} for deliveries:`, selectedDeliveries);
-  };
+  const getActions = (delivery: Delivery) => (
+    <div className="flex items-center gap-1">
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={(e) => {
+          e.stopPropagation();
+          handleRowClick(delivery);
+        }}
+      >
+        <Eye className="h-4 w-4" />
+      </Button>
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={(e) => {
+          e.stopPropagation();
+          handleEdit(delivery);
+        }}
+      >
+        <Edit className="h-4 w-4" />
+      </Button>
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={(e) => {
+          e.stopPropagation();
+          handleDelete(delivery);
+        }}
+      >
+        <Trash2 className="h-4 w-4" />
+      </Button>
+    </div>
+  );
 
   const breadcrumbs = [
     { label: 'Dashboard', href: '/dashboard' },
     { label: 'Deliveries', isActive: true }
   ];
 
+  const headerActions = (
+    <div className="flex items-center gap-2">
+      <Button
+        variant="outline"
+        onClick={() => refreshDeliveries?.()}
+        disabled={loading}
+      >
+        Refresh
+      </Button>
+      <Button>
+        <Plus className="h-4 w-4 mr-2" />
+        New Delivery
+      </Button>
+    </div>
+  );
+
+  if (error) {
+    return (
+      <Layout 
+        breadcrumbs={breadcrumbs}
+        pageTitle="Deliveries"
+        pageDescription="Manage and track delivery verifications"
+      >
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <AlertTriangle className="h-12 w-12 mx-auto text-destructive mb-4" />
+            <h3 className="text-lg font-semibold mb-2">Error Loading Deliveries</h3>
+            <p className="text-muted-foreground mb-4">{error}</p>
+            <Button onClick={() => refreshDeliveries?.()}>
+              Try Again
+            </Button>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
   return (
-    <Layout
+    <Layout 
       breadcrumbs={breadcrumbs}
-      pageTitle="Delivery Management"
-      pageDescription="Monitor and verify all delivery activities"
+      pageTitle="Deliveries"
+      pageDescription="Manage and track delivery verifications"
+      headerActions={headerActions}
     >
       <div className="p-6 space-y-6">
-        {/* Quick Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Total Deliveries</p>
-                  <p className="text-2xl font-bold">{deliveryData.length}</p>
-                </div>
-                <Package className="h-8 w-8 text-primary" />
-              </div>
-            </CardContent>
-          </Card>
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+          >
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  Total Deliveries
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{displayDeliveries.length}</div>
+              </CardContent>
+            </Card>
+          </motion.div>
 
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Verified</p>
-                  <p className="text-2xl font-bold text-green-600">
-                    {deliveryData.filter(d => d.status === 'verified').length}
-                  </p>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+          >
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  Verified
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-green-600">
+                  {displayDeliveries.filter(d => d.status === 'verified').length}
                 </div>
-                <CheckCircle2 className="h-8 w-8 text-green-600" />
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </motion.div>
 
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Pending</p>
-                  <p className="text-2xl font-bold text-yellow-600">
-                    {deliveryData.filter(d => d.status === 'pending').length}
-                  </p>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+          >
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  Pending
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-yellow-600">
+                  {displayDeliveries.filter(d => d.status === 'pending').length}
                 </div>
-                <Clock className="h-8 w-8 text-yellow-600" />
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </motion.div>
 
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Rejected</p>
-                  <p className="text-2xl font-bold text-red-600">
-                    {deliveryData.filter(d => d.status === 'rejected').length}
-                  </p>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+          >
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  Rejected
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-red-600">
+                  {displayDeliveries.filter(d => d.status === 'rejected').length}
                 </div>
-                <AlertCircle className="h-8 w-8 text-red-600" />
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </motion.div>
         </div>
 
         {/* Filters */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Filter className="h-5 w-5" />
-              Filters
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="relative">
-                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search deliveries..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-8"
-                />
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+        >
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Filters</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="relative">
+                  <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search deliveries..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-8"
+                  />
+                </div>
+
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Filter by status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="verified">Verified</SelectItem>
+                    <SelectItem value="rejected">Rejected</SelectItem>
+                    <SelectItem value="in_transit">In Transit</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Select value={conditionFilter} onValueChange={setConditionFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Filter by condition" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Conditions</SelectItem>
+                    <SelectItem value="excellent">Excellent</SelectItem>
+                    <SelectItem value="good">Good</SelectItem>
+                    <SelectItem value="fair">Fair</SelectItem>
+                    <SelectItem value="poor">Poor</SelectItem>
+                    <SelectItem value="damaged">Damaged</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
+            </CardContent>
+          </Card>
+        </motion.div>
 
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Filter by status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="verified">Verified</SelectItem>
-                  <SelectItem value="rejected">Rejected</SelectItem>
-                  <SelectItem value="processing">Processing</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Select value={dateRange} onValueChange={setDateRange}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Filter by date" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Time</SelectItem>
-                  <SelectItem value="today">Today</SelectItem>
-                  <SelectItem value="week">This Week</SelectItem>
-                  <SelectItem value="month">This Month</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Button variant="outline" onClick={() => refetch && refetch()}>
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Refresh
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Bulk Actions */}
-        {selectedDeliveries.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex items-center gap-2 p-3 bg-primary/10 rounded-lg"
-          >
-            <span className="text-sm font-medium">
-              {selectedDeliveries.length} deliveries selected
-            </span>
-            <Button size="sm" variant="outline" onClick={() => handleBulkAction('verify')}>
-              Verify Selected
-            </Button>
-            <Button size="sm" variant="outline" onClick={() => handleBulkAction('export')}>
-              <Download className="h-4 w-4 mr-2" />
-              Export
-            </Button>
-          </motion.div>
-        )}
-
-        {/* Main Table */}
-        <DataTable
-          data={filteredDeliveries}
-          columns={columns}
-          loading={loading}
-          onRowClick={handleRowClick}
-          actions={(delivery) => (
-            <Button variant="ghost" size="sm" onClick={() => handleRowClick(delivery)}>
-              <Eye className="h-4 w-4" />
-            </Button>
-          )}
-          emptyMessage="No deliveries found matching your criteria"
-        />
+        {/* Deliveries Table */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6 }}
+        >
+          <DataTable
+            data={filteredDeliveries}
+            columns={columns}
+            loading={loading}
+            searchable={false}
+            onRowClick={handleRowClick}
+            actions={getActions}
+            emptyMessage="No deliveries found"
+            className="w-full"
+          />
+        </motion.div>
       </div>
     </Layout>
   );
