@@ -3,8 +3,13 @@
 // API Response types
 export interface ApiResponse<T> {
   success: boolean;
-  data: T;
-  message: string;
+  message?: string;
+  data?: T;
+  error?: {
+    code: string;
+    message: string;
+    details?: any;
+  };
   timestamp: string;
 }
 
@@ -187,3 +192,4 @@ export interface WebSocketState {
   lastMessage: WebSocketMessage | null;
   error: string | null;
 }
+
