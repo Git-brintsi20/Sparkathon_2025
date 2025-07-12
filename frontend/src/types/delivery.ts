@@ -88,6 +88,7 @@ export interface DeliveryFilters {
   search?: string;
 }
 
+// Fixed: Changed from 'data' to 'deliveries' property
 export interface DeliveryApiResponse {
   deliveries: Delivery[];
   total: number;
@@ -123,3 +124,4 @@ export interface DeliveryAnalytics {
     detectedAt: string;
   }>;
 }
+

@@ -1,26 +1,25 @@
-// tsconfig.node.json - CORRECTED
+// frontend/tsconfig.node.json - CORRECTED
 {
   "compilerOptions": {
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo",
     "target": "ES2023",
     "lib": ["ES2023"],
     "module": "ESNext",
-   "types": ["vite/client", "node"],
+    "types": ["vite/client", "node"],
     "skipLibCheck": true,
-     "composite": true,
+    // "composite": true, // <--- REMOVE THIS LINE
     "allowSyntheticDefaultImports": true,
-      "jsx": "react-jsx",
+    "jsx": "react-jsx",
 
-      /* Path mapping */
-     "baseUrl": ".",
-  
+    /* Path mapping */
+    "baseUrl": ".",
 
     /* Bundler mode */
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
     "moduleDetection": "force",
-    "noEmit": true, // <--- THIS LINE HAS BEEN REMOVED
+    "noEmit": true, // <--- BRING THIS LINE BACK
 
     /* Linting */
     "strict": true,
@@ -29,7 +28,6 @@
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true
-
   },
   "include": ["vite.config.ts"]
 }

@@ -214,6 +214,8 @@ class DeliveryService {
   }
 }
 
+
+
 // Export singleton instance
 export const deliveryService = new DeliveryService();
 export default deliveryService;

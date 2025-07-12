@@ -79,12 +79,12 @@ export const useVendors = (): UseVendorsState & UseVendorsActions => {
       if (response.success && response.data) {
         setState(prev => ({
           ...prev,
-          vendors: response.data.data,
+          vendors: response.data!.data,
           pagination: {
-            page: response.data.page,
-            limit: response.data.limit,
-            total: response.data.total,
-            totalPages: response.data.totalPages,
+            page: response.data!.page,
+            limit: response.data!.limit,
+            total: response.data!.total,
+            totalPages: response.data!.totalPages,
           },
           loading: false,
         }));
@@ -114,7 +114,7 @@ export const useVendors = (): UseVendorsState & UseVendorsActions => {
       if (response.success && response.data) {
         setState(prev => ({
           ...prev,
-          selectedVendor: response.data,
+          selectedVendor: response.data!,
           loading: false,
         }));
         return response.data;
@@ -146,7 +146,7 @@ export const useVendors = (): UseVendorsState & UseVendorsActions => {
       if (response.success && response.data) {
         setState(prev => ({
           ...prev,
-          vendors: [response.data, ...prev.vendors],
+          vendors: [response.data!, ...prev.vendors],
           loading: false,
         }));
         return response.data;
@@ -179,9 +179,9 @@ export const useVendors = (): UseVendorsState & UseVendorsActions => {
         setState(prev => ({
           ...prev,
           vendors: prev.vendors.map(vendor => 
-            vendor.id === id ? response.data : vendor
+            vendor.id === id ? response.data! : vendor
           ),
-          selectedVendor: prev.selectedVendor?.id === id ? response.data : prev.selectedVendor,
+          selectedVendor: prev.selectedVendor?.id === id ? response.data! : prev.selectedVendor,
           loading: false,
         }));
         return response.data;
@@ -315,12 +315,12 @@ export const useVendors = (): UseVendorsState & UseVendorsActions => {
       if (response.success && response.data) {
         setState(prev => ({
           ...prev,
-          vendors: response.data.data,
+          vendors: response.data!.data,
           pagination: {
-            page: response.data.page,
-            limit: response.data.limit,
-            total: response.data.total,
-            totalPages: response.data.totalPages,
+            page: response.data!.page,
+            limit: response.data!.limit,
+            total: response.data!.total,
+            totalPages: response.data!.totalPages,
           },
           loading: false,
         }));
@@ -340,7 +340,7 @@ export const useVendors = (): UseVendorsState & UseVendorsActions => {
     }
   }, []);
 
-  // Fetch metrics
+  // Fetch metrics - FIX: Handle undefined response.data properly
   const fetchMetrics = useCallback(async () => {
     try {
       const response = await vendorService.getVendorMetrics();
@@ -348,7 +348,7 @@ export const useVendors = (): UseVendorsState & UseVendorsActions => {
       if (response.success && response.data) {
         setState(prev => ({
           ...prev,
-          metrics: response.data,
+          metrics: response.data || null, // Convert undefined to null
         }));
       }
     } catch (error) {
