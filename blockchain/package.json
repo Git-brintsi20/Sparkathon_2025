@@ -1,0 +1,26 @@
+{
+  "name": "vendor-compliance-blockchain",
+  "version": "1.0.0",
+  "description": "Blockchain integration for vendor compliance system",
+  "main": "index.js",
+  "scripts": {
+    "dev": "hardhat node",
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "deploy": "hardhat run scripts/deploy.js"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^4.9.5",
+    "ethers": "^6.9.0",
+    "web3": "^4.3.0"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^3.0.0",
+    "hardhat": "^2.19.2",
+    "chai": "^4.3.10",
+    "mocha": "^10.2.0"
+  },
+  "keywords": ["blockchain", "smart-contracts", "hardhat", "ethereum"],
+  "author": "Your Team",
+  "license": "MIT"
+}
