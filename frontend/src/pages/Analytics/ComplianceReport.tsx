@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react'; // Added useEffect
 import { Calendar, Download, Filter, TrendingUp, AlertTriangle, CheckCircle, XCircle, Eye, FileText, BarChart3, Clock, User, Shield } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,9 +6,13 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useAnalytics } from '../../../hooks/useAnalytics';
-import { MetricsChart } from '../../../components/charts/MetricsChart';
-import { ComplianceChart } from '../../../components/charts/ComplianceChart';
+import { useAnalytics } from '@/hooks/useAnalytics';
+import { MetricsChart } from '@/components/charts/MetricsChart';
+import { ComplianceChart } from '@/components/charts/ComplianceChart';
+// REMOVED: import { Layout } from '@/components/layout/Layout';
+// ADDED: Import the useLayout hook
+import { useLayout } from '@/contexts/LayoutContext';
+import { cn } from '@/components/lib/utils'; // Keeping this path as per your instruction
 
 interface ComplianceIncident {
   id: string;
@@ -31,8 +35,11 @@ interface ComplianceAlert {
 }
 
 const ComplianceReport: React.FC = () => {
+  // ADDED: Call the useLayout hook
+  const { setLayoutData } = useLayout();
+
   const { data, loading, error, updateFilters, exportData } = useAnalytics();
-  
+
   const [selectedDateRange, setSelectedDateRange] = useState('last6months');
   const [selectedVendor, setSelectedVendor] = useState('all');
   const [selectedRiskLevel, setSelectedRiskLevel] = useState('all');
@@ -40,6 +47,48 @@ const ComplianceReport: React.FC = () => {
   const [selectedTab, setSelectedTab] = useState('overview');
   const [sortBy, setSortBy] = useState('complianceScore');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+
+  // ADDED: useEffect hook to set and clear layout data
+  useEffect(() => {
+    setLayoutData({
+      pageTitle: "Compliance Report",
+      pageDescription: "Comprehensive compliance monitoring and reporting",
+      breadcrumbs: [
+        { label: 'Dashboard', href: '/dashboard' },
+        { label: 'Compliance', isActive: true }
+      ],
+      headerActions: (
+        <div className="flex items-center gap-3">
+          <Button
+            variant="outline"
+            onClick={() => handleExport('csv')}
+            className="flex items-center gap-2"
+          >
+            <Download className="w-4 h-4" />
+            Export CSV
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => handleExport('xlsx')}
+            className="flex items-center gap-2"
+          >
+            <FileText className="w-4 h-4" />
+            Export Excel
+          </Button>
+          <Button
+            onClick={() => handleExport('pdf')}
+            className="flex items-center gap-2"
+          >
+            <BarChart3 className="w-4 h-4" />
+            Export PDF
+          </Button>
+        </div>
+      )
+    });
+
+    // Return a cleanup function
+    return () => setLayoutData({});
+  }, [setLayoutData, exportData]); // Added exportData to dependencies for headerActions
 
   // Mock incidents data
   const mockIncidents: ComplianceIncident[] = [
@@ -105,27 +154,27 @@ const ComplianceReport: React.FC = () => {
 
   const filteredVendors = useMemo(() => {
     if (!data?.vendorPerformance) return [];
-    
+
     let filtered = data.vendorPerformance;
-    
+
     if (selectedVendor !== 'all') {
       filtered = filtered.filter(vendor => vendor.vendorId === selectedVendor);
     }
-    
+
     if (selectedRiskLevel !== 'all') {
       filtered = filtered.filter(vendor => vendor.riskLevel === selectedRiskLevel);
     }
-    
+
     if (searchTerm) {
-      filtered = filtered.filter(vendor => 
+      filtered = filtered.filter(vendor =>
         vendor.vendorName.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
-    
+
     return filtered.sort((a, b) => {
       const aValue = a[sortBy as keyof typeof a];
       const bValue = b[sortBy as keyof typeof b];
-      
+
       if (sortOrder === 'desc') {
         return bValue > aValue ? 1 : -1;
       }
@@ -188,14 +237,16 @@ const ComplianceReport: React.FC = () => {
   }
 
   return (
+    // REMOVED: The <Layout> wrapper from the return statement.
+    // The page now only returns its own content.
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      {/* Header - This content is now managed by the Layout component via context */}
+      {/* <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Compliance Report</h1>
           <p className="text-gray-600">Comprehensive compliance monitoring and reporting</p>
         </div>
-        
+
         <div className="flex items-center gap-3">
           <Button
             variant="outline"
@@ -221,7 +272,7 @@ const ComplianceReport: React.FC = () => {
             Export PDF
           </Button>
         </div>
-      </div>
+      </div> */}
 
       {/* Filters */}
       <Card>
@@ -247,7 +298,7 @@ const ComplianceReport: React.FC = () => {
                 </SelectContent>
               </Select>
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium mb-1">Vendor</label>
               <Select value={selectedVendor} onValueChange={setSelectedVendor}>
@@ -264,7 +315,7 @@ const ComplianceReport: React.FC = () => {
                 </SelectContent>
               </Select>
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium mb-1">Risk Level</label>
               <Select value={selectedRiskLevel} onValueChange={setSelectedRiskLevel}>
@@ -279,7 +330,7 @@ const ComplianceReport: React.FC = () => {
                 </SelectContent>
               </Select>
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium mb-1">Search</label>
               <Input
@@ -305,7 +356,7 @@ const ComplianceReport: React.FC = () => {
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
@@ -317,7 +368,7 @@ const ComplianceReport: React.FC = () => {
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
@@ -329,7 +380,7 @@ const ComplianceReport: React.FC = () => {
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
@@ -361,7 +412,7 @@ const ComplianceReport: React.FC = () => {
               showRiskIndicators={true}
               height={350}
             />
-            
+
             <MetricsChart
               title="Risk Distribution"
               type="pie"
@@ -433,7 +484,7 @@ const ComplianceReport: React.FC = () => {
                           <div className="flex items-center gap-2">
                             <span className="font-medium">{vendor.complianceScore.toFixed(1)}%</span>
                             <div className="w-16 bg-gray-200 rounded-full h-2">
-                              <div 
+                              <div
                                 className="bg-blue-600 h-2 rounded-full"
                                 style={{ width: `${vendor.complianceScore}%` }}
                               />
@@ -530,8 +581,8 @@ const ComplianceReport: React.FC = () => {
             <CardContent>
               <div className="space-y-3">
                 {mockAlerts.map((alert) => (
-                  <div 
-                    key={alert.id} 
+                  <div
+                    key={alert.id}
                     className={`border rounded-lg p-4 ${!alert.read ? 'bg-blue-50 border-blue-200' : ''}`}
                   >
                     <div className="flex items-center justify-between mb-2">

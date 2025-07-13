@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/components/lib/utils';
 import { Button } from '@/components/ui/button';
 import {
@@ -110,8 +111,31 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onToggle,
   isMobile = false
 }) => {
+  const location = useLocation();
   const [expandedItems, setExpandedItems] = useState<string[]>(['vendors']);
-  const [activeItem, setActiveItem] = useState('dashboard');
+
+  // Determine which item is active based on the current path
+  const getActiveItem = () => {
+    // Check sub-items first for more specific matches
+    for (const item of navItems) {
+      if (item.subItems) {
+        for (const subItem of item.subItems) {
+          if (location.pathname === subItem.href) {
+            return subItem.id;
+          }
+        }
+      }
+    }
+    // Then check main items
+    for (const item of navItems) {
+      if (location.pathname === item.href) {
+        return item.id;
+      }
+    }
+    return 'dashboard'; // Default or fallback
+  };
+
+  const activeItem = getActiveItem();
 
   const toggleExpanded = (itemId: string) => {
     setExpandedItems(prev => 
@@ -119,13 +143,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
         ? prev.filter(id => id !== itemId)
         : [...prev, itemId]
     );
-  };
-
-  const handleItemClick = (item: NavItem) => {
-    setActiveItem(item.id);
-    if (item.subItems) {
-      toggleExpanded(item.id);
-    }
   };
 
   const sidebarVariants = {
@@ -185,11 +202,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
         variants={sidebarVariants}
         animate={isOpen ? 'open' : 'closed'}
         className={cn(
-          'fixed left-0 top-0 z-50 h-full bg-card border-r border-border',
-          'flex flex-col shadow-lg',
-          isMobile ? 'lg:relative lg:z-auto' : 'relative',
+           'fixed left-0 top-0 z-50 h-full bg-card border-r border-border',
+    'flex flex-col shadow-lg',
+          
           className
+          
         )}
+        style={{
+    // Ensure consistent positioning
+    position: 'fixed',
+    left: 0,
+    top: 0,
+    zIndex: 50
+  }}
       >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-border">
@@ -236,48 +261,53 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <nav className="flex-1 px-4 py-4 space-y-2 overflow-y-auto">
           {navItems.map((item) => (
             <div key={item.id} className="space-y-1">
-              <Button
-                variant={activeItem === item.id ? 'default' : 'ghost'}
-                className={cn(
-                  'w-full justify-start h-10',
-                  !isOpen && 'justify-center px-2',
-                  activeItem === item.id && 'bg-primary text-primary-foreground'
-                )}
-                onClick={() => handleItemClick(item)}
-              >
-                <item.icon className={cn('h-4 w-4', isOpen && 'mr-3')} />
-                <AnimatePresence mode="wait">
-                  {isOpen && (
-                    <motion.span
-                      key={`${item.id}-label`}
-                      variants={itemVariants}
-                      initial="closed"
-                      animate="open"
-                      exit="closed"
-                      className="flex-1 text-left"
-                    >
-                      {item.label}
-                    </motion.span>
+              <Link to={item.href}>
+                <Button
+                  variant={activeItem === item.id ? 'default' : 'ghost'}
+                  className={cn(
+                    'w-full justify-start h-10',
+                    !isOpen && 'justify-center px-2',
+                    activeItem === item.id && 'bg-primary text-primary-foreground'
                   )}
-                </AnimatePresence>
-                {isOpen && item.badge && (
-                  <motion.span
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    className="ml-auto bg-accent text-accent-foreground text-xs rounded-full px-2 py-1 min-w-[20px] text-center"
-                  >
-                    {item.badge}
-                  </motion.span>
-                )}
-                {isOpen && item.subItems && (
-                  <motion.div
-                    animate={{ rotate: expandedItems.includes(item.id) ? 90 : 0 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <ChevronRight className="h-4 w-4 ml-1" />
-                  </motion.div>
-                )}
-              </Button>
+                  onClick={() => item.subItems && toggleExpanded(item.id)}
+                  asChild
+                >
+                  <div>
+                    <item.icon className={cn('h-4 w-4', isOpen && 'mr-3')} />
+                    <AnimatePresence mode="wait">
+                      {isOpen && (
+                        <motion.span
+                          key={`${item.id}-label`}
+                          variants={itemVariants}
+                          initial="closed"
+                          animate="open"
+                          exit="closed"
+                          className="flex-1 text-left"
+                        >
+                          {item.label}
+                        </motion.span>
+                      )}
+                    </AnimatePresence>
+                    {isOpen && item.badge && (
+                      <motion.span
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        className="ml-auto bg-accent text-accent-foreground text-xs rounded-full px-2 py-1 min-w-[20px] text-center"
+                      >
+                        {item.badge}
+                      </motion.span>
+                    )}
+                    {isOpen && item.subItems && (
+                      <motion.div
+                        animate={{ rotate: expandedItems.includes(item.id) ? 90 : 0 }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        <ChevronRight className="h-4 w-4 ml-1" />
+                      </motion.div>
+                    )}
+                  </div>
+                </Button>
+              </Link>
 
               {/* Sub Items */}
               <AnimatePresence>
@@ -290,15 +320,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     className="ml-4 space-y-1"
                   >
                     {item.subItems.map((subItem) => (
-                      <Button
-                        key={subItem.id}
-                        variant="ghost"
-                        className="w-full justify-start h-8 text-sm text-muted-foreground hover:text-foreground"
-                        onClick={() => setActiveItem(subItem.id)}
-                      >
-                        <div className="w-2 h-2 rounded-full bg-muted-foreground mr-3" />
-                        {subItem.label}
-                      </Button>
+                      <Link to={subItem.href} key={subItem.id}>
+                        <Button
+                          variant="ghost"
+                          className="w-full justify-start h-8 text-sm text-muted-foreground hover:text-foreground"
+                          asChild
+                        >
+                          <div>
+                            <div className="w-2 h-2 rounded-full bg-muted-foreground mr-3" />
+                            {subItem.label}
+                          </div>
+                        </Button>
+                      </Link>
                     ))}
                   </motion.div>
                 )}

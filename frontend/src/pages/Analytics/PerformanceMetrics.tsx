@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react'; // Added useEffect
 import {
   LineChart,
   Line,
@@ -20,19 +20,21 @@ import {
   Cell,
 } from 'recharts';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { cn } from '@/components/lib/utils';
-import { 
-  TrendingUp, 
-  TrendingDown, 
-  Activity, 
-  Target, 
-  CheckCircle, 
+import { cn } from '@/components/lib/utils'; // Keeping this path as per your instruction
+import {
+  TrendingUp,
+  TrendingDown,
+  Activity,
+  Target,
+  CheckCircle,
   AlertTriangle,
   Clock,
   DollarSign,
   Truck,
   Users
 } from 'lucide-react';
+// ADDED: Import the useLayout hook
+import { useLayout } from '@/contexts/LayoutContext';
 
 export interface PerformanceMetric {
   id: string;
@@ -58,13 +60,12 @@ export interface PerformanceDataPoint {
   [key: string]: string | number;
 }
 
+// MODIFIED: Removed timeRange and onTimeRangeChange from props, as they will be internal state
 export interface PerformanceMetricsProps {
   className?: string;
   data?: PerformanceDataPoint[];
   metrics?: PerformanceMetric[];
   showComparison?: boolean;
-  timeRange?: '7d' | '30d' | '90d' | '1y';
-  onTimeRangeChange?: (range: string) => void;
 }
 
 const PERFORMANCE_COLORS = {
@@ -172,8 +173,8 @@ const MetricCard: React.FC<{ metric: PerformanceMetric }> = ({ metric }) => {
     }
   };
 
-  const TrendIcon = metric.trend === 'up' ? TrendingUp : 
-                   metric.trend === 'down' ? TrendingDown : Activity;
+  const TrendIcon = metric.trend === 'up' ? TrendingUp :
+    metric.trend === 'down' ? TrendingDown : Activity;
 
   return (
     <Card className="relative overflow-hidden">
@@ -185,19 +186,19 @@ const MetricCard: React.FC<{ metric: PerformanceMetric }> = ({ metric }) => {
           <div className="flex items-center space-x-1">
             <TrendIcon className={cn(
               "h-4 w-4",
-              metric.trend === 'up' ? 'text-green-600' : 
+              metric.trend === 'up' ? 'text-green-600' :
               metric.trend === 'down' ? 'text-red-600' : 'text-muted-foreground'
             )} />
             <span className={cn(
               "text-sm font-medium",
-              metric.trend === 'up' ? 'text-green-600' : 
+              metric.trend === 'up' ? 'text-green-600' :
               metric.trend === 'down' ? 'text-red-600' : 'text-muted-foreground'
             )}>
               {metric.change > 0 ? '+' : ''}{metric.change}%
             </span>
           </div>
         </div>
-        
+
         <div className="space-y-2">
           <h3 className="font-medium text-sm text-muted-foreground">
             {metric.name}
@@ -220,9 +221,9 @@ const MetricCard: React.FC<{ metric: PerformanceMetric }> = ({ metric }) => {
             </span>
           </div>
         </div>
-        
+
         <div className="mt-4 w-full bg-muted rounded-full h-2">
-          <div 
+          <div
             className={cn(
               "h-2 rounded-full transition-all duration-300",
               metric.status === 'excellent' ? 'bg-green-500' :
@@ -265,10 +266,51 @@ export const PerformanceMetrics: React.FC<PerformanceMetricsProps> = ({
   data = defaultData,
   metrics = defaultMetrics,
   showComparison = true,
-  timeRange = '30d',
-  onTimeRangeChange,
+  // REMOVED: timeRange and onTimeRangeChange from props
 }) => {
-  const [selectedMetric, setSelectedMetric] = useState<string | null>(null);
+  // ADDED: Call the useLayout hook
+  const { setLayoutData } = useLayout();
+
+  // ADDED: Internal state for timeRange and its handler
+  const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d' | '1y'>('30d');
+  const handleTimeRangeChange = (range: '7d' | '30d' | '90d' | '1y') => {
+    setTimeRange(range);
+    // You might want to trigger data fetching here based on the new timeRange
+    // e.g., fetchData(range);
+  };
+
+  // ADDED: useEffect hook to set and clear layout data
+  useEffect(() => {
+    setLayoutData({
+      pageTitle: "Performance Metrics",
+      pageDescription: "Comprehensive performance tracking and KPI monitoring",
+      breadcrumbs: [
+        { label: 'Dashboard', href: '/dashboard' },
+        { label: 'Performance', isActive: true }
+      ],
+      headerActions: (
+        <div className="flex items-center space-x-2">
+          {timeRangeOptions.map(option => (
+            <button
+              key={option.value}
+              onClick={() => handleTimeRangeChange(option.value as '7d' | '30d' | '90d' | '1y')}
+              className={cn(
+                "px-3 py-1 rounded-md text-sm font-medium transition-colors",
+                timeRange === option.value
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted hover:bg-muted/80"
+              )}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+      )
+    });
+
+    // Return a cleanup function
+    return () => setLayoutData({});
+  }, [setLayoutData, timeRange]); // Added timeRange to dependencies for headerActions to update correctly
 
   const radarData = useMemo(() => {
     const latest = data[data.length - 1];
@@ -304,32 +346,10 @@ export const PerformanceMetrics: React.FC<PerformanceMetricsProps> = ({
   ];
 
   return (
+    // REMOVED: The outer div that contained the header.
+    // The page now only returns its own content after the header is moved to layout context.
     <div className={cn('space-y-6', className)}>
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold">Performance Metrics</h2>
-          <p className="text-muted-foreground">
-            Comprehensive performance tracking and KPI monitoring
-          </p>
-        </div>
-        <div className="flex items-center space-x-2">
-          {timeRangeOptions.map(option => (
-            <button
-              key={option.value}
-              onClick={() => onTimeRangeChange?.(option.value)}
-              className={cn(
-                "px-3 py-1 rounded-md text-sm font-medium transition-colors",
-                timeRange === option.value 
-                  ? "bg-primary text-primary-foreground" 
-                  : "bg-muted hover:bg-muted/80"
-              )}
-            >
-              {option.label}
-            </button>
-          ))}
-        </div>
-      </div>
+      {/* Header content moved to setLayoutData in useEffect */}
 
       {/* Key Metrics Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -353,36 +373,36 @@ export const PerformanceMetrics: React.FC<PerformanceMetricsProps> = ({
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={performanceTrend}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis 
-                    dataKey="period" 
+                  <XAxis
+                    dataKey="period"
                     stroke="hsl(var(--muted-foreground))"
                     fontSize={12}
                   />
-                  <YAxis 
+                  <YAxis
                     stroke="hsl(var(--muted-foreground))"
                     fontSize={12}
                   />
                   <Tooltip content={<CustomTooltip />} />
                   <Legend />
-                  <Line 
-                    type="monotone" 
-                    dataKey="overallScore" 
+                  <Line
+                    type="monotone"
+                    dataKey="overallScore"
                     stroke={PERFORMANCE_COLORS.primary}
                     strokeWidth={3}
                     dot={{ r: 4 }}
                     name="Overall Score"
                   />
-                  <Line 
-                    type="monotone" 
-                    dataKey="qualityScore" 
+                  <Line
+                    type="monotone"
+                    dataKey="qualityScore"
                     stroke={PERFORMANCE_COLORS.success}
                     strokeWidth={2}
                     dot={{ r: 3 }}
                     name="Quality Score"
                   />
-                  <Line 
-                    type="monotone" 
-                    dataKey="customerSatisfaction" 
+                  <Line
+                    type="monotone"
+                    dataKey="customerSatisfaction"
                     stroke={PERFORMANCE_COLORS.info}
                     strokeWidth={2}
                     dot={{ r: 3 }}
@@ -407,12 +427,12 @@ export const PerformanceMetrics: React.FC<PerformanceMetricsProps> = ({
               <ResponsiveContainer width="100%" height="100%">
                 <RadarChart data={radarData}>
                   <PolarGrid stroke="hsl(var(--border))" />
-                  <PolarAngleAxis 
-                    dataKey="metric" 
+                  <PolarAngleAxis
+                    dataKey="metric"
                     className="text-xs"
                   />
-                  <PolarRadiusAxis 
-                    angle={90} 
+                  <PolarRadiusAxis
+                    angle={90}
                     domain={[0, 100]}
                     className="text-xs"
                   />
@@ -444,12 +464,12 @@ export const PerformanceMetrics: React.FC<PerformanceMetricsProps> = ({
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={data}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis 
-                  dataKey="period" 
+                <XAxis
+                  dataKey="period"
                   stroke="hsl(var(--muted-foreground))"
                   fontSize={12}
                 />
-                <YAxis 
+                <YAxis
                   stroke="hsl(var(--muted-foreground))"
                   fontSize={12}
                 />

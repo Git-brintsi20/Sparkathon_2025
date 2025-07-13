@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react'; // Added useEffect
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   AlertTriangle,
@@ -19,7 +19,10 @@ import {
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { cn } from '@/components/lib/utils';
+// REMOVED: import { Layout } from '@/components/layout/Layout';
+// ADDED: Import the useLayout hook
+import { useLayout } from '@/contexts/LayoutContext';
+import { cn } from '@/components/lib/utils'; // Keeping this path as per your instruction
 
 interface FraudAlert {
   id: string;
@@ -150,10 +153,48 @@ const mockFraudStats: FraudStats = {
 };
 
 const FraudDetection: React.FC = () => {
+  // ADDED: Call the useLayout hook
+  const { setLayoutData } = useLayout();
+
   const [selectedTimeRange, setSelectedTimeRange] = useState('30d');
   const [selectedSeverity, setSelectedSeverity] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // ADDED: useEffect hook to set and clear layout data
+  useEffect(() => {
+    setLayoutData({
+      pageTitle: "Fraud Detection",
+      pageDescription: "AI-powered fraud detection and risk analysis",
+      breadcrumbs: [
+        { label: 'Dashboard', href: '/dashboard' },
+        { label: 'Fraud Detection', isActive: true }
+      ],
+      headerActions: (
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+          >
+            <RefreshCw className={cn(
+              "w-4 h-4 mr-2",
+              isRefreshing && "animate-spin"
+            )} />
+            Refresh
+          </Button>
+          <Button variant="outline" size="sm">
+            <Download className="w-4 h-4 mr-2" />
+            Export
+          </Button>
+        </div>
+      )
+    });
+
+    // Return a cleanup function
+    return () => setLayoutData({});
+  }, [setLayoutData, isRefreshing]); // Added isRefreshing to dependencies for headerActions
 
   const filteredAlerts = useMemo(() => {
     return mockFraudAlerts.filter(alert => {
@@ -200,9 +241,11 @@ const FraudDetection: React.FC = () => {
   };
 
   return (
+    // REMOVED: The <Layout> wrapper from the return statement.
+    // The page now only returns its own content.
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      {/* Header - This content is now managed by the Layout component via context */}
+      {/* <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Fraud Detection</h1>
           <p className="text-muted-foreground">
@@ -227,7 +270,7 @@ const FraudDetection: React.FC = () => {
             Export
           </Button>
         </div>
-      </div>
+      </div> */}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -416,10 +459,10 @@ const FraudDetection: React.FC = () => {
                           {alert.timestamp.toLocaleDateString()}
                         </span>
                       </div>
-                      
+
                       <h3 className="font-semibold text-foreground mb-1">{alert.title}</h3>
                       <p className="text-sm text-muted-foreground mb-2">{alert.description}</p>
-                      
+
                       <div className="flex items-center gap-4 text-sm">
                         <span className="flex items-center gap-1">
                           <strong>Vendor:</strong> {alert.vendorName}
@@ -441,7 +484,7 @@ const FraudDetection: React.FC = () => {
                         </span>
                       </div>
                     </div>
-                    
+
                     <div className="flex items-center gap-2">
                       {getStatusIcon(alert.status)}
                       <span className="text-sm capitalize">{alert.status.replace('_', ' ')}</span>
@@ -479,14 +522,14 @@ const FraudDetection: React.FC = () => {
                       {getTrendIcon(pattern.trend)}
                     </div>
                     <p className="text-sm text-muted-foreground mb-3">{pattern.description}</p>
-                    
+
                     <div className="flex items-center gap-4 text-sm">
                       <span><strong>Occurrences:</strong> {pattern.occurrences}</span>
                       <span><strong>Risk Score:</strong> {pattern.riskScore}/100</span>
                       <span><strong>Affected Vendors:</strong> {pattern.affectedVendors.length}</span>
                     </div>
                   </div>
-                  
+
                   <div className="text-right">
                     <div className={cn(
                       "px-3 py-1 rounded-full text-xs font-medium",

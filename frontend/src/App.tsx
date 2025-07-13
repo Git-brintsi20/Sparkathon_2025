@@ -4,8 +4,10 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { LoadingSpinner } from './components/common/LoadingSpinner';
-import { Layout } from './components/layout/Layout';
+import  Layout  from './components/layout/Layout';
 import { ROUTES } from './config/routes';
+import { LayoutProvider } from './contexts/LayoutContext';
+
 
 // Lazy load components for better performance
 const Dashboard = React.lazy(() => import('./pages/Dashboard/Dashboard'));
@@ -132,10 +134,7 @@ const AppRoutes: React.FC = () => {
           path="/"
           element={
             <ProtectedRoute>
-             <Layout>
-        {/* This empty fragment will be replaced by the matched child route */}
-        <></>
-      </Layout>
+              <Layout />
             </ProtectedRoute>
           }
         >
@@ -204,11 +203,16 @@ const App: React.FC = () => {
     <ErrorBoundary>
       <ThemeProvider defaultTheme="default">
         <AuthProvider>
-          
+           {/*
+            The LayoutProvider now wraps all routes.
+            This means both the Layout component and any page component
+            (like Dashboard) rendered by the Outlet can access the same context.
+          */}
+          <LayoutProvider>
             <div className="min-h-screen bg-background font-sans antialiased">
               <AppRoutes />
             </div>
-         
+         </LayoutProvider>
         </AuthProvider>
       </ThemeProvider>
     </ErrorBoundary>

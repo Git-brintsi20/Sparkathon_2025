@@ -1,67 +1,33 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Outlet } from 'react-router-dom';
 import { cn } from '@/components/lib/utils';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
-import { Breadcrumb } from './Breadcrumb';
+import { useLayout } from '@/contexts/LayoutContext';
 
-interface LayoutProps {
-  children: React.ReactNode;
-  className?: string;
-  showSidebar?: boolean;
-  showHeader?: boolean;
-  showBreadcrumbs?: boolean;
-  breadcrumbs?: Array<{
-    label: string;
-    href?: string;
-    isActive?: boolean;
-  }>;
-  pageTitle?: string;
-  pageDescription?: string;
-  headerActions?: React.ReactNode;
-  sidebarProps?: any;
-}
-
-export const Layout: React.FC<LayoutProps> = ({
-  children,
-  className,
-  showSidebar = true,
-  showHeader = true,
-  showBreadcrumbs = true,
-  breadcrumbs,
-  pageTitle,
-  pageDescription,
-  headerActions,
-  sidebarProps
-}) => {
+const Layout: React.FC = () => {
+  // Get the page data from our context
+  const { pageTitle, pageDescription, breadcrumbs, headerActions } = useLayout();
+  
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
 
   // Enhanced responsive behavior with smooth transitions
   useEffect(() => {
     const checkMobile = () => {
       const mobile = window.innerWidth < 1024;
       setIsMobile(mobile);
-      
-      // Smooth sidebar state management
-      if (mobile && isSidebarOpen) {
+      if (mobile) {
         setIsSidebarOpen(false);
-      } else if (!mobile && !isSidebarOpen) {
+      } else {
         setIsSidebarOpen(true);
       }
     };
-
     checkMobile();
-    setIsLoading(false);
-    
-    const handleResize = () => {
-      checkMobile();
-    };
-
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, [isSidebarOpen]);
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
@@ -73,10 +39,8 @@ export const Layout: React.FC<LayoutProps> = ({
     }
   };
 
-  // Enhanced animation variants with professional gliding effects
   const mainContentVariants = {
     expanded: {
-      marginLeft: isMobile ? 0 : (isSidebarOpen ? 280 : 80),
       transition: {
         type: 'spring',
         stiffness: 400,
@@ -85,7 +49,6 @@ export const Layout: React.FC<LayoutProps> = ({
       }
     },
     collapsed: {
-      marginLeft: isMobile ? 0 : (isSidebarOpen ? 280 : 80),
       transition: {
         type: 'spring',
         stiffness: 400,
@@ -154,134 +117,65 @@ export const Layout: React.FC<LayoutProps> = ({
     }
   };
 
-  // Loading state with professional shimmer effect
-  if (isLoading) {
-    return (
-      <div className="h-screen bg-background flex items-center justify-center">
-        <div className="animate-pulse flex space-x-4">
-          <div className="rounded-full bg-primary/20 h-12 w-12 animate-shimmer"></div>
-          <div className="flex-1 space-y-2 py-1">
-            <div className="h-4 bg-primary/20 rounded w-3/4 animate-shimmer"></div>
-            <div className="h-4 bg-primary/20 rounded w-1/2 animate-shimmer"></div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="h-screen bg-background overflow-hidden relative">
       {/* Background gradient overlay for depth */}
       <div className="absolute inset-0 bg-gradient-to-br from-background via-background to-background-secondary/20 pointer-events-none" />
       
       {/* Sidebar with enhanced animations */}
-      {showSidebar && (
-        <motion.div
-          initial={{ x: -280 }}
-          animate={{ x: 0 }}
-          transition={{ 
-            type: 'spring', 
-            stiffness: 300, 
-            damping: 30,
-            duration: 0.5
-          }}
-        >
-          <Sidebar
-            isOpen={isSidebarOpen}
-            onToggle={toggleSidebar}
-            isMobile={isMobile}
-            {...sidebarProps}
-          />
-        </motion.div>
-      )}
+      <motion.div
+        initial={{ x: -280 }}
+        animate={{ x: 0 }}
+        transition={{ 
+          type: 'spring', 
+          stiffness: 300, 
+          damping: 30,
+          duration: 0.5
+        }}
+        className="relative z-40"
+      >
+        <Sidebar
+          isOpen={isSidebarOpen}
+          onToggle={toggleSidebar}
+          isMobile={isMobile}
+        />
+      </motion.div>
 
-      {/* Main Content Area with smooth gliding transitions */}
+      {/* Main Content Area - FIXED: Proper positioning to avoid sidebar overlap */}
       <motion.div
         variants={mainContentVariants}
         animate={isSidebarOpen ? 'expanded' : 'collapsed'}
-        className={cn(
-          'flex flex-col h-full relative z-10',
-          'transition-all duration-300 ease-spring',
-          isMobile && 'ml-0',
-          className
-        )}
+        className="flex flex-col h-full relative z-10"
+        style={{
+          // FIXED: Proper margin calculation based on sidebar state
+          marginLeft: isMobile 
+            ? '0px' 
+            : isSidebarOpen 
+              ? '280px' 
+              : '80px',
+          width: isMobile 
+            ? '100%' 
+            : isSidebarOpen 
+              ? 'calc(100% - 280px)' 
+              : 'calc(100% - 80px)',
+          transition: 'margin-left 0.3s ease, width 0.3s ease'
+        }}
       >
         {/* Header with glass effect */}
-        {showHeader && (
-          <motion.div
-            variants={headerVariants}
-            initial="initial"
-            animate="animate"
-            className="glass-effect border-b border-border/50 backdrop-blur-md"
-          >
-            <Header
-              onMenuToggle={toggleSidebar}
-              isMobileMenuOpen={isSidebarOpen}
-              showBreadcrumbs={showBreadcrumbs}
-              breadcrumbs={breadcrumbs}
-            />
-          </motion.div>
-        )}
-
-        {/* Page Header Section with elegant animations */}
-        {(pageTitle || pageDescription || headerActions) && (
-          <motion.div
-            variants={headerVariants}
-            initial="initial"
-            animate="animate"
-            className={cn(
-              'bg-card/80 backdrop-blur-sm border-b border-border/50',
-              'px-6 py-6 hover-glow transition-all duration-300',
-              'relative overflow-hidden'
-            )}
-          >
-            {/* Subtle background pattern */}
-            <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent opacity-50" />
-            
-            <div className="relative z-10 flex items-center justify-between">
-              <motion.div 
-                className="space-y-2"
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.2, duration: 0.4 }}
-              >
-                {pageTitle && (
-                  <h1 className="text-3xl font-bold text-foreground tracking-tight">
-                    {pageTitle}
-                  </h1>
-                )}
-                {pageDescription && (
-                  <p className="text-muted-foreground text-lg font-medium">
-                    {pageDescription}
-                  </p>
-                )}
-              </motion.div>
-              
-              {headerActions && (
-                <motion.div
-                  className="flex items-center space-x-3"
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.3, duration: 0.4 }}
-                >
-                  {headerActions}
-                </motion.div>
-              )}
-            </div>
-          </motion.div>
-        )}
-
-        {/* Breadcrumbs with smooth entrance */}
-        {showBreadcrumbs && breadcrumbs && !showHeader && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1, duration: 0.3 }}
-            className="px-6 py-4 border-b border-border/50 bg-card/50 backdrop-blur-sm"
-          >
-            <Breadcrumb items={breadcrumbs} />
-          </motion.div>
-        )}
+        <motion.div
+          variants={headerVariants}
+          initial="initial"
+          animate="animate"
+          className="glass-effect border-b border-border/50 backdrop-blur-md flex-shrink-0"
+        >
+          <Header 
+            onMenuToggle={toggleSidebar}
+            pageTitle={pageTitle}
+            pageDescription={pageDescription}
+            breadcrumbs={breadcrumbs}
+            headerActions={headerActions}
+          />
+        </motion.div>
 
         {/* Main Content with professional animations */}
         <motion.main
@@ -290,7 +184,7 @@ export const Layout: React.FC<LayoutProps> = ({
           animate="animate"
           exit="exit"
           className={cn(
-            'flex-1 overflow-auto relative',
+            'flex-1 overflow-auto relative p-6',
             'scrollbar-hide' // Custom utility from tailwind config
           )}
         >
@@ -304,7 +198,7 @@ export const Layout: React.FC<LayoutProps> = ({
           >
             {/* Content wrapper with subtle animations */}
             <div className="animate-slide-in-up">
-              {children}
+              <Outlet />
             </div>
           </motion.div>
         </motion.main>
@@ -335,3 +229,5 @@ export const Layout: React.FC<LayoutProps> = ({
     </div>
   );
 };
+
+export default Layout;
