@@ -2,7 +2,9 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 // Use the 'url' module for modern path resolution
 import { fileURLToPath, URL } from 'url';
-import fs from 'fs'; // Import the 'fs' module
+import tailwindcss from 'tailwindcss';
+import autoprefixer from 'autoprefixer';
+import tailwindcssNesting from 'tailwindcss/nesting';
 
 // Change defineConfig to a function to allow synchronous logic before returning the config
 export default defineConfig(() => {
@@ -31,6 +33,17 @@ export default defineConfig(() => {
         '@types': fileURLToPath(new URL('./src/types', import.meta.url))
       }
     },
+
+   css: {
+    postcss: {
+      plugins: [
+        // The nesting plugin MUST come before Tailwind CSS
+        tailwindcssNesting(),
+        tailwindcss(),
+        autoprefixer(),
+      ],
+    },
+  },
 
     server: {
       port: 3000,
@@ -88,18 +101,6 @@ export default defineConfig(() => {
 //   __APP_VERSION__: JSON.stringify(version),
 //   __BUILD_DATE__: JSON.stringify(new Date().toISOString())
 // },
-
-    css: {
-      postcss: './postcss.config.js',
-      modules: {
-        localsConvention: 'camelCaseOnly'
-      },
-      preprocessorOptions: {
-        scss: {
-          additionalData: `@import "@/styles/variables.scss";`
-        }
-      }
-    },
 
     preview: {
       port: 3000,

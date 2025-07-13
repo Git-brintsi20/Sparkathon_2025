@@ -1,5 +1,5 @@
 import React, { Suspense } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
@@ -132,7 +132,10 @@ const AppRoutes: React.FC = () => {
           path="/"
           element={
             <ProtectedRoute>
-              <Layout />
+             <Layout>
+        {/* This empty fragment will be replaced by the matched child route */}
+        <></>
+      </Layout>
             </ProtectedRoute>
           }
         >
