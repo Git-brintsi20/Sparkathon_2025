@@ -1,5 +1,5 @@
 // Authentication types and interfaces
-import { ApiResponse } from './common';
+import type { ApiResponse } from './common';
 
 // User types
 export interface User {

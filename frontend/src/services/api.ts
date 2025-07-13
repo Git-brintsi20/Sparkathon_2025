@@ -1,6 +1,7 @@
 // frontend/src/services/api.ts
-import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
-import { ApiResponse, ApiError, PaginationParams, PaginatedResponse } from '../types/common';
+import type  { AxiosInstance, AxiosRequestConfig, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
+import axios from 'axios';
+import type { ApiResponse, ApiError, PaginationParams, PaginatedResponse } from '../types/common';
 
 // 1. Declare a module augmentation for 'axios'
 declare module 'axios' {

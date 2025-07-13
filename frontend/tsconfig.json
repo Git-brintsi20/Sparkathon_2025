@@ -12,9 +12,9 @@
     "jsx": "react-jsx",
 
     /* Path mapping */
-    "baseUrl": "./src",
-      "paths": {
-      "@/*": ["*"] // <--- Map '@/anything' to 'src/anything'
+     "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
     },
 
     /* Bundler mode */

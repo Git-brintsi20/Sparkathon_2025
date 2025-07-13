@@ -1,13 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react'; // Added useEffect
 import { motion } from 'framer-motion';
-import { 
-  Package, 
-  CheckCircle, 
-  Clock, 
-  AlertTriangle, 
-  Edit, 
-  Camera, 
-  Scale, 
+import {
+  Package,
+  CheckCircle,
+  Clock,
+  AlertTriangle,
+  Edit,
+  Camera,
+  Scale,
   Barcode,
   FileText,
   Calendar,
@@ -20,6 +20,10 @@ import {
   ExternalLink,
   X
 } from 'lucide-react';
+// ADDED: Import the useLayout hook
+import { useLayout } from '@/contexts/LayoutContext';
+import { Card, CardContent } from '@/components/ui/card'; // Keeping these imports as they are used within the component
+import { cn } from '@/components/lib/utils'; // Keeping this path as per your instruction
 
 interface DeliveryDetail {
   id: string;
@@ -67,6 +71,9 @@ const statusIcons = {
 };
 
 const DeliveryDetail: React.FC = () => {
+  // ADDED: Call the useLayout hook
+  const { setLayoutData } = useLayout();
+
   const [activeTab, setActiveTab] = useState<'overview' | 'photos' | 'timeline'>('overview');
   const [loading, setLoading] = useState(false);
   const [showFullImage, setShowFullImage] = useState<string | null>(null);
@@ -145,6 +152,42 @@ const DeliveryDetail: React.FC = () => {
     }, 1000);
   };
 
+  // ADDED: useEffect hook to set and clear layout data
+  useEffect(() => {
+    setLayoutData({
+      pageTitle: `Delivery ${mockDelivery.poNumber}`,
+      pageDescription: `Verification details for ${mockDelivery.vendorName}`,
+      breadcrumbs: [
+        { label: 'Dashboard', href: '/dashboard' },
+        { label: 'Deliveries', href: '/deliveries' },
+        { label: mockDelivery.poNumber, isActive: true }
+      ],
+      headerActions: (
+        <div className="flex items-center gap-2">
+          <button className="inline-flex items-center px-3 py-1 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+            <Download className="h-4 w-4 mr-2" />
+            Export
+          </button>
+          <button className="inline-flex items-center px-3 py-1 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+            <Printer className="h-4 w-4 mr-2" />
+            Print
+          </button>
+          <button className="inline-flex items-center px-3 py-1 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+            <Share2 className="h-4 w-4 mr-2" />
+            Share
+          </button>
+          <button onClick={handleEdit} className="inline-flex items-center px-3 py-1 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700">
+            <Edit className="h-4 w-4 mr-2" />
+            Edit
+          </button>
+        </div>
+      )
+    });
+
+    // Return a cleanup function
+    return () => setLayoutData({});
+  }, [setLayoutData, mockDelivery.poNumber, mockDelivery.vendorName, loading]); // Added loading to dependencies for headerActions to update correctly
+
   const StatusBadge = ({ status }: { status: string }) => {
     const Icon = statusIcons[status as keyof typeof statusIcons];
     return (
@@ -172,53 +215,10 @@ const DeliveryDetail: React.FC = () => {
     );
   };
 
-  const breadcrumbs = [
-    { label: 'Dashboard', href: '/dashboard' },
-    { label: 'Deliveries', href: '/deliveries' },
-    { label: mockDelivery.poNumber, isActive: true }
-  ];
-
-  const headerActions = (
-    <div className="flex items-center gap-2">
-      <button className="inline-flex items-center px-3 py-1 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
-        <Download className="h-4 w-4 mr-2" />
-        Export
-      </button>
-      <button className="inline-flex items-center px-3 py-1 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
-        <Printer className="h-4 w-4 mr-2" />
-        Print
-      </button>
-      <button className="inline-flex items-center px-3 py-1 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
-        <Share2 className="h-4 w-4 mr-2" />
-        Share
-      </button>
-      <button onClick={handleEdit} className="inline-flex items-center px-3 py-1 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700">
-        <Edit className="h-4 w-4 mr-2" />
-        Edit
-      </button>
-    </div>
-  );
-
   return (
+    // REMOVED: The outer header div that contained the page title, breadcrumbs, and actions.
+    // This content is now managed by the Layout component via context.
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <nav className="flex items-center space-x-2 text-sm text-gray-500 mb-2">
-              <span>Dashboard</span>
-              <span>/</span>
-              <span>Deliveries</span>
-              <span>/</span>
-              <span className="text-gray-900">{mockDelivery.poNumber}</span>
-            </nav>
-            <h1 className="text-2xl font-bold text-gray-900">Delivery {mockDelivery.poNumber}</h1>
-            <p className="text-gray-600">Verification details for {mockDelivery.vendorName}</p>
-          </div>
-          {headerActions}
-        </div>
-      </div>
-
       <div className="p-6 space-y-6">
         {/* Status and Actions */}
         <motion.div
@@ -240,17 +240,17 @@ const DeliveryDetail: React.FC = () => {
                   </div>
                 )}
               </div>
-              
+
               {mockDelivery.status === 'pending' && (
                 <div className="flex items-center gap-2">
-                  <button 
+                  <button
                     onClick={handleReject}
                     disabled={loading}
                     className="px-4 py-2 border border-red-300 text-red-700 rounded-md hover:bg-red-50 disabled:opacity-50"
                   >
                     Reject
                   </button>
-                  <button 
+                  <button
                     onClick={handleApprove}
                     disabled={loading}
                     className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50"
@@ -329,7 +329,7 @@ const DeliveryDetail: React.FC = () => {
                         <div className="text-sm">{mockDelivery.vendorContact}</div>
                       </div>
                     </div>
-                    
+
                     <div className="space-y-2">
                       <div className="text-sm text-gray-600">Delivery Address</div>
                       <div className="flex items-center gap-2">
@@ -355,22 +355,22 @@ const DeliveryDetail: React.FC = () => {
                           <div className="flex items-center justify-between">
                             <span>Expected: {mockDelivery.expectedWeight} kg</span>
                             <span className={`font-semibold ${
-                              mockDelivery.weight === mockDelivery.expectedWeight 
-                                ? 'text-green-600' 
+                              mockDelivery.weight === mockDelivery.expectedWeight
+                                ? 'text-green-600'
                                 : 'text-yellow-600'
                             }`}>
                               Actual: {mockDelivery.weight} kg
                             </span>
                           </div>
                         </div>
-                        
+
                         <div className="space-y-2">
                           <div className="text-sm text-gray-600">Quantity Verification</div>
                           <div className="flex items-center justify-between">
                             <span>Expected: {mockDelivery.expectedQuantity}</span>
                             <span className={`font-semibold ${
-                              mockDelivery.quantity === mockDelivery.expectedQuantity 
-                                ? 'text-green-600' 
+                              mockDelivery.quantity === mockDelivery.expectedQuantity
+                                ? 'text-green-600'
                                 : 'text-yellow-600'
                             }`}>
                               Actual: {mockDelivery.quantity}
@@ -378,7 +378,7 @@ const DeliveryDetail: React.FC = () => {
                           </div>
                         </div>
                       </div>
-                      
+
                       <div className="space-y-4">
                         <div className="space-y-2">
                           <div className="text-sm text-gray-600">Condition</div>
@@ -386,7 +386,7 @@ const DeliveryDetail: React.FC = () => {
                             {mockDelivery.condition}
                           </div>
                         </div>
-                        
+
                         <div className="space-y-2">
                           <div className="text-sm text-gray-600">Verified By</div>
                           <div className="flex items-center gap-2">
@@ -396,7 +396,7 @@ const DeliveryDetail: React.FC = () => {
                         </div>
                       </div>
                     </div>
-                    
+
                     {mockDelivery.notes && (
                       <div className="mt-6 space-y-2">
                         <div className="text-sm text-gray-600">Notes</div>
@@ -439,13 +439,13 @@ const DeliveryDetail: React.FC = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-3">
                     <h4 className="font-medium">Delivery Photo</h4>
-                    <div 
+                    <div
                       className="relative cursor-pointer group"
                       onClick={() => setShowFullImage(mockDelivery.deliveryPhoto!)}
                     >
-                      <img 
-                        src={mockDelivery.deliveryPhoto} 
-                        alt="Delivery" 
+                      <img
+                        src={mockDelivery.deliveryPhoto}
+                        alt="Delivery"
                         className="w-full h-64 object-cover rounded-lg"
                       />
                       <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 rounded-lg flex items-center justify-center">
@@ -453,16 +453,16 @@ const DeliveryDetail: React.FC = () => {
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="space-y-3">
                     <h4 className="font-medium">Packaging Photo</h4>
-                    <div 
+                    <div
                       className="relative cursor-pointer group"
                       onClick={() => setShowFullImage(mockDelivery.packagingPhoto!)}
                     >
-                      <img 
-                        src={mockDelivery.packagingPhoto} 
-                        alt="Packaging" 
+                      <img
+                        src={mockDelivery.packagingPhoto}
+                        alt="Packaging"
                         className="w-full h-64 object-cover rounded-lg"
                       />
                       <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 rounded-lg flex items-center justify-center">

@@ -1,7 +1,7 @@
 // frontend/src/hooks/useDeliveries.ts
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import deliveryService from '../services/deliveryService';
-import { 
+import type { 
   Delivery, 
   DeliveryFormData, 
   DeliveryVerificationData, 
@@ -9,7 +9,7 @@ import {
   DeliveryFilters,
   DeliveryAnalytics 
 } from '../types/delivery';
-import { PaginationParams } from '../types/common';
+import type { PaginationParams } from '../types/common';
 
 interface UseDeliveriesState {
   deliveries: Delivery[];

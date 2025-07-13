@@ -1,8 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react'; // Added useEffect
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/components/lib/utils';
+// ADDED: Import the useLayout hook
+import { useLayout } from '@/contexts/LayoutContext';
+import { RotateCcw, Save } from 'lucide-react'; // Added imports for icons used in headerActions
 
 interface SystemConfigProps {
   className?: string;
@@ -26,6 +29,9 @@ interface ConfigSetting {
 }
 
 const SystemConfig: React.FC<SystemConfigProps> = ({ className }) => {
+  // ADDED: Call the useLayout hook
+  const { setLayoutData } = useLayout();
+
   const [configs, setConfigs] = useState<ConfigSection[]>([
     {
       id: 'api',
@@ -152,14 +158,14 @@ const SystemConfig: React.FC<SystemConfigProps> = ({ className }) => {
   const [loading, setLoading] = useState(false);
 
   const updateSetting = (sectionId: string, settingId: string, value: string | number | boolean) => {
-    setConfigs(prev => prev.map(section => 
-      section.id === sectionId 
+    setConfigs(prev => prev.map(section =>
+      section.id === sectionId
         ? {
-            ...section,
-            settings: section.settings.map(setting =>
-              setting.id === settingId ? { ...setting, value } : setting
-            )
-          }
+          ...section,
+          settings: section.settings.map(setting =>
+            setting.id === settingId ? { ...setting, value } : setting
+          )
+        }
         : section
     ));
     setHasChanges(true);
@@ -217,7 +223,7 @@ const SystemConfig: React.FC<SystemConfigProps> = ({ className }) => {
             placeholder={setting.label}
           />
         );
-      
+
       case 'number':
         return (
           <Input
@@ -228,7 +234,7 @@ const SystemConfig: React.FC<SystemConfigProps> = ({ className }) => {
             placeholder={setting.label}
           />
         );
-      
+
       case 'boolean':
         return (
           <div className="flex items-center space-x-2">
@@ -242,7 +248,7 @@ const SystemConfig: React.FC<SystemConfigProps> = ({ className }) => {
             <span className="text-sm text-gray-600">Enable</span>
           </div>
         );
-      
+
       case 'select':
         return (
           <select
@@ -258,38 +264,60 @@ const SystemConfig: React.FC<SystemConfigProps> = ({ className }) => {
             ))}
           </select>
         );
-      
+
       default:
         return null;
     }
   };
 
-  return (
-    <div className={cn("space-y-6", className)}>
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">System Configuration</h1>
-          <p className="text-gray-600 mt-1">Configure system settings and parameters</p>
-        </div>
-        <div className="flex space-x-3">
-          <Button
-            variant="outline"
-            onClick={handleReset}
-            disabled={loading}
-          >
-            Reset to Defaults
-          </Button>
-          <Button
-            onClick={handleSave}
-            disabled={!hasChanges || loading}
-            className="min-w-[120px]"
-          >
-            {loading ? 'Saving...' : 'Save Changes'}
-          </Button>
-        </div>
-      </div>
+  // Define breadcrumbs and header actions for the layout context
+  const breadcrumbs = [
+    { label: 'Dashboard', href: '/dashboard' },
+    { label: 'System Configuration', isActive: true }
+  ];
 
+  const headerActions = (
+    <div className="flex space-x-3">
+      <Button
+        variant="outline"
+        onClick={handleReset}
+        disabled={loading}
+      >
+        <RotateCcw className="w-4 h-4 mr-2" />
+        Reset to Defaults
+      </Button>
+      <Button
+        onClick={handleSave}
+        disabled={!hasChanges || loading}
+        className="min-w-[120px]"
+      >
+        {loading ? (
+          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+        ) : (
+          <Save className="w-4 h-4 mr-2" />
+        )}
+        <span>{loading ? 'Saving...' : 'Save Changes'}</span>
+      </Button>
+    </div>
+  );
+
+  // ADDED: useEffect hook to set and clear layout data
+  useEffect(() => {
+    setLayoutData({
+      pageTitle: "System Configuration",
+      pageDescription: "Configure system settings and parameters",
+      breadcrumbs: breadcrumbs,
+      headerActions: headerActions
+    });
+
+    // Return a cleanup function
+    return () => setLayoutData({});
+  }, [setLayoutData, hasChanges, loading]); // Added dependencies for headerActions to update correctly
+
+  return (
+    // REMOVED: The outer header div that contained the page title, description, and action buttons.
+    // This content is now managed by the Layout component via context.
+    <div className={cn("space-y-6", className)}>
       {/* Configuration Sections */}
       <div className="grid gap-6">
         {configs.map((section) => (

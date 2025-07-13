@@ -1,26 +1,28 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react'; // Added useEffect
 import { motion } from 'framer-motion';
 import type { Vendor, VendorFormData } from '@/types/vendor';
-import { 
-  Search, 
-  Filter, 
-  Plus, 
-  MoreHorizontal, 
-  Edit, 
-  Trash2, 
+import {
+  Search,
+  Filter,
+  Plus,
+  MoreHorizontal,
+  Edit,
+  Trash2,
   Eye,
   AlertTriangle,
   CheckCircle,
   XCircle,
   Building2
 } from 'lucide-react';
-import { Layout } from '@/components/layout/Layout';
+// REMOVED: import { Layout } from '@/components/layout/Layout';
+// ADDED: Import the useLayout hook
+import { useLayout } from '@/contexts/LayoutContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useVendors } from '@/hooks/useVendors';
-import  VendorForm from '@/components/forms/VendorForm';
+import VendorForm from '@/components/forms/VendorForm';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { DataTable } from '@/components/common/DataTable';
 import type { Column } from '@/components/common/DataTable';
@@ -29,6 +31,9 @@ import { cn } from '@/components/lib/utils';
 
 
 const VendorList: React.FC = () => {
+  // ADDED: Call the useLayout hook
+  const { setLayoutData } = useLayout();
+
   const {
     vendors,
     loading,
@@ -51,7 +56,7 @@ const VendorList: React.FC = () => {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
 
-  // Breadcrumb navigation
+  // Define breadcrumbs for the layout context
   const breadcrumbs = [
     { label: 'Dashboard', href: '/' },
     { label: 'Vendors', isActive: true }
@@ -120,11 +125,11 @@ const VendorList: React.FC = () => {
           {score}%
         </div>
         <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
-          <div 
+          <div
             className={cn(
               'h-full transition-all duration-300',
-              score >= 90 ? 'bg-green-500' : 
-              score >= 70 ? 'bg-yellow-500' : 'bg-red-500'
+              score >= 90 ? 'bg-green-500' :
+                score >= 70 ? 'bg-yellow-500' : 'bg-red-500'
             )}
             style={{ width: `${score}%` }}
           />
@@ -215,7 +220,7 @@ const VendorList: React.FC = () => {
     </div>
   );
 
-  // Header actions
+  // Define header actions for the layout context
   const headerActions = (
     <div className="flex items-center gap-2">
       <div className="relative">
@@ -244,7 +249,7 @@ const VendorList: React.FC = () => {
           </DialogHeader>
           <VendorForm
             mode="create"
-         onSubmit={async (data: VendorFormData) => {
+            onSubmit={async (data: VendorFormData) => {
               await createVendor(data);
               setShowCreateDialog(false);
               refreshVendors();
@@ -283,92 +288,100 @@ const VendorList: React.FC = () => {
     }
   ];
 
+  // ADDED: useEffect hook to set and clear layout data
+  useEffect(() => {
+    setLayoutData({
+      pageTitle: "Vendor Management",
+      pageDescription: "Manage your vendor network and compliance",
+      breadcrumbs: breadcrumbs,
+      headerActions: headerActions
+    });
+
+    // Return a cleanup function
+    return () => setLayoutData({});
+  }, [setLayoutData, searchTerm, filters, loading, metrics, showCreateDialog]); // Added dependencies for headerActions to update correctly
+
   return (
-    <Layout
-      breadcrumbs={breadcrumbs}
-      pageTitle="Vendor Management"
-      pageDescription="Manage your vendor network and compliance"
-      headerActions={headerActions}
-    >
-      <div className="p-6 space-y-6">
-        {/* Metrics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {metricsCards.map((metric, index) => (
-            <motion.div
-              key={metric.title}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-            >
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground">{metric.title}</p>
-                      <p className="text-2xl font-bold">{metric.value}</p>
-                    </div>
-                    <div className={cn(
-                      'text-sm font-medium',
-                      metric.positive ? 'text-green-600' : 'text-red-600'
-                    )}>
-                      {metric.change}
-                    </div>
+    // REMOVED: The <Layout> wrapper from the return statement.
+    // The page now only returns its own content.
+    <div className="p-6 space-y-6">
+      {/* Metrics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {metricsCards.map((metric, index) => (
+          <motion.div
+            key={metric.title}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: index * 0.1 }}
+          >
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">{metric.title}</p>
+                    <p className="text-2xl font-bold">{metric.value}</p>
                   </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          ))}
-        </div>
-
-        {/* Vendor Table */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-        >
-          <DataTable
-            data={vendors}
-            columns={columns}
-            loading={loading}
-            actions={renderActions}
-            onRowClick={(vendor) => setSelectedVendor(vendor)}
-            emptyMessage="No vendors found"
-            pagination={true}
-            pageSize={pagination.limit}
-          />
-        </motion.div>
-
-        {/* Edit Dialog */}
-      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Edit Vendor</DialogTitle>
-            </DialogHeader>
-            {selectedVendor && (() => {
-             
-              const initialFormDataForEdit: Partial<VendorFormData> = {
-                ...selectedVendor,
-                
-                documents: undefined, 
-              };
-
-              return (
-                <VendorForm
-                  mode="edit"
-                  initialData={initialFormDataForEdit}
-                  onSubmit={async (data: VendorFormData) => { 
-                    await updateVendor(selectedVendor.id, data);
-                    setShowEditDialog(false);
-                    setSelectedVendor(null);
-                    refreshVendors();
-                  }}
-                />
-              );
-            })()}
-          </DialogContent>
-        </Dialog>
+                  <div className={cn(
+                    'text-sm font-medium',
+                    metric.positive ? 'text-green-600' : 'text-red-600'
+                  )}>
+                    {metric.change}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        ))}
       </div>
-    </Layout>
+
+      {/* Vendor Table */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
+      >
+        <DataTable
+          data={vendors}
+          columns={columns}
+          loading={loading}
+          actions={renderActions}
+          onRowClick={(vendor) => setSelectedVendor(vendor)}
+          emptyMessage="No vendors found"
+          pagination={true}
+          pageSize={pagination.limit}
+        />
+      </motion.div>
+
+      {/* Edit Dialog */}
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Edit Vendor</DialogTitle>
+          </DialogHeader>
+          {selectedVendor && (() => {
+
+            const initialFormDataForEdit: Partial<VendorFormData> = {
+              ...selectedVendor,
+
+              documents: undefined,
+            };
+
+            return (
+              <VendorForm
+                mode="edit"
+                initialData={initialFormDataForEdit}
+                onSubmit={async (data: VendorFormData) => {
+                  await updateVendor(selectedVendor.id, data);
+                  setShowEditDialog(false);
+                  setSelectedVendor(null);
+                  refreshVendors();
+                }}
+              />
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 };
 

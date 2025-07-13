@@ -1,18 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react'; // Added useEffect
 import { motion } from 'framer-motion';
-import { Layout } from '../../components/layout/Layout';
+// REMOVED: import { Layout } from '../../components/layout/Layout';
+// ADDED: Import the useLayout hook
+import { useLayout } from '@/contexts/LayoutContext';
 import { ThemeSettings } from './ThemeSettings';
-import { 
-  Settings as  
-  User, 
-  Bell, 
-  Database, 
-  Mail, 
-  Globe, 
+import {
+  Settings as // Renamed to avoid conflict with component name
+  User,
+  Bell,
+  Database,
+  Mail,
+  Globe,
   Smartphone,
   Save,
   RotateCcw
 } from 'lucide-react';
+
+import { Button } from '@/components/ui/button'; // Added Button import for consistency
 
 interface SettingsSection {
   id: string;
@@ -39,7 +43,10 @@ interface SystemSettings {
   dataRetention: number;
 }
 
- const Settings: React.FC = () => {
+const Settings: React.FC = () => {
+  // ADDED: Call the useLayout hook
+  const { setLayoutData } = useLayout();
+
   const [activeSection, setActiveSection] = useState('profile');
   const [notifications, setNotifications] = useState<NotificationSettings>({
     email: true,
@@ -49,7 +56,7 @@ interface SystemSettings {
     complianceAlerts: true,
     systemUpdates: false
   });
-  
+
   const [systemSettings, setSystemSettings] = useState<SystemSettings>({
     language: 'en',
     timezone: 'UTC',
@@ -110,11 +117,11 @@ interface SystemSettings {
           <input
             type="text"
             value={userProfile.name}
-            onChange={(e) => setUserProfile({...userProfile, name: e.target.value})}
+            onChange={(e) => setUserProfile({ ...userProfile, name: e.target.value })}
             className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
           />
         </div>
-        
+
         <div>
           <label className="block text-sm font-medium text-foreground mb-2">
             Email Address
@@ -122,18 +129,18 @@ interface SystemSettings {
           <input
             type="email"
             value={userProfile.email}
-            onChange={(e) => setUserProfile({...userProfile, email: e.target.value})}
+            onChange={(e) => setUserProfile({ ...userProfile, email: e.target.value })}
             className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
           />
         </div>
-        
+
         <div>
           <label className="block text-sm font-medium text-foreground mb-2">
             Role
           </label>
           <select
             value={userProfile.role}
-            onChange={(e) => setUserProfile({...userProfile, role: e.target.value})}
+            onChange={(e) => setUserProfile({ ...userProfile, role: e.target.value })}
             className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
           >
             <option value="Compliance Officer">Compliance Officer</option>
@@ -142,7 +149,7 @@ interface SystemSettings {
             <option value="Administrator">Administrator</option>
           </select>
         </div>
-        
+
         <div>
           <label className="block text-sm font-medium text-foreground mb-2">
             Department
@@ -150,11 +157,11 @@ interface SystemSettings {
           <input
             type="text"
             value={userProfile.department}
-            onChange={(e) => setUserProfile({...userProfile, department: e.target.value})}
+            onChange={(e) => setUserProfile({ ...userProfile, department: e.target.value })}
             className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
           />
         </div>
-        
+
         <div className="md:col-span-2">
           <label className="block text-sm font-medium text-foreground mb-2">
             Phone Number
@@ -162,7 +169,7 @@ interface SystemSettings {
           <input
             type="tel"
             value={userProfile.phone}
-            onChange={(e) => setUserProfile({...userProfile, phone: e.target.value})}
+            onChange={(e) => setUserProfile({ ...userProfile, phone: e.target.value })}
             className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
           />
         </div>
@@ -170,7 +177,7 @@ interface SystemSettings {
     </motion.div>
   );
 
-  const NotificationSettings = () => (
+  const NotificationSettingsComponent = () => ( // Renamed to avoid conflict with interface name
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
@@ -178,7 +185,7 @@ interface SystemSettings {
     >
       <div className="space-y-4">
         <h3 className="text-lg font-semibold text-foreground">Notification Channels</h3>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="flex items-center space-x-3 p-4 border border-border rounded-lg">
             <Mail className="w-5 h-5 text-primary" />
@@ -190,13 +197,13 @@ interface SystemSettings {
               <input
                 type="checkbox"
                 checked={notifications.email}
-                onChange={(e) => setNotifications({...notifications, email: e.target.checked})}
+                onChange={(e) => setNotifications({ ...notifications, email: e.target.checked })}
                 className="sr-only peer"
               />
               <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
             </label>
           </div>
-          
+
           <div className="flex items-center space-x-3 p-4 border border-border rounded-lg">
             <Smartphone className="w-5 h-5 text-primary" />
             <div className="flex-1">
@@ -207,13 +214,13 @@ interface SystemSettings {
               <input
                 type="checkbox"
                 checked={notifications.sms}
-                onChange={(e) => setNotifications({...notifications, sms: e.target.checked})}
+                onChange={(e) => setNotifications({ ...notifications, sms: e.target.checked })}
                 className="sr-only peer"
               />
               <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
             </label>
           </div>
-          
+
           <div className="flex items-center space-x-3 p-4 border border-border rounded-lg">
             <Bell className="w-5 h-5 text-primary" />
             <div className="flex-1">
@@ -224,7 +231,7 @@ interface SystemSettings {
               <input
                 type="checkbox"
                 checked={notifications.push}
-                onChange={(e) => setNotifications({...notifications, push: e.target.checked})}
+                onChange={(e) => setNotifications({ ...notifications, push: e.target.checked })}
                 className="sr-only peer"
               />
               <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
@@ -232,10 +239,10 @@ interface SystemSettings {
           </div>
         </div>
       </div>
-      
+
       <div className="space-y-4">
         <h3 className="text-lg font-semibold text-foreground">Alert Types</h3>
-        
+
         <div className="space-y-3">
           {[
             { key: 'deliveryAlerts', label: 'Delivery Alerts', description: 'Notifications for delivery updates and issues' },
@@ -251,7 +258,7 @@ interface SystemSettings {
                 <input
                   type="checkbox"
                   checked={notifications[item.key as keyof NotificationSettings] as boolean}
-                  onChange={(e) => setNotifications({...notifications, [item.key]: e.target.checked})}
+                  onChange={(e) => setNotifications({ ...notifications, [item.key]: e.target.checked })}
                   className="sr-only peer"
                 />
                 <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
@@ -276,7 +283,7 @@ interface SystemSettings {
           </label>
           <select
             value={systemSettings.language}
-            onChange={(e) => setSystemSettings({...systemSettings, language: e.target.value})}
+            onChange={(e) => setSystemSettings({ ...systemSettings, language: e.target.value })}
             className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
           >
             <option value="en">English</option>
@@ -285,14 +292,14 @@ interface SystemSettings {
             <option value="de">German</option>
           </select>
         </div>
-        
+
         <div>
           <label className="block text-sm font-medium text-foreground mb-2">
             Timezone
           </label>
           <select
             value={systemSettings.timezone}
-            onChange={(e) => setSystemSettings({...systemSettings, timezone: e.target.value})}
+            onChange={(e) => setSystemSettings({ ...systemSettings, timezone: e.target.value })}
             className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
           >
             <option value="UTC">UTC</option>
@@ -301,14 +308,14 @@ interface SystemSettings {
             <option value="GMT">Greenwich Mean Time</option>
           </select>
         </div>
-        
+
         <div>
           <label className="block text-sm font-medium text-foreground mb-2">
             Date Format
           </label>
           <select
             value={systemSettings.dateFormat}
-            onChange={(e) => setSystemSettings({...systemSettings, dateFormat: e.target.value})}
+            onChange={(e) => setSystemSettings({ ...systemSettings, dateFormat: e.target.value })}
             className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
           >
             <option value="MM/DD/YYYY">MM/DD/YYYY</option>
@@ -316,14 +323,14 @@ interface SystemSettings {
             <option value="YYYY-MM-DD">YYYY-MM-DD</option>
           </select>
         </div>
-        
+
         <div>
           <label className="block text-sm font-medium text-foreground mb-2">
             Currency
           </label>
           <select
             value={systemSettings.currency}
-            onChange={(e) => setSystemSettings({...systemSettings, currency: e.target.value})}
+            onChange={(e) => setSystemSettings({ ...systemSettings, currency: e.target.value })}
             className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
           >
             <option value="USD">USD ($)</option>
@@ -332,7 +339,7 @@ interface SystemSettings {
             <option value="JPY">JPY (¥)</option>
           </select>
         </div>
-        
+
         <div>
           <label className="block text-sm font-medium text-foreground mb-2">
             Data Retention (days)
@@ -340,17 +347,17 @@ interface SystemSettings {
           <input
             type="number"
             value={systemSettings.dataRetention}
-            onChange={(e) => setSystemSettings({...systemSettings, dataRetention: parseInt(e.target.value)})}
+            onChange={(e) => setSystemSettings({ ...systemSettings, dataRetention: parseInt(e.target.value) })}
             className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
           />
         </div>
-        
+
         <div className="flex items-center space-x-3">
           <label className="relative inline-flex items-center cursor-pointer">
             <input
               type="checkbox"
               checked={systemSettings.autoSave}
-              onChange={(e) => setSystemSettings({...systemSettings, autoSave: e.target.checked})}
+              onChange={(e) => setSystemSettings({ ...systemSettings, autoSave: e.target.checked })}
               className="sr-only peer"
             />
             <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
@@ -375,7 +382,7 @@ interface SystemSettings {
       id: 'notifications',
       title: 'Notifications',
       icon: <Bell className="w-5 h-5" />,
-      component: <NotificationSettings />
+      component: <NotificationSettingsComponent /> // Used renamed component
     },
     {
       id: 'system',
@@ -391,85 +398,89 @@ interface SystemSettings {
     }
   ];
 
-  return (
-    <Layout
-      pageTitle="Settings"
-      pageDescription="Configure your account, notifications, and system preferences"
-      breadcrumbs={[
+  // Define header actions for the layout context
+  const headerActions = (
+    <div className="flex items-center space-x-3">
+      <Button
+        onClick={handleResetSettings}
+        variant="outline"
+        className="flex items-center space-x-2"
+      >
+        <RotateCcw className="w-4 h-4" />
+        <span>Reset</span>
+      </Button>
+
+      <Button
+        onClick={handleSaveSettings}
+        disabled={isSaving}
+        className="flex items-center space-x-2"
+      >
+        {isSaving ? (
+          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+        ) : (
+          <Save className="w-4 h-4" />
+        )}
+        <span>{isSaving ? 'Saving...' : 'Save Changes'}</span>
+      </Button>
+    </div>
+  );
+
+  // ADDED: useEffect hook to set and clear layout data
+  useEffect(() => {
+    setLayoutData({
+      pageTitle: "Settings",
+      pageDescription: "Configure your account, notifications, and system preferences",
+      breadcrumbs: [
         { label: 'Dashboard', href: '/dashboard' },
         { label: 'Settings', isActive: true }
-      ]}
-    >
-      <div className="flex h-full bg-background">
-        {/* Sidebar */}
-        <div className="w-64 border-r border-border bg-card">
-          <div className="p-4">
-            <h2 className="text-lg font-semibold text-foreground mb-4">Settings</h2>
-            <nav className="space-y-2">
-              {sections.map((section) => (
-                <button
-                  key={section.id}
-                  onClick={() => setActiveSection(section.id)}
-                  className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left transition-colors ${
-                    activeSection === section.id
-                      ? 'bg-primary text-primary-foreground'
-                      : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                  }`}
-                >
-                  {section.icon}
-                  <span>{section.title}</span>
-                </button>
-              ))}
-            </nav>
-          </div>
+      ],
+      headerActions: headerActions // Pass the defined header actions
+    });
+
+    // Return a cleanup function
+    return () => setLayoutData({});
+  }, [setLayoutData, isSaving]); // Added isSaving to dependencies for headerActions to update correctly
+
+  return (
+    // REMOVED: The <Layout> wrapper from the return statement.
+    // The page now only returns its own content.
+    <div className="flex h-full bg-background">
+      {/* Sidebar */}
+      <div className="w-64 border-r border-border bg-card">
+        <div className="p-4">
+          <h2 className="text-lg font-semibold text-foreground mb-4">Settings</h2>
+          <nav className="space-y-2">
+            {sections.map((section) => (
+              <button
+                key={section.id}
+                onClick={() => setActiveSection(section.id)}
+                className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left transition-colors ${
+                  activeSection === section.id
+                    ? 'bg-primary text-primary-foreground'
+                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                }`}
+              >
+                {section.icon}
+                <span>{section.title}</span>
+              </button>
+            ))}
+          </nav>
         </div>
+      </div>
 
-        {/* Main Content */}
-        <div className="flex-1 overflow-auto">
-          <div className="p-6">
-            <div className="max-w-4xl mx-auto">
-              <div className="flex items-center justify-between mb-6">
-                <div>
-                  <h1 className="text-2xl font-bold text-foreground">
-                    {sections.find(s => s.id === activeSection)?.title}
-                  </h1>
-                  <p className="text-muted-foreground">
-                    Configure your preferences and system settings
-                  </p>
-                </div>
-                
-                <div className="flex items-center space-x-3">
-                  <button
-                    onClick={handleResetSettings}
-                    className="px-4 py-2 border border-border rounded-lg text-muted-foreground hover:bg-muted transition-colors flex items-center space-x-2"
-                  >
-                    <RotateCcw className="w-4 h-4" />
-                    <span>Reset</span>
-                  </button>
-                  
-                  <button
-                    onClick={handleSaveSettings}
-                    disabled={isSaving}
-                    className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors flex items-center space-x-2 disabled:opacity-50"
-                  >
-                    {isSaving ? (
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    ) : (
-                      <Save className="w-4 h-4" />
-                    )}
-                    <span>{isSaving ? 'Saving...' : 'Save Changes'}</span>
-                  </button>
-                </div>
-              </div>
-
-              <div className="bg-card border border-border rounded-lg p-6">
-                {sections.find(s => s.id === activeSection)?.component}
-              </div>
+      {/* Main Content */}
+      <div className="flex-1 overflow-auto">
+        <div className="p-6">
+          <div className="max-w-4xl mx-auto">
+            {/* REMOVED: The page title, description, and action buttons from here */}
+            {/* They are now handled by the Layout component via context */}
+            <div className="bg-card border border-border rounded-lg p-6">
+              {sections.find(s => s.id === activeSection)?.component}
             </div>
           </div>
         </div>
       </div>
-    </Layout>
+    </div>
   );
 };
 export default Settings;

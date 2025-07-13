@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react'; // Added useEffect
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
-import { User, Mail, Phone, Building, Shield, Camera, Save, Edit3 } from 'lucide-react';
+import { User, Shield, Camera, Save, Edit3 } from 'lucide-react';
+// ADDED: Import the useLayout hook
+import { useLayout } from '@/contexts/LayoutContext';
 
 interface UserProfileData {
   id: string;
@@ -22,10 +24,13 @@ interface UserProfileData {
 }
 
 const UserProfile: React.FC = () => {
+  // ADDED: Call the useLayout hook
+  const { setLayoutData } = useLayout();
+
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showPasswordForm, setShowPasswordForm] = useState(false);
-  
+
   const [userData, setUserData] = useState<UserProfileData>({
     id: '1',
     name: 'John Doe',
@@ -33,7 +38,7 @@ const UserProfile: React.FC = () => {
     phone: '+1 (555) 123-4567',
     company: 'TechCorp Solutions',
     role: 'Compliance Manager',
-    avatar: '/api/placeholder/150/150',
+    avatar: 'https://placehold.co/150x150/E0E0E0/616161?text=JD', // Placeholder image
     preferences: {
       notifications: true,
       emailAlerts: true,
@@ -69,11 +74,13 @@ const UserProfile: React.FC = () => {
     await new Promise(resolve => setTimeout(resolve, 1000));
     setIsEditing(false);
     setIsLoading(false);
+    // In a real app, you might show a toast notification here
   };
 
   const handlePasswordUpdate = async () => {
     if (passwordData.newPassword !== passwordData.confirmPassword) {
-      alert('Passwords do not match');
+      // Replaced alert with console.error as per instructions
+      console.error('Passwords do not match');
       return;
     }
     setIsLoading(true);
@@ -82,6 +89,7 @@ const UserProfile: React.FC = () => {
     setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
     setShowPasswordForm(false);
     setIsLoading(false);
+    // In a real app, you might show a toast notification here
   };
 
   const containerVariants = {
@@ -101,6 +109,36 @@ const UserProfile: React.FC = () => {
     visible: { opacity: 1, y: 0 }
   };
 
+  // Define breadcrumbs and header actions for the layout context
+  const breadcrumbs = [
+    { label: 'Dashboard', href: '/dashboard' },
+    { label: 'User Profile', isActive: true }
+  ];
+
+  const headerActions = (
+    <Button
+      onClick={() => setIsEditing(!isEditing)}
+      variant={isEditing ? "outline" : "default"}
+      className="gap-2"
+    >
+      <Edit3 size={16} />
+      {isEditing ? 'Cancel' : 'Edit Profile'}
+    </Button>
+  );
+
+  // ADDED: useEffect hook to set and clear layout data
+  useEffect(() => {
+    setLayoutData({
+      pageTitle: "User Profile",
+      pageDescription: "Manage your account settings and preferences",
+      breadcrumbs: breadcrumbs,
+      headerActions: headerActions
+    });
+
+    // Return a cleanup function
+    return () => setLayoutData({});
+  }, [setLayoutData, isEditing]); // Added isEditing to dependencies for headerActions to update correctly
+
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-6">
       <motion.div
@@ -109,22 +147,7 @@ const UserProfile: React.FC = () => {
         variants={containerVariants}
         className="space-y-6"
       >
-        {/* Header */}
-        <motion.div variants={itemVariants} className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">User Profile</h1>
-            <p className="text-gray-600 mt-1">Manage your account settings and preferences</p>
-          </div>
-          <Button
-            onClick={() => setIsEditing(!isEditing)}
-            variant={isEditing ? "outline" : "default"}
-            className="gap-2"
-          >
-            <Edit3 size={16} />
-            {isEditing ? 'Cancel' : 'Edit Profile'}
-          </Button>
-        </motion.div>
-
+        {/* REMOVED: The header section (h1, p, and Edit button) */}
         {/* Profile Information */}
         <motion.div variants={itemVariants}>
           <Card className="p-6">
