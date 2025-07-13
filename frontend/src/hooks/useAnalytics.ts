@@ -21,6 +21,7 @@ export interface ComplianceTrend {
   onTimeDeliveries: number;
   totalDeliveries: number;
   deliveryRate: number;
+  [key: string]: any;
 }
 
 export interface VendorPerformance {

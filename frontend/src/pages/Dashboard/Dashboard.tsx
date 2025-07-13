@@ -47,7 +47,7 @@ interface RecentActivity {
   status: 'success' | 'warning' | 'error' | 'pending';
 }
 
-export const Dashboard: React.FC = () => {
+const Dashboard: React.FC = () => {
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
   const [chartData, setChartData] = useState<ChartData[]>([]);
   const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
@@ -329,3 +329,5 @@ export const Dashboard: React.FC = () => {
     </Layout>
   );
 };
+
+export default Dashboard;

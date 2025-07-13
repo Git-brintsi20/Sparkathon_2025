@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
-import { Notification } from '../types/common';
+import type  { Notification } from '@/types/common';
 
 interface NotificationContextType {
   notifications: Notification[];
@@ -133,4 +133,4 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
   );
 };
 
-export default NotificationProvider;w
+export default NotificationProvider;

@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { cn } from '@/components/lib/utils';
+import { cn } from '@/components/lib/utils'; // Assuming '@/lib/utils' is the correct path
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 import { Breadcrumb } from './Breadcrumb';
+// REMOVED: import { Outlet } from 'react-router-dom'; // Outlet is not used in this pattern
 
 interface LayoutProps {
-  children: React.ReactNode;
+  children: React.ReactNode; // RE-ADDED: The children prop is required again
   className?: string;
   showSidebar?: boolean;
   showHeader?: boolean;
@@ -23,7 +24,7 @@ interface LayoutProps {
 }
 
 export const Layout: React.FC<LayoutProps> = ({
-  children,
+  children, // RE-ADDED: Destructure children prop
   className,
   showSidebar = true,
   showHeader = true,
@@ -40,9 +41,11 @@ export const Layout: React.FC<LayoutProps> = ({
   // Handle responsive behavior
   useEffect(() => {
     const checkMobile = () => {
+      // FIX for 'window' not found: Ensure your frontend/tsconfig.json includes "DOM" in its "lib" array.
+      // This code assumes 'window' is available in a browser environment.
       const mobile = window.innerWidth < 1024;
       setIsMobile(mobile);
-      
+
       // Auto-close sidebar on mobile
       if (mobile) {
         setIsSidebarOpen(false);
@@ -176,7 +179,7 @@ export const Layout: React.FC<LayoutProps> = ({
           </div>
         )}
 
-        {/* Main Content */}
+        {/* Main Content - Now renders children again */}
         <motion.main
           variants={pageVariants}
           initial="initial"
@@ -185,7 +188,7 @@ export const Layout: React.FC<LayoutProps> = ({
           className="flex-1 overflow-auto"
         >
           <div className="h-full">
-            {children}
+            {children} {/* RE-ADDED: Render children here */}
           </div>
         </motion.main>
       </motion.div>

@@ -9,6 +9,12 @@
 /* Import animation styles */
 @import './styles/animations.css';
 
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
 /* Recharts custom styles */
 .recharts-wrapper {
   font-family: inherit;

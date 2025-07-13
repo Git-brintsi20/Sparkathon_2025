@@ -14,7 +14,7 @@ interface RegisterFormData {
   agreeToTerms: boolean;
 }
 
-export const Register: React.FC = () => {
+const Register: React.FC = () => {
   const [formData, setFormData] = useState<RegisterFormData>({
     firstName: '',
     lastName: '',
@@ -502,3 +502,5 @@ const [errors, setErrors] = useState<Partial<Record<keyof RegisterFormData, stri
     </div>
   );
 };
+
+export default Register;

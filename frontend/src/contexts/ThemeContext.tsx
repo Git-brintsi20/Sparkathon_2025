@@ -1,12 +1,11 @@
 import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
-import type { 
-  ThemeName, 
-  ColorPalette, 
-  colorPalettes, 
-  applyTheme, 
-  getCurrentTheme, 
-  initializeTheme 
-} from '../config/theme';
+import type { ThemeName, ColorPalette } from '@/config/theme';
+import { 
+  colorPalettes,  // Now imported as a value
+  applyTheme,
+  getCurrentTheme,
+  initializeTheme
+} from '@/config/theme';
 
 interface ThemeState {
   currentTheme: ThemeName;

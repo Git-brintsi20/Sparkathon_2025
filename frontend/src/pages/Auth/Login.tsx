@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { useAuth } from '@/contexts/AuthContext';
 import type { LoginCredentials } from '@/types/common';
 
-export const Login: React.FC = () => {
+ const Login: React.FC = () => {
   const { state, login } = useAuth();
   const [formData, setFormData] = useState<LoginCredentials>({
     email: '',
@@ -277,3 +277,4 @@ export const Login: React.FC = () => {
     </div>
   );
 };
+export default Login;

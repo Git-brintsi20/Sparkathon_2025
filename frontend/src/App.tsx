@@ -1,246 +1,215 @@
-// frontend/src/config/routes.ts
-export interface RouteConfig {
-  path: string;
-  title: string;
-  icon?: string;
-  requiresAuth: boolean;
-  roles?: string[];
-  permissions?: string[];
-  children?: RouteConfig[];
+import React, { Suspense } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { ThemeProvider } from './contexts/ThemeContext';
+import { ErrorBoundary } from './components/common/ErrorBoundary';
+import { LoadingSpinner } from './components/common/LoadingSpinner';
+import { Layout } from './components/layout/Layout';
+import { ROUTES } from './config/routes';
+
+// Lazy load components for better performance
+const Dashboard = React.lazy(() => import('./pages/Dashboard/Dashboard'));
+const VendorList = React.lazy(() => import('./pages/Vendors/VendorList'));
+const VendorDetail = React.lazy(() => import('./pages/Vendors/VendorDetail'));
+const DeliveryList = React.lazy(() => import('./pages/Deliveries/DeliveryList'));
+const DeliveryDetail = React.lazy(() => import('./pages/Deliveries/DeliveryDetail'));
+const Analytics = React.lazy(() => import('./pages/Analytics/Analytics'));
+const ComplianceReport = React.lazy(() => import('./pages/Analytics/ComplianceReport'));
+const Settings = React.lazy(() => import('./pages/Settings/Settings'));
+const Login = React.lazy(() => import('./pages/Auth/Login'));
+const Register = React.lazy(() => import('./pages/Auth/Register'));
+
+// Loading component for route transitions
+const RouteLoader: React.FC = () => (
+  <div className="flex items-center justify-center min-h-screen">
+    <LoadingSpinner size="lg" />
+  </div>
+);
+
+// TEMPORARILY DISABLED PROTECTION - Set this to true to re-enable auth
+const DISABLE_AUTH_FOR_DEVELOPMENT = true;
+
+// Protected Route Component
+interface ProtectedRouteProps {
+  children: React.ReactNode;
+  requiresAuth?: boolean;
+  allowedRoles?: string[];
 }
 
-// Route paths constants
-export const ROUTES = {
-  HOME: '/',
-  DASHBOARD: '/dashboard',
-  VENDORS: '/vendors',
-  VENDOR_DETAIL: '/vendors/:id',
-  VENDOR_CREATE: '/vendors/create',
-  DELIVERIES: '/deliveries',
-  DELIVERY_DETAIL: '/deliveries/:id',
-  DELIVERY_CREATE: '/deliveries/create',
-  ANALYTICS: '/analytics',
-  COMPLIANCE_REPORT: '/analytics/compliance',
-  FRAUD_DETECTION: '/analytics/fraud',
-  PERFORMANCE_METRICS: '/analytics/performance',
-  SETTINGS: '/settings',
-  PROFILE: '/settings/profile',
-  THEME: '/settings/theme',
-  SYSTEM: '/settings/system',
-  LOGIN: '/login',
-  REGISTER: '/register',
-  FORGOT_PASSWORD: '/forgot-password',
-  UNAUTHORIZED: '/unauthorized',
-  NOT_FOUND: '/404',
-} as const;
-
-// Route configurations
-export const routeConfigs: RouteConfig[] = [
-  {
-    path: ROUTES.DASHBOARD,
-    title: 'Dashboard',
-    icon: 'LayoutDashboard',
-    requiresAuth: true,
-  },
-  {
-    path: ROUTES.VENDORS,
-    title: 'Vendors',
-    icon: 'Users',
-    requiresAuth: true,
-    children: [
-      {
-        path: ROUTES.VENDOR_DETAIL,
-        title: 'Vendor Details',
-        requiresAuth: true,
-      },
-      {
-        path: ROUTES.VENDOR_CREATE,
-        title: 'Create Vendor',
-        requiresAuth: true,
-        roles: ['admin', 'manager'],
-      },
-    ],
-  },
-  {
-    path: ROUTES.DELIVERIES,
-    title: 'Deliveries',
-    icon: 'Package',
-    requiresAuth: true,
-    children: [
-      {
-        path: ROUTES.DELIVERY_DETAIL,
-        title: 'Delivery Details',
-        requiresAuth: true,
-      },
-      {
-        path: ROUTES.DELIVERY_CREATE,
-        title: 'Create Delivery',
-        requiresAuth: true,
-        roles: ['admin', 'manager', 'operator'],
-      },
-    ],
-  },
-  {
-    path: ROUTES.ANALYTICS,
-    title: 'Analytics',
-    icon: 'BarChart3',
-    requiresAuth: true,
-    roles: ['admin', 'manager', 'analyst'],
-    children: [
-      {
-        path: ROUTES.COMPLIANCE_REPORT,
-        title: 'Compliance Report',
-        requiresAuth: true,
-        roles: ['admin', 'manager', 'analyst'],
-      },
-      {
-        path: ROUTES.FRAUD_DETECTION,
-        title: 'Fraud Detection',
-        requiresAuth: true,
-        roles: ['admin', 'manager'],
-      },
-      {
-        path: ROUTES.PERFORMANCE_METRICS,
-        title: 'Performance Metrics',
-        requiresAuth: true,
-        roles: ['admin', 'manager', 'analyst'],
-      },
-    ],
-  },
-  {
-    path: ROUTES.SETTINGS,
-    title: 'Settings',
-    icon: 'Settings',
-    requiresAuth: true,
-    children: [
-      {
-        path: ROUTES.PROFILE,
-        title: 'Profile',
-        requiresAuth: true,
-      },
-      {
-        path: ROUTES.THEME,
-        title: 'Theme',
-        requiresAuth: true,
-      },
-      {
-        path: ROUTES.SYSTEM,
-        title: 'System',
-        requiresAuth: true,
-        roles: ['admin'],
-      },
-    ],
-  },
-];
-
-// Public routes (no authentication required)
-export const publicRoutes = [
-  ROUTES.LOGIN,
-  ROUTES.REGISTER,
-  ROUTES.FORGOT_PASSWORD,
-  ROUTES.UNAUTHORIZED,
-  ROUTES.NOT_FOUND,
-];
-
-// Protected routes helper
-export const isProtectedRoute = (path: string): boolean => {
-  return !publicRoutes.includes(path as any);
-};
-
-// Route matching helper
-export const matchRoute = (currentPath: string, routePath: string): boolean => {
-  // Convert route path to regex pattern
-  const pattern = routePath.replace(/:\w+/g, '[^/]+');
-  const regex = new RegExp(`^${pattern}$`);
-  return regex.test(currentPath);
-};
-
-// Get route config by path
-export const getRouteConfig = (path: string): RouteConfig | undefined => {
-  const findRoute = (routes: RouteConfig[], targetPath: string): RouteConfig | undefined => {
-    for (const route of routes) {
-      if (matchRoute(targetPath, route.path)) {
-        return route;
-      }
-      if (route.children) {
-        const childRoute = findRoute(route.children, targetPath);
-        if (childRoute) return childRoute;
-      }
-    }
-    return undefined;
-  };
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ 
+  children, 
+  requiresAuth = true, 
+  allowedRoles 
+}) => {
+  const { state } = useAuth();
+  const location = useLocation();
   
-  return findRoute(routeConfigs, path);
-};
-
-// Check if user has access to route
-export const hasRouteAccess = (
-  route: RouteConfig,
-  userRole?: string,
-  userPermissions?: string[]
-): boolean => {
-  if (!route.requiresAuth) return true;
-  
-  if (route.roles && route.roles.length > 0) {
-    if (!userRole || !route.roles.includes(userRole)) {
-      return false;
-    }
+  // DEVELOPMENT MODE: Skip all auth checks
+  if (DISABLE_AUTH_FOR_DEVELOPMENT) {
+    return <>{children}</>;
   }
   
-  if (route.permissions && route.permissions.length > 0) {
-    if (!userPermissions || !route.permissions.some(p => userPermissions.includes(p))) {
-      return false;
-    }
+  // Show loading while checking auth
+  if (state.isLoading) {
+    return <RouteLoader />;
   }
   
-  return true;
+  // Check if route requires authentication
+  if (requiresAuth && !state.isAuthenticated) {
+    return <Navigate to={ROUTES.LOGIN} state={{ from: location }} replace />;
+  }
+  
+  // Check role-based access
+  if (allowedRoles && state.user && !allowedRoles.includes(state.user.role)) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <h2 className="text-2xl font-semibold mb-4">Access Denied</h2>
+          <p className="text-muted-foreground mb-4">
+            You don't have permission to access this page.
+          </p>
+          <button
+            onClick={() => window.history.back()}
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+          >
+            Go Back
+          </button>
+        </div>
+      </div>
+    );
+  }
+  
+  return <>{children}</>;
 };
 
-// Navigation helper
-export const getNavigationRoutes = (
-  userRole?: string,
-  userPermissions?: string[]
-): RouteConfig[] => {
-  return routeConfigs.filter(route => 
-    hasRouteAccess(route, userRole, userPermissions)
+// Public Route Component (redirects to dashboard if already authenticated)
+interface PublicRouteProps {
+  children: React.ReactNode;
+}
+
+const PublicRoute: React.FC<PublicRouteProps> = ({ children }) => {
+  const { state } = useAuth();
+  const location = useLocation();
+  
+  // DEVELOPMENT MODE: Skip auth redirect
+  if (DISABLE_AUTH_FOR_DEVELOPMENT) {
+    return <>{children}</>;
+  }
+  
+  if (state.isAuthenticated) {
+    const from = (location.state as any)?.from?.pathname || ROUTES.DASHBOARD;
+    return <Navigate to={from} replace />;
+  }
+  
+  return <>{children}</>;
+};
+
+// Route Configuration Component
+const AppRoutes: React.FC = () => {
+  return (
+    <Suspense fallback={<RouteLoader />}>
+      <Routes>
+        {/* Public Routes */}
+        <Route
+          path={ROUTES.LOGIN}
+          element={
+            <PublicRoute>
+              <Login />
+            </PublicRoute>
+          }
+        />
+        <Route
+          path={ROUTES.REGISTER}
+          element={
+            <PublicRoute>
+              <Register />
+            </PublicRoute>
+          }
+        />
+        
+        {/* Protected Routes with Layout */}
+        <Route
+          path="/"
+          element={
+            <ProtectedRoute>
+              <Layout />
+            </ProtectedRoute>
+          }
+        >
+          {/* Dashboard */}
+          <Route index element={<Navigate to={ROUTES.DASHBOARD} replace />} />
+          <Route path={ROUTES.DASHBOARD.slice(1)} element={<Dashboard />} />
+          
+          {/* Vendors */}
+          <Route path={ROUTES.VENDORS.slice(1)} element={<VendorList />} />
+          <Route path={ROUTES.VENDOR_DETAIL.slice(1)} element={<VendorDetail />} />
+          
+          {/* Deliveries */}
+          <Route path={ROUTES.DELIVERIES.slice(1)} element={<DeliveryList />} />
+          <Route path={ROUTES.DELIVERY_DETAIL.slice(1)} element={<DeliveryDetail />} />
+          
+          {/* Analytics - Manager/Admin only */}
+          <Route
+            path={ROUTES.ANALYTICS.slice(1)}
+            element={
+              <ProtectedRoute allowedRoles={['manager', 'admin']}>
+                <Analytics />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path={ROUTES.COMPLIANCE_REPORT.slice(1)}
+            element={
+              <ProtectedRoute allowedRoles={['manager', 'admin']}>
+                <ComplianceReport />
+              </ProtectedRoute>
+            }
+          />
+          
+          {/* Settings */}
+          <Route path={ROUTES.SETTINGS.slice(1)} element={<Settings />} />
+        </Route>
+        
+        {/* Catch all route */}
+        <Route
+          path="*"
+          element={
+            <div className="flex items-center justify-center min-h-screen">
+              <div className="text-center">
+                <h2 className="text-2xl font-semibold mb-4">Page Not Found</h2>
+                <p className="text-muted-foreground mb-4">
+                  The page you're looking for doesn't exist.
+                </p>
+                <button
+                  onClick={() => window.history.back()}
+                  className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+                >
+                  Go Back
+                </button>
+              </div>
+            </div>
+          }
+        />
+      </Routes>
+    </Suspense>
   );
 };
 
-// Breadcrumb helper
-export const getBreadcrumbs = (path: string): { title: string; path: string }[] => {
-  const segments = path.split('/').filter(Boolean);
-  const breadcrumbs: { title: string; path: string }[] = [];
-  
-  let currentPath = '';
-  
-  for (const segment of segments) {
-    currentPath += `/${segment}`;
-    const route = getRouteConfig(currentPath);
-    
-    if (route) {
-      breadcrumbs.push({
-        title: route.title,
-        path: currentPath,
-      });
-    } else {
-      // Handle dynamic segments
-      const routeWithParam = getRouteConfig(currentPath.replace(/\/[^/]+$/, '/:id'));
-      if (routeWithParam) {
-        breadcrumbs.push({
-          title: `${routeWithParam.title} - ${segment}`,
-          path: currentPath,
-        });
-      }
-    }
-  }
-  
-  return breadcrumbs;
+// Main App Component
+const App: React.FC = () => {
+  return (
+    <ErrorBoundary>
+      <ThemeProvider defaultTheme="default">
+        <AuthProvider>
+          
+            <div className="min-h-screen bg-background font-sans antialiased">
+              <AppRoutes />
+            </div>
+         
+        </AuthProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
+  );
 };
 
-// Default redirects
-export const DEFAULT_REDIRECTS = {
-  AUTHENTICATED: ROUTES.DASHBOARD,
-  UNAUTHENTICATED: ROUTES.LOGIN,
-  UNAUTHORIZED: ROUTES.UNAUTHORIZED,
-  NOT_FOUND: ROUTES.NOT_FOUND,
-} as const;
+export default App;

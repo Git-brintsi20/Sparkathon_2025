@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Calendar, Download, Filter, RefreshCw, TrendingUp, AlertTriangle, Shield, Users } from 'lucide-react';
+import { Calendar, Download, RefreshCw, TrendingUp, AlertTriangle, Shield, Users } from 'lucide-react';
 import { Layout } from '@/components/layout/Layout';
 import { MetricsChart } from '@/components/charts/MetricsChart';
 import { ComplianceChart } from '@/components/charts/ComplianceChart';
@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { useAnalytics } from '@/hooks/useAnalytics';
-import { cn } from '@/lib/utils';
+import { cn } from '@/components/lib/utils';
 
 // KPI Card Component
 const KPICard: React.FC<{
@@ -132,12 +132,11 @@ const ExportOptions: React.FC<{
   </div>
 );
 
-export const Analytics: React.FC = () => {
+ const Analytics: React.FC = () => {
   const { 
     data, 
     loading, 
     error, 
-    filters, 
     computedMetrics,
     refreshData, 
     exportData,
@@ -151,12 +150,16 @@ export const Analytics: React.FC = () => {
     setIsExporting(true);
     try {
       const result = await exportData(format);
+      if(result){
       if (result.success) {
         // In real implementation, trigger download
         console.log('Export successful:', result.downloadUrl);
       } else {
         console.error('Export failed:', result.error);
-      }
+      }}else {
+    // Handle the case where the export function itself failed to return anything
+    console.error('Export failed: No result was returned.');
+  }
     } catch (error) {
       console.error('Export error:', error);
     } finally {
@@ -443,3 +446,5 @@ export const Analytics: React.FC = () => {
     </Layout>
   );
 };
+
+export default Analytics;

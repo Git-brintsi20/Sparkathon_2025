@@ -3,10 +3,9 @@ import { motion } from 'framer-motion';
 import { Layout } from '../../components/layout/Layout';
 import { ThemeSettings } from './ThemeSettings';
 import { 
-  Settings as SettingsIcon, 
+  Settings as  
   User, 
   Bell, 
-  Shield, 
   Database, 
   Mail, 
   Globe, 
@@ -40,7 +39,7 @@ interface SystemSettings {
   dataRetention: number;
 }
 
-export const Settings: React.FC = () => {
+ const Settings: React.FC = () => {
   const [activeSection, setActiveSection] = useState('profile');
   const [notifications, setNotifications] = useState<NotificationSettings>({
     email: true,
@@ -473,3 +472,4 @@ export const Settings: React.FC = () => {
     </Layout>
   );
 };
+export default Settings;
