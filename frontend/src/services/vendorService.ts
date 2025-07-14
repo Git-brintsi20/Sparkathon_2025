@@ -296,11 +296,11 @@ const mockMetrics: VendorMetrics = {
   activeVendors: mockVendors.filter(v => v.status === 'active').length,
   inactiveVendors: mockVendors.filter(v => v.status === 'inactive').length,
   suspendedVendors: mockVendors.filter(v => v.status === 'suspended').length,
-  pendingApproval: mockVendors.filter(v => v.status === 'pending').length, // Add this
+  pendingApproval: mockVendors.filter(v => v.status === 'pending').length,
   averageComplianceScore: Math.round(mockVendors.reduce((sum, v) => sum + v.complianceScore, 0) / mockVendors.length),
   highRiskVendors: mockVendors.filter(v => v.riskLevel === 'high').length,
-  complianceRate: 0.85, // Add this
-  monthlyGrowth: 12.5, // Add this
+  complianceRate: Math.round(mockVendors.reduce((sum, v) => sum + v.complianceScore, 0) / mockVendors.length) / 100,
+  monthlyGrowth: 12.5,
   categoryDistribution: Object.entries(mockVendors.reduce((acc, vendor) => {
     acc[vendor.category] = (acc[vendor.category] || 0) + 1;
     return acc;
@@ -310,6 +310,8 @@ const mockMetrics: VendorMetrics = {
     percentage: (count / mockVendors.length) * 100
   }))
 };
+
+
 
 class VendorService {
   private readonly BASE_ENDPOINT = '/vendors';
@@ -555,7 +557,61 @@ const updatedVendor: Vendor = {
       message: 'Vendor status updated successfully'
     };
   }
+async getVendorDetailedMetrics(vendorId: string): Promise<ApiResponse<any>> {
+  await new Promise(resolve => setTimeout(resolve, 300));
+  
+  const vendor = mockVendors.find(v => v.id === vendorId);
+  if (!vendor) {
+    return {
+      success: false,
+      data: null,
+      message: 'Vendor not found'
+    };
+  }
 
+  const detailedMetrics = {
+    complianceScore: vendor.complianceScore,
+    complianceHistory: Array.from({ length: 12 }, (_, i) => ({
+      month: new Date(2024, i).toLocaleDateString('en-US', { month: 'short' }),
+      score: Math.floor(Math.random() * 30) + 70,
+      deliveries: Math.floor(Math.random() * 20) + 5,
+      issues: Math.floor(Math.random() * 3)
+    })),
+    performanceMetrics: {
+      totalOrders: vendor.totalDeliveries || 0,
+      completedOrders: vendor.successfulDeliveries || 0,
+      pendingOrders: Math.floor(Math.random() * 5),
+      cancelledOrders: (vendor.totalDeliveries || 0) - (vendor.successfulDeliveries || 0),
+      averageDeliveryTime: Math.floor(Math.random() * 10) + 5,
+      onTimeDeliveryRate: Math.floor(Math.random() * 30) + 70,
+      qualityScore: Math.floor(Math.random() * 30) + 70,
+      costSavings: Math.floor(Math.random() * 50000) + 10000
+    },
+    riskMetrics: {
+      riskLevel: vendor.riskLevel,
+      riskScore: vendor.riskLevel === 'low' ? Math.floor(Math.random() * 30) + 10 : 
+                 vendor.riskLevel === 'medium' ? Math.floor(Math.random() * 30) + 40 : 
+                 Math.floor(Math.random() * 30) + 70,
+      riskFactors: vendor.riskLevel === 'high' ? ['Payment Delays', 'Quality Issues'] : 
+                   vendor.riskLevel === 'medium' ? ['Minor Delays'] : 
+                   ['No Issues'],
+      complianceIssues: vendor.riskLevel === 'high' ? 5 : vendor.riskLevel === 'medium' ? 2 : 0,
+      resolvedIssues: vendor.riskLevel === 'high' ? 3 : vendor.riskLevel === 'medium' ? 2 : 0
+    },
+    monthlyTrends: Array.from({ length: 12 }, (_, i) => ({
+      month: new Date(2024, i).toLocaleDateString('en-US', { month: 'short' }),
+      orders: Math.floor(Math.random() * 20) + 5,
+      revenue: Math.floor(Math.random() * 100000) + 50000,
+      satisfaction: Math.floor(Math.random() * 30) + 70
+    }))
+  };
+
+  return {
+    success: true,
+    data: detailedMetrics,
+    message: 'Vendor detailed metrics fetched successfully'
+  };
+}
   // Get vendor metrics
   async getVendorMetrics(): Promise<ApiResponse<VendorMetrics>> {
     await new Promise(resolve => setTimeout(resolve, 300));
@@ -566,6 +622,7 @@ const updatedVendor: Vendor = {
       message: 'Vendor metrics fetched successfully'
     };
   }
+  
 
   // Get vendor performance data
   async getVendorPerformance(
@@ -736,6 +793,8 @@ const mockDocuments: VendorDocument[] = documents.map((file, index) => ({
   uploadedAt: new Date().toISOString(), // Change from uploadDate
   status: 'pending'
 }));
+
+
 
     
     return {

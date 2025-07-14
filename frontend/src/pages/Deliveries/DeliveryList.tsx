@@ -42,11 +42,36 @@ const statusIcons = {
 
 const DeliveryList: React.FC = () => {
   const navigate = useNavigate();
-  const { deliveries, loading, error, refreshDeliveries } = useDeliveries();
+  
+  // FIX 1: Add fallback for hook failures
+  let deliveries, loading, error, refreshDeliveries;
+  try {
+    const hookResult = useDeliveries();
+    deliveries = hookResult.deliveries;
+    loading = hookResult.loading;
+    error = hookResult.error;
+    refreshDeliveries = hookResult.refreshDeliveries;
+  } catch (hookError) {
+    console.warn('useDeliveries hook failed:', hookError);
+    deliveries = [];
+    loading = false;
+    error = null;
+    refreshDeliveries = () => {};
+  }
+
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [conditionFilter, setConditionFilter] = useState<string>('all');
-  const { setLayoutData } = useLayout();
+  
+  // FIX 2: Add fallback for layout context
+  let setLayoutData;
+  try {
+    const layoutContext = useLayout();
+    setLayoutData = layoutContext.setLayoutData;
+  } catch (layoutError) {
+    console.warn('useLayout hook failed:', layoutError);
+    setLayoutData = () => {};
+  }
 
   // Mock data for demonstration - updated to match the actual Delivery type
   const mockDeliveries: DeliveryListItem[] = [
@@ -181,7 +206,8 @@ const DeliveryList: React.FC = () => {
     }
   ];
 
-  const displayDeliveries = deliveries?.length ? deliveries as DeliveryListItem[] : mockDeliveries;
+  // FIX 3: Ensure mock data is always used when real data is empty/null/undefined
+  const displayDeliveries = (deliveries && deliveries.length > 0) ? deliveries as DeliveryListItem[] : mockDeliveries;
 
   // Filter deliveries
   const filteredDeliveries = useMemo(() => {
@@ -210,11 +236,19 @@ const DeliveryList: React.FC = () => {
   }, [displayDeliveries, searchTerm, statusFilter, conditionFilter]);
 
   const handleRowClick = (delivery: DeliveryListItem) => {
-    navigate(`${ROUTES.DELIVERIES}/${delivery.id}`);
+    try {
+      navigate(`${ROUTES.DELIVERIES}/${delivery.id}`);
+    } catch (navError) {
+      console.error('Navigation error:', navError);
+    }
   };
 
   const handleEdit = (delivery: DeliveryListItem) => {
-    navigate(`${ROUTES.DELIVERIES}/edit/${delivery.id}`);
+    try {
+      navigate(`${ROUTES.DELIVERIES}/edit/${delivery.id}`);
+    } catch (navError) {
+      console.error('Navigation error:', navError);
+    }
   };
 
   const handleDelete = (delivery: DeliveryListItem) => {
@@ -223,11 +257,11 @@ const DeliveryList: React.FC = () => {
   };
 
   const StatusBadge = ({ status }: { status: string }) => {
-    const Icon = statusIcons[status as keyof typeof statusIcons];
+    const Icon = statusIcons[status as keyof typeof statusIcons] || Package;
     return (
       <div className={cn(
         'inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border',
-        statusColors[status as keyof typeof statusColors]
+        statusColors[status as keyof typeof statusColors] || 'bg-gray-100 text-gray-800 border-gray-200'
       )}>
         <Icon className="h-3 w-3" />
         {status.replace('_', ' ').toUpperCase()}
@@ -356,23 +390,45 @@ const DeliveryList: React.FC = () => {
       >
         Refresh
       </Button>
-      <Button onClick={() => navigate(`${ROUTES.DELIVERIES}/create`)}>
+      <Button onClick={() => {
+        try {
+          navigate(`${ROUTES.DELIVERIES}/create`);
+        } catch (navError) {
+          console.error('Navigation error:', navError);
+        }
+      }}>
         <Plus className="h-4 w-4 mr-2" />
         New Delivery
       </Button>
     </div>
   );
 
+  // FIX 4: Wrap useEffect in try-catch and make it conditional
   useEffect(() => {
-    setLayoutData({
-      pageTitle: "Deliveries",
-      pageDescription: "Manage and track delivery verifications",
-      breadcrumbs: breadcrumbs,
-      headerActions: headerActions
-    });
+    try {
+      if (setLayoutData) {
+        setLayoutData({
+          pageTitle: "Deliveries",
+          pageDescription: "Manage and track delivery verifications",
+          breadcrumbs: breadcrumbs,
+          headerActions: headerActions
+        });
 
-    return () => setLayoutData({});
-  }, [setLayoutData, refreshDeliveries, loading, navigate]);
+        return () => setLayoutData({});
+      }
+    } catch (layoutError) {
+      console.warn('Layout context error:', layoutError);
+    }
+  }, [setLayoutData, refreshDeliveries, loading]);
+
+  // FIX 5: Show loading state only when actually loading
+  if (loading && (!deliveries || deliveries.length === 0)) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <LoadingSpinner />
+      </div>
+    );
+  }
 
   if (error) {
     return (
