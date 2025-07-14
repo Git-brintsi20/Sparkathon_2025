@@ -16,18 +16,29 @@ import { useLayout } from '@/contexts/LayoutContext';
 import type { LayoutContextType } from '@/contexts/LayoutContext'; // Add this import
 import { ROUTES } from '@/config/routes';
 import type { Delivery } from '@/types/delivery';
+import { Shield, Hash} from 'lucide-react';
 
 // Extended interface for the component to handle both type systems
+interface BlockchainStatus {
+  status: 'confirmed' | 'pending' | 'failed';
+  blockNumber?: string;
+  confirmations?: number;
+  gasUsed?: string;
+  transactionHash?: string;
+}
+
+// 3. Update DeliveryListItem interface to include blockchain status
 interface DeliveryListItem extends Delivery {
   barcode?: string;
   poNumber?: string;
   condition?: string;
   weight?: number;
   quantity?: number;
+  blockchainStatus?: BlockchainStatus; // Add this line
 }
 
 // Mock data for demonstration - moved to top level to avoid recreating
-const mockDeliveries: DeliveryListItem[] = [
+onst mockDeliveries: DeliveryListItem[] = [
   {
     id: '1',
     orderId: 'PO-2024-001',
@@ -58,7 +69,14 @@ const mockDeliveries: DeliveryListItem[] = [
     poNumber: 'PO-2024-001',
     condition: 'good',
     weight: 15.5,
-    quantity: 10
+    quantity: 10,
+    blockchainStatus: {
+      status: 'confirmed',
+      blockNumber: '18,742,391',
+      confirmations: 24,
+      gasUsed: '84,357',
+      transactionHash: '0x7d4f2a8c9e3b5f1a6d8e2c4b7f9a3e5d8c1b6f4a9e2d7c3b8f5a1e6d9c2b4f7a'
+    }
   },
   {
     id: '2',
@@ -90,7 +108,13 @@ const mockDeliveries: DeliveryListItem[] = [
     poNumber: 'PO-2024-002',
     condition: 'excellent',
     weight: 8.2,
-    quantity: 5
+    quantity: 5,
+    blockchainStatus: {
+      status: 'pending',
+      blockNumber: '18,742,395',
+      confirmations: 0,
+      gasUsed: '42,150'
+    }
   },
   {
     id: '3',
@@ -122,10 +146,66 @@ const mockDeliveries: DeliveryListItem[] = [
     poNumber: 'PO-2024-003',
     condition: 'good',
     weight: 22.8,
-    quantity: 15
+    quantity: 15,
+    blockchainStatus: {
+      status: 'failed',
+      blockNumber: '18,742,388',
+      confirmations: 0,
+      gasUsed: '28,750'
+    }
   }
 ];
+const BlockchainStatusBadge = ({ blockchainStatus }: { blockchainStatus?: BlockchainStatus }) => {
+  if (!blockchainStatus) {
+    return (
+      <div className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border bg-gray-100 text-gray-600 border-gray-300">
+        <Shield className="h-3 w-3" />
+        NO BLOCKCHAIN
+      </div>
+    );
+  }
 
+  const getStatusConfig = (status: string) => {
+    switch (status) {
+      case 'confirmed':
+        return { 
+          color: 'bg-green-100 text-green-800 border-green-300', 
+          icon: CheckCircle,
+          label: 'VERIFIED'
+        };
+      case 'pending':
+        return { 
+          color: 'bg-yellow-100 text-yellow-800 border-yellow-300', 
+          icon: Clock,
+          label: 'PENDING'
+        };
+      case 'failed':
+        return { 
+          color: 'bg-red-100 text-red-800 border-red-300', 
+          icon: AlertTriangle,
+          label: 'FAILED'
+        };
+      default:
+        return { 
+          color: 'bg-gray-100 text-gray-800 border-gray-300', 
+          icon: Shield,
+          label: 'UNKNOWN'
+        };
+    }
+  };
+   const config = getStatusConfig(blockchainStatus.status);
+  const Icon = config.icon;
+
+  return (
+    <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border ${config.color}`}>
+      <Icon className="h-3 w-3" />
+      {config.label}
+      {blockchainStatus.status === 'confirmed' && blockchainStatus.confirmations && (
+        <span className="ml-1 text-xs opacity-75">({blockchainStatus.confirmations})</span>
+      )}
+    </div>
+  );
+};
 const statusColors = {
   pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
   verified: 'bg-green-100 text-green-800 border-green-200',
@@ -141,7 +221,7 @@ const statusIcons = {
   in_transit: Package,
   delivered: Package
 };
-
+ const [blockchainFilter, setBlockchainFilter] = useState<string>('all');
 const DeliveryList: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -197,38 +277,45 @@ try {
 }
 
   // Filter deliveries with safe array operations
-  const filteredDeliveries = useMemo(() => {
-    if (!Array.isArray(getFilteredData)) {
-      return [];
-    }
+ const filteredDeliveries = useMemo(() => {
+  if (!Array.isArray(getFilteredData)) {
+    return [];
+  }
 
-    let filtered = [...getFilteredData];
+  let filtered = [...getFilteredData];
 
-    // Search filter
-    if (searchTerm) {
-      filtered = filtered.filter(delivery => {
-        const barcode = delivery.barcode || '';
-        const poNumber = delivery.poNumber || delivery.orderId || '';
-        const vendorName = delivery.vendorName || '';
-        
-        return barcode.toLowerCase().includes(searchTerm.toLowerCase()) ||
-               poNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-               vendorName.toLowerCase().includes(searchTerm.toLowerCase());
-      });
-    }
+  // Search filter
+  if (searchTerm) {
+    filtered = filtered.filter(delivery => {
+      const barcode = delivery.barcode || '';
+      const poNumber = delivery.poNumber || delivery.orderId || '';
+      const vendorName = delivery.vendorName || '';
+      
+      return barcode.toLowerCase().includes(searchTerm.toLowerCase()) ||
+             poNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+             vendorName.toLowerCase().includes(searchTerm.toLowerCase());
+    });
+  }
 
-    // Status filter
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter(delivery => delivery.status === statusFilter);
-    }
+  // Status filter
+  if (statusFilter !== 'all') {
+    filtered = filtered.filter(delivery => delivery.status === statusFilter);
+  }
 
-    // Condition filter
-    if (conditionFilter !== 'all') {
-      filtered = filtered.filter(delivery => delivery.condition === conditionFilter);
-    }
+  // Condition filter
+  if (conditionFilter !== 'all') {
+    filtered = filtered.filter(delivery => delivery.condition === conditionFilter);
+  }
 
-    return filtered;
-  }, [getFilteredData, searchTerm, statusFilter, conditionFilter]);
+  // Blockchain filter
+  if (blockchainFilter !== 'all') {
+    filtered = filtered.filter(delivery => 
+      delivery.blockchainStatus?.status === blockchainFilter
+    );
+  }
+
+  return filtered;
+}, [getFilteredData, searchTerm, statusFilter, conditionFilter, blockchainFilter]);
 
   const handleRowClick = (delivery: DeliveryListItem) => {
     try {
@@ -265,74 +352,82 @@ try {
   };
 
   const columns = [
-    {
-      key: 'barcode' as keyof DeliveryListItem,
-      label: 'Barcode',
-      sortable: true,
-      render: (value: string | undefined) => (
-        <div className="font-mono text-sm">{value || 'N/A'}</div>
-      )
-    },
-    {
-      key: 'poNumber' as keyof DeliveryListItem,
-      label: 'PO Number',
-      sortable: true,
-      render: (value: string | undefined, row: DeliveryListItem) => (
-        <div className="font-medium">{value || row.orderId || 'N/A'}</div>
-      )
-    },
-    {
-      key: 'vendorName' as keyof DeliveryListItem,
-      label: 'Vendor',
-      sortable: true
-    },
-    {
-      key: 'status' as keyof DeliveryListItem,
-      label: 'Status',
-      sortable: true,
-      render: (value: string) => <StatusBadge status={value} />
-    },
-    {
-      key: 'weight' as keyof DeliveryListItem,
-      label: 'Weight (kg)',
-      sortable: true,
-      render: (value: number | undefined) => (
-        <div className="text-right font-mono">
-          {value ? value.toFixed(1) : 'N/A'}
-        </div>
-      )
-    },
-    {
-      key: 'quantity' as keyof DeliveryListItem,
-      label: 'Quantity',
-      sortable: true,
-      render: (value: number | undefined, row: DeliveryListItem) => (
-        <div className="text-right font-mono">
-          {value || row.items?.reduce((sum, item) => sum + item.quantity, 0) || 'N/A'}
-        </div>
-      )
-    },
-    {
-      key: 'condition' as keyof DeliveryListItem,
-      label: 'Condition',
-      sortable: true,
-      render: (value: string | undefined, row: DeliveryListItem) => (
-        <div className="capitalize">
-          {value || row.items?.[0]?.condition || 'N/A'}
-        </div>
-      )
-    },
-    {
-      key: 'createdAt' as keyof DeliveryListItem,
-      label: 'Created',
-      sortable: true,
-      render: (value: string) => (
-        <div className="text-sm text-muted-foreground">
-          {new Date(value).toLocaleDateString()}
-        </div>
-      )
-    }
-  ];
+  {
+    key: 'barcode' as keyof DeliveryListItem,
+    label: 'Barcode',
+    sortable: true,
+    render: (value: string | undefined) => (
+      <div className="font-mono text-sm">{value || 'N/A'}</div>
+    )
+  },
+  {
+    key: 'poNumber' as keyof DeliveryListItem,
+    label: 'PO Number',
+    sortable: true,
+    render: (value: string | undefined, row: DeliveryListItem) => (
+      <div className="font-medium">{value || row.orderId || 'N/A'}</div>
+    )
+  },
+  {
+    key: 'vendorName' as keyof DeliveryListItem,
+    label: 'Vendor',
+    sortable: true
+  },
+  {
+    key: 'status' as keyof DeliveryListItem,
+    label: 'Status',
+    sortable: true,
+    render: (value: string) => <StatusBadge status={value} />
+  },
+  {
+    key: 'blockchainStatus' as keyof DeliveryListItem,
+    label: 'Blockchain',
+    sortable: false,
+    render: (value: BlockchainStatus | undefined) => (
+      <BlockchainStatusBadge blockchainStatus={value} />
+    )
+  },
+  {
+    key: 'weight' as keyof DeliveryListItem,
+    label: 'Weight (kg)',
+    sortable: true,
+    render: (value: number | undefined) => (
+      <div className="text-right font-mono">
+        {value ? value.toFixed(1) : 'N/A'}
+      </div>
+    )
+  },
+  {
+    key: 'quantity' as keyof DeliveryListItem,
+    label: 'Quantity',
+    sortable: true,
+    render: (value: number | undefined, row: DeliveryListItem) => (
+      <div className="text-right font-mono">
+        {value || row.items?.reduce((sum, item) => sum + item.quantity, 0) || 'N/A'}
+      </div>
+    )
+  },
+  {
+    key: 'condition' as keyof DeliveryListItem,
+    label: 'Condition',
+    sortable: true,
+    render: (value: string | undefined, row: DeliveryListItem) => (
+      <div className="capitalize">
+        {value || row.items?.[0]?.condition || 'N/A'}
+      </div>
+    )
+  },
+  {
+    key: 'createdAt' as keyof DeliveryListItem,
+    label: 'Created',
+    sortable: true,
+    render: (value: string) => (
+      <div className="text-sm text-muted-foreground">
+        {new Date(value).toLocaleDateString()}
+      </div>
+    )
+  }
+];
 
   const getActions = (delivery: DeliveryListItem) => (
     <div className="flex items-center gap-1">
@@ -396,6 +491,7 @@ try {
       </Button>
     </div>
   );
+ 
 
   // Safe useEffect for layout
 useEffect(() => {
@@ -516,6 +612,24 @@ useEffect(() => {
             </CardContent>
           </Card>
         </motion.div>
+        <motion.div
+  initial={{ opacity: 0, y: 20 }}
+  animate={{ opacity: 1, y: 0 }}
+  transition={{ delay: 0.5 }}
+>
+  <Card>
+    <CardHeader className="pb-2">
+      <CardTitle className="text-sm font-medium text-muted-foreground">
+        Blockchain Verified
+      </CardTitle>
+    </CardHeader>
+    <CardContent>
+      <div className="text-2xl font-bold text-blue-600">
+        {filteredDeliveries.filter(d => d.blockchainStatus?.status === 'confirmed').length}
+      </div>
+    </CardContent>
+  </Card>
+</motion.div>
       </div>
 
       {/* Filters */}
@@ -567,6 +681,17 @@ useEffect(() => {
                   <SelectItem value="damaged">Damaged</SelectItem>
                 </SelectContent>
               </Select>
+              <Select value={blockchainFilter} onValueChange={setBlockchainFilter}>
+              <SelectTrigger>
+                <SelectValue placeholder="Filter by blockchain" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Blockchain Status</SelectItem>
+                <SelectItem value="confirmed">Confirmed</SelectItem>
+                <SelectItem value="pending">Pending</SelectItem>
+                <SelectItem value="failed">Failed</SelectItem>
+              </SelectContent>
+            </Select>
             </div>
           </CardContent>
         </Card>

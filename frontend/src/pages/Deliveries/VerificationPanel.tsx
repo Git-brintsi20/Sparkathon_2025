@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
+import { Shield, Hash, CheckCircle2, Link as LinkIcon } from 'lucide-react';
 import { 
   Camera, 
   Check, 
@@ -16,6 +17,15 @@ import {
   Clock,
   User
 } from 'lucide-react';
+
+interface BlockchainVerificationStatus {
+  enabled: boolean;
+  pending: string[];
+  confirmed: string[];
+  failed: string[];
+  gasEstimate: string;
+  networkFee: string;
+}
 
 interface VerificationItem {
   id: string;
@@ -37,7 +47,85 @@ interface VerificationPanelProps {
   onUploadImage: (itemId: string, file: File) => void;
   currentUser: string;
   canApprove: boolean;
+  blockchainStatus?: BlockchainVerificationStatus;
 }
+
+const defaultBlockchainStatus: BlockchainVerificationStatus = {
+  enabled: true,
+  pending: ['item-1'],
+  confirmed: ['item-2', 'item-3'],
+  failed: [],
+  gasEstimate: '0.0045 ETH',
+  networkFee: '$12.34'
+};
+
+const BlockchainStatusPanel = ({ status }: { status: BlockchainVerificationStatus }) => {
+  if (!status.enabled) return null;
+
+  return (
+    <Card className="border-2 border-blue-200 bg-blue-50">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-blue-900">
+          <Shield className="w-5 h-5" />
+          Blockchain Verification
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+          <div className="text-center">
+            <div className="text-2xl font-bold text-yellow-600">{status.pending.length}</div>
+            <div className="text-sm text-yellow-700">Pending Verification</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-green-600">{status.confirmed.length}</div>
+            <div className="text-sm text-green-700">Confirmed</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-red-600">{status.failed.length}</div>
+            <div className="text-sm text-red-700">Failed</div>
+          </div>
+        </div>
+        
+        <div className="flex items-center justify-between text-sm">
+          <span className="text-blue-700">Estimated Gas:</span>
+          <span className="font-mono">{status.gasEstimate}</span>
+        </div>
+        <div className="flex items-center justify-between text-sm">
+          <span className="text-blue-700">Network Fee:</span>
+          <span className="font-mono">{status.networkFee}</span>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
+const getBlockchainStatus = (itemId: string, blockchainStatus: BlockchainVerificationStatus) => {
+  if (blockchainStatus.confirmed.includes(itemId)) {
+    return (
+      <Badge className="bg-green-100 text-green-800 border-green-300">
+        <CheckCircle2 className="w-3 h-3 mr-1" />
+        Blockchain Verified
+      </Badge>
+    );
+  }
+  if (blockchainStatus.pending.includes(itemId)) {
+    return (
+      <Badge className="bg-yellow-100 text-yellow-800 border-yellow-300">
+        <Hash className="w-3 h-3 mr-1" />
+        Blockchain Pending
+      </Badge>
+    );
+  }
+  if (blockchainStatus.failed.includes(itemId)) {
+    return (
+      <Badge className="bg-red-100 text-red-800 border-red-300">
+        <AlertTriangle className="w-3 h-3 mr-1" />
+        Blockchain Failed
+      </Badge>
+    );
+  }
+  return null;
+};
 
 const VerificationPanel: React.FC<VerificationPanelProps> = ({
   deliveryId,
@@ -46,7 +134,8 @@ const VerificationPanel: React.FC<VerificationPanelProps> = ({
   onVerify,
   onUploadImage,
   currentUser,
-  canApprove
+  canApprove,
+  blockchainStatus = defaultBlockchainStatus
 }) => {
   const [selectedItem, setSelectedItem] = useState<string | null>(null);
   const [notes, setNotes] = useState<string>('');
@@ -139,6 +228,11 @@ const VerificationPanel: React.FC<VerificationPanelProps> = ({
       </CardHeader>
 
       <CardContent className="space-y-6">
+        {/* Global Blockchain Status Panel */}
+        {blockchainStatus.enabled && (
+          <BlockchainStatusPanel status={blockchainStatus} />
+        )}
+
         {/* Verification Items */}
         <div className="space-y-4">
           {items.map((item) => (
@@ -160,9 +254,12 @@ const VerificationPanel: React.FC<VerificationPanelProps> = ({
                         {getStatusIcon(item.status)}
                         {item.status}
                       </Badge>
+                      {/* Item-specific Blockchain Badge */}
+                      {getBlockchainStatus(item.id, blockchainStatus)}
                     </div>
-                    <p className="text-sm text-gray-600 mb-2">{item.description}</p>
                     
+                    <p className="text-sm text-gray-600 mb-2">{item.description}</p>
+
                     {/* Verification Details */}
                     {item.status !== 'pending' && (
                       <div className="text-xs text-gray-500 space-y-1">

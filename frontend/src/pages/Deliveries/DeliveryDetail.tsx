@@ -1,8 +1,15 @@
 import React, { useState, useEffect } from 'react'; // Added useEffect
 import { motion } from 'framer-motion';
+
 import {
+  Shield, 
+  Link, 
+  Hash, 
+  Zap, 
+  Database,
   Package,
   CheckCircle,
+  CheckCircle2,
   Clock,
   AlertTriangle,
   Edit,
@@ -25,6 +32,25 @@ import { useLayout } from '@/contexts/LayoutContext';
 import { Card, CardContent } from '@/components/ui/card'; // Keeping these imports as they are used within the component
 import { cn } from '@/components/lib/utils'; // Keeping this path as per your instruction
 
+interface BlockchainVerification {
+  blockNumber: string;
+  transactionHash: string;
+  gasUsed: string;
+  confirmations: number;
+  timestamp: string;
+  status: 'pending' | 'confirmed' | 'failed';
+  photoHashes: {
+    deliveryPhoto: string;
+    packagingPhoto: string;
+  };
+  immutableRecord: {
+    weight: number;
+    quantity: number;
+    condition: string;
+    verifiedBy: string;
+    timestamp: string;
+  };
+}
 interface DeliveryDetail {
   id: string;
   barcode: string;
@@ -47,6 +73,7 @@ interface DeliveryDetail {
   verifiedBy?: string;
   trackingNumber?: string;
   complianceScore: number;
+  blockchain: BlockchainVerification;
   timeline: Array<{
     id: string;
     status: string;
@@ -68,6 +95,43 @@ const statusIcons = {
   verified: CheckCircle,
   rejected: AlertTriangle,
   in_transit: Package
+};
+
+const BlockchainStatus = ({ verification }: { verification: BlockchainVerification }) => {
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'confirmed':
+        return 'text-green-600 bg-green-50 border-green-200';
+      case 'pending':
+        return 'text-yellow-600 bg-yellow-50 border-yellow-200';
+      case 'failed':
+        return 'text-red-600 bg-red-50 border-red-200';
+      default:
+        return 'text-gray-600 bg-gray-50 border-gray-200';
+    }
+  };
+    const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'confirmed':
+        return <CheckCircle2 className="w-4 h-4" />;
+      case 'pending':
+        return <Clock className="w-4 h-4" />;
+      case 'failed':
+        return <AlertTriangle className="w-4 h-4" />;
+      default:
+        return <Clock className="w-4 h-4" />;
+    }
+  };
+  
+  return (
+    <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium border ${getStatusColor(verification.status)}`}>
+      {getStatusIcon(verification.status)}
+      {verification.status.toUpperCase()}
+      {verification.status === 'confirmed' && (
+        <span className="text-xs">({verification.confirmations} confirmations)</span>
+      )}
+    </div>
+  );
 };
 
 const DeliveryDetail: React.FC = () => {
@@ -100,6 +164,25 @@ const DeliveryDetail: React.FC = () => {
     verifiedBy: 'Sarah Johnson',
     trackingNumber: 'TRK-2024-001-ABC',
     complianceScore: 95,
+    blockchain: {
+    blockNumber: '18,742,391',
+    transactionHash: '0x7d4f2a8c9e3b5f1a6d8e2c4b7f9a3e5d8c1b6f4a9e2d7c3b8f5a1e6d9c2b4f7a',
+    gasUsed: '84,357',
+    confirmations: 24,
+    timestamp: '2024-01-15T11:05:00Z',
+    status: 'confirmed',
+    photoHashes: {
+      deliveryPhoto: 'QmX7zF9aB2cD3eF4gH5iJ6kL7mN8oP9qR0sT1uV2wX3yZ4',
+      packagingPhoto: 'QmA1bC2dE3fG4hI5jK6lM7nO8pQ9rS0tU1vW2xY3zA4bC5'
+    },
+    immutableRecord: {
+      weight: 15.5,
+      quantity: 10,
+      condition: 'good',
+      verifiedBy: 'Sarah Johnson',
+      timestamp: '2024-01-15T11:00:00Z'
+    }
+  },
     timeline: [
       {
         id: '1',
@@ -262,6 +345,90 @@ const DeliveryDetail: React.FC = () => {
             </div>
           </div>
         </motion.div>
+        {/* Blockchain Verification */}
+<div className="bg-white rounded-lg shadow-sm border border-gray-200">
+  <div className="p-6 border-b border-gray-200">
+    <h3 className="text-lg font-semibold flex items-center gap-2">
+      <Shield className="h-5 w-5" />
+      Blockchain Verification
+    </h3>
+  </div>
+  <div className="p-6 space-y-4">
+    <div className="flex items-center justify-between">
+      <span className="text-sm text-gray-600">Verification Status</span>
+      <BlockchainStatus verification={mockDelivery.blockchain} />
+    </div>
+    
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-gray-600">Block Number</span>
+          <span className="font-mono text-sm">{mockDelivery.blockchain.blockNumber}</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-gray-600">Gas Used</span>
+          <span className="font-mono text-sm">{mockDelivery.blockchain.gasUsed}</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-gray-600">Confirmations</span>
+          <span className="font-mono text-sm">{mockDelivery.blockchain.confirmations}</span>
+        </div>
+      </div>
+      
+      <div className="space-y-3">
+        <div className="space-y-2">
+          <span className="text-sm text-gray-600">Transaction Hash</span>
+          <div className="flex items-center gap-2">
+            <Hash className="w-4 h-4 text-gray-400" />
+            <span className="font-mono text-xs break-all">{mockDelivery.blockchain.transactionHash}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+      <h4 className="font-medium text-blue-900 mb-3 flex items-center gap-2">
+        <Database className="w-4 h-4" />
+        Photo Hash Storage
+      </h4>
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-blue-800">Delivery Photo</span>
+          <span className="font-mono text-xs text-blue-600">{mockDelivery.blockchain.photoHashes.deliveryPhoto}</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-blue-800">Packaging Photo</span>
+          <span className="font-mono text-xs text-blue-600">{mockDelivery.blockchain.photoHashes.packagingPhoto}</span>
+        </div>
+      </div>
+    </div>
+
+    <div className="mt-4 p-4 bg-green-50 rounded-lg border border-green-200">
+      <h4 className="font-medium text-green-900 mb-3 flex items-center gap-2">
+        <Link className="w-4 h-4" />
+        Immutable Record
+      </h4>
+      <div className="grid grid-cols-2 gap-4 text-sm">
+        <div>
+          <span className="text-green-700">Weight: </span>
+          <span className="font-mono">{mockDelivery.blockchain.immutableRecord.weight} kg</span>
+        </div>
+        <div>
+          <span className="text-green-700">Quantity: </span>
+          <span className="font-mono">{mockDelivery.blockchain.immutableRecord.quantity}</span>
+        </div>
+        <div>
+          <span className="text-green-700">Condition: </span>
+          <span className="font-mono">{mockDelivery.blockchain.immutableRecord.condition}</span>
+        </div>
+        <div>
+          <span className="text-green-700">Verified By: </span>
+          <span className="font-mono">{mockDelivery.blockchain.immutableRecord.verifiedBy}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
         {/* Tabs */}
         <div className="flex space-x-1 border-b border-gray-200 bg-white rounded-t-lg">

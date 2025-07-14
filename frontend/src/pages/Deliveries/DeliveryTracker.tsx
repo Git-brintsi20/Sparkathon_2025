@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Shield, Hash, CheckCircle2 } from 'lucide-react';
 import { 
   Truck, 
   MapPin, 
@@ -20,6 +21,17 @@ interface DeliveryStep {
   timestamp: string;
   status: 'completed' | 'current' | 'pending';
   location?: string;
+   blockchain?: BlockchainEvent;
+}
+interface BlockchainEvent {
+  id: string;
+  type: 'blockchain_commit' | 'photo_hash' | 'verification_complete';
+  blockNumber: string;
+  transactionHash: string;
+  timestamp: string;
+  gasUsed: string;
+  confirmations: number;
+  description: string;
 }
 
 interface DeliveryTrackerProps {
@@ -30,6 +42,57 @@ interface DeliveryTrackerProps {
   steps: DeliveryStep[];
   onRefresh?: () => void;
 }
+
+const blockchainSteps: DeliveryStep[] = [
+  {
+    id: 'blockchain-1',
+    title: 'Initial Blockchain Commit',
+    description: 'Delivery data committed to blockchain',
+    timestamp: '2024-01-15T10:35:00Z',
+    status: 'completed',
+    blockchain: {
+      id: 'bc-1',
+      type: 'blockchain_commit',
+      blockNumber: '18,742,385',
+      transactionHash: '0x1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b',
+      timestamp: '2024-01-15T10:35:00Z',
+      gasUsed: '42,150',
+      confirmations: 28,
+      description: 'Initial delivery record'
+    }
+  },
+  {
+    id: 'blockchain-2',
+    title: 'Photo Hashes Stored',
+    description: 'Photo hashes securely stored on blockchain',
+    timestamp: '2024-01-15T10:55:00Z',
+    status: 'completed',
+    blockchain: {
+      id: 'bc-2',
+      type: 'photo_hash',
+      blockNumber: '18,742,389',
+      transactionHash: '0x2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c',
+      timestamp: '2024-01-15T10:55:00Z',
+      gasUsed: '28,750',
+      confirmations: 26,
+      description: 'Photo integrity verified'
+    }
+  }
+];
+const BlockchainBadge = ({ event }: { event: BlockchainEvent }) => (
+  <div className="mt-2 p-2 bg-blue-50 rounded-md border border-blue-200">
+    <div className="flex items-center gap-2 mb-1">
+      <Shield className="w-3 h-3 text-blue-600" />
+      <span className="text-xs font-medium text-blue-800">Blockchain Verified</span>
+      <CheckCircle2 className="w-3 h-3 text-green-600" />
+    </div>
+    <div className="text-xs text-blue-600 space-y-1">
+      <div>Block: {event.blockNumber}</div>
+      <div>Gas: {event.gasUsed}</div>
+      <div>Confirmations: {event.confirmations}</div>
+    </div>
+  </div>
+);
 
 const DeliveryTracker: React.FC<DeliveryTrackerProps> = ({
   deliveryId,
@@ -162,6 +225,7 @@ const DeliveryTracker: React.FC<DeliveryTrackerProps> = ({
 
         {/* Timeline */}
         <div className="space-y-4">
+  
           <h3 className="font-medium text-gray-900 mb-4">Delivery Timeline</h3>
           {steps.map((step, index) => (
             <div key={step.id} className="flex gap-4">
@@ -184,6 +248,9 @@ const DeliveryTracker: React.FC<DeliveryTrackerProps> = ({
                   </Badge>
                 </div>
                 <p className="text-sm text-gray-600 mb-1">{step.description}</p>
+                       {step.blockchain && (
+        <BlockchainBadge event={step.blockchain} />
+      )}
                 <div className="flex items-center gap-4 text-xs text-gray-500">
                   <span className="flex items-center gap-1">
                     <Clock className="w-3 h-3" />
