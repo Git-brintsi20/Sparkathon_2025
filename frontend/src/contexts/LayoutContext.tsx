@@ -7,7 +7,7 @@ interface BreadcrumbItem {
   isActive?: boolean;
 }
 
-interface LayoutContextType {
+export interface LayoutContextType {  // Add 'export' here
   pageTitle?: string;
   pageDescription?: string;
   breadcrumbs?: BreadcrumbItem[];

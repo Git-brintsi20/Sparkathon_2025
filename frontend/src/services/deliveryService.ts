@@ -13,17 +13,95 @@ import type { ApiResponse, PaginationParams } from '../types/common';
 
 class DeliveryService {
   private readonly endpoint = '/deliveries';
+  private mockDeliveries: Delivery[] = [
+    {
+      id: '1',
+      orderId: 'PO-2024-001',
+      vendorId: 'vendor-1',
+      vendorName: 'ABC Suppliers Ltd',
+      deliveryDate: '2024-01-15T10:30:00Z',
+      expectedDate: '2024-01-15T10:00:00Z',
+      status: 'verified',
+      items: [
+        {
+          id: 'item-1',
+          name: 'Office Supplies',
+          quantity: 10,
+          expectedQuantity: 10,
+          unit: 'pieces',
+          price: 25.50,
+          verified: true,
+          condition: 'good'
+        }
+      ],
+      totalAmount: 255.00,
+      verificationStatus: 'verified',
+      photos: [],
+      notes: 'All items in perfect condition',
+      createdAt: '2024-01-15T10:30:00Z',
+      updatedAt: '2024-01-15T11:00:00Z'
+    },
+    {
+      id: '2',
+      orderId: 'PO-2024-002',
+      vendorId: 'vendor-2',
+      vendorName: 'XYZ Manufacturing',
+      deliveryDate: '2024-01-15T14:20:00Z',
+      expectedDate: '2024-01-15T14:00:00Z',
+      status: 'pending',
+      items: [
+        {
+          id: 'item-2',
+          name: 'Raw Materials',
+          quantity: 5,
+          expectedQuantity: 5,
+          unit: 'boxes',
+          price: 45.00,
+          verified: false,
+          condition: 'good'
+        }
+      ],
+      totalAmount: 225.00,
+      verificationStatus: 'pending',
+      photos: [],
+      notes: 'Awaiting verification',
+      createdAt: '2024-01-15T14:20:00Z',
+      updatedAt: '2024-01-15T14:20:00Z'
+    }
+  ];
 
   // Get all deliveries with pagination and filters
-  async getDeliveries(
+async getDeliveries(
     params: PaginationParams & DeliveryFilters = { page: 1, limit: 10 }
   ): Promise<ApiResponse<DeliveryApiResponse>> {
-    return apiService.get<DeliveryApiResponse>(this.endpoint, params);
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 300));
+    
+    return {
+      success: true,
+      data: {
+        deliveries: this.mockDeliveries,
+        page: 1,
+        limit: 10,
+        total: this.mockDeliveries.length,
+        totalPages: 1
+      },
+      message: 'Success'
+    };
   }
 
+
   // Get delivery by ID
-  async getDeliveryById(id: string): Promise<ApiResponse<Delivery>> {
-    return apiService.get<Delivery>(`${this.endpoint}/${id}`);
+   async getDeliveryById(id: string): Promise<ApiResponse<Delivery>> {
+    await new Promise(resolve => setTimeout(resolve, 200));
+    
+    const delivery = this.mockDeliveries.find(d => d.id === id);
+    
+    return {
+      success: !!delivery,
+      data: delivery,
+      message: delivery ? 'Success' : 'Delivery not found'
+    };
   }
 
   // Create new delivery

@@ -8,12 +8,18 @@ export const ROUTES = {
   
   // Protected routes
   DASHBOARD: '/dashboard',
-  VENDORS: '/vendors',
+ VENDORS: '/vendors',
+  VENDOR_ACTIVE: '/vendors/active',
+  VENDOR_PENDING: '/vendors/pending',
+  VENDOR_SUSPENDED: '/vendors/suspended',
   VENDOR_DETAIL: '/vendors/:id',
   VENDOR_CREATE: '/vendors/create',
   VENDOR_EDIT: '/vendors/:id/edit',
   
   DELIVERIES: '/deliveries',
+  DELIVERY_ACTIVE: '/deliveries/active',
+  DELIVERY_COMPLETED: '/deliveries/completed',
+  DELIVERY_VERIFICATION: '/deliveries/verification-queue',
   DELIVERY_DETAIL: '/deliveries/:id',
   DELIVERY_CREATE: '/deliveries/create',
   DELIVERY_EDIT: '/deliveries/:id/edit',
@@ -143,17 +149,24 @@ export const ROUTE_METADATA: Record<string, RouteMetadata> = {
     breadcrumb: 'Dashboard',
     exact: true,
   },
-  [ROUTES.VENDORS]: {
-    path: ROUTES.VENDORS,
-    title: 'Vendors',
-    description: 'Manage vendor information and compliance',
-    icon: 'Building2',
-    requiresAuth: true,
-    sidebar: true,
-    breadcrumb: 'Vendors',
-    exact: true,
-    children: [ROUTES.VENDOR_DETAIL, ROUTES.VENDOR_CREATE, ROUTES.VENDOR_EDIT],
-  },
+[ROUTES.VENDORS]: {
+  path: ROUTES.VENDORS,
+  title: 'Vendors',
+  description: 'Manage vendor information and compliance',
+  icon: 'Building2',
+  requiresAuth: true,
+  sidebar: true,
+  breadcrumb: 'Vendors',
+  exact: true,
+  children: [
+    ROUTES.VENDOR_ACTIVE,
+    ROUTES.VENDOR_PENDING,
+    ROUTES.VENDOR_SUSPENDED,
+    ROUTES.VENDOR_DETAIL,
+    ROUTES.VENDOR_CREATE,
+    ROUTES.VENDOR_EDIT
+  ],
+},
   [ROUTES.VENDOR_DETAIL]: {
     path: ROUTES.VENDOR_DETAIL,
     title: 'Vendor Details',
@@ -186,17 +199,57 @@ export const ROUTE_METADATA: Record<string, RouteMetadata> = {
     allowedRoles: [USER_ROLES.ADMIN, USER_ROLES.MANAGER],
     exact: true,
   },
-  [ROUTES.DELIVERIES]: {
-    path: ROUTES.DELIVERIES,
-    title: 'Deliveries',
-    description: 'Track and verify deliveries',
-    icon: 'Package',
-    requiresAuth: true,
-    sidebar: true,
-    breadcrumb: 'Deliveries',
-    exact: true,
-    children: [ROUTES.DELIVERY_DETAIL, ROUTES.DELIVERY_CREATE, ROUTES.DELIVERY_EDIT],
-  },
+
+  [ROUTES.VENDOR_ACTIVE]: {
+  path: ROUTES.VENDOR_ACTIVE,
+  title: 'Active Vendors',
+  description: 'View active vendors',
+  requiresAuth: true,
+  sidebar: false,
+  breadcrumb: 'Active Vendors',
+  parent: ROUTES.VENDORS,
+  exact: true,
+},
+[ROUTES.VENDOR_PENDING]: {
+  path: ROUTES.VENDOR_PENDING,
+  title: 'Pending Vendors',
+  description: 'Vendors awaiting approval',
+  requiresAuth: true,
+  sidebar: false,
+  breadcrumb: 'Pending Vendors',
+  parent: ROUTES.VENDORS,
+  allowedRoles: [USER_ROLES.ADMIN, USER_ROLES.MANAGER],
+  exact: true,
+},
+[ROUTES.VENDOR_SUSPENDED]: {
+  path: ROUTES.VENDOR_SUSPENDED,
+  title: 'Suspended Vendors',
+  description: 'Suspended or blocked vendors',
+  requiresAuth: true,
+  sidebar: false,
+  breadcrumb: 'Suspended Vendors',
+  parent: ROUTES.VENDORS,
+  allowedRoles: [USER_ROLES.ADMIN, USER_ROLES.MANAGER],
+  exact: true,
+},
+[ROUTES.DELIVERIES]: {
+  path: ROUTES.DELIVERIES,
+  title: 'Deliveries',
+  description: 'Track and verify deliveries',
+  icon: 'Package',
+  requiresAuth: true,
+  sidebar: true,
+  breadcrumb: 'Deliveries',
+  exact: true,
+  children: [
+    ROUTES.DELIVERY_ACTIVE,
+    ROUTES.DELIVERY_COMPLETED,
+    ROUTES.DELIVERY_VERIFICATION,
+    ROUTES.DELIVERY_DETAIL,
+    ROUTES.DELIVERY_CREATE,
+    ROUTES.DELIVERY_EDIT
+  ],
+},
   [ROUTES.DELIVERY_DETAIL]: {
     path: ROUTES.DELIVERY_DETAIL,
     title: 'Delivery Details',
@@ -228,6 +281,38 @@ export const ROUTE_METADATA: Record<string, RouteMetadata> = {
     allowedRoles: [USER_ROLES.ADMIN, USER_ROLES.MANAGER],
     exact: true,
   },
+
+  [ROUTES.DELIVERY_ACTIVE]: {
+    path: ROUTES.DELIVERY_ACTIVE,
+    title: 'Active Deliveries',
+    description: 'View currently active deliveries',
+    requiresAuth: true,
+    sidebar: false,
+    breadcrumb: 'Active Deliveries',
+    parent: ROUTES.DELIVERIES,
+    exact: true,
+  },
+  [ROUTES.DELIVERY_COMPLETED]: {
+    path: ROUTES.DELIVERY_COMPLETED,
+    title: 'Completed Deliveries',
+    description: 'View completed deliveries',
+    requiresAuth: true,
+    sidebar: false,
+    breadcrumb: 'Completed Deliveries',
+    parent: ROUTES.DELIVERIES,
+    exact: true,
+  },
+  [ROUTES.DELIVERY_VERIFICATION]: {
+    path: ROUTES.DELIVERY_VERIFICATION,
+    title: 'Verification Queue',
+    description: 'Deliveries pending verification',
+    requiresAuth: true,
+    sidebar: false,
+    breadcrumb: 'Verification Queue',
+    parent: ROUTES.DELIVERIES,
+    exact: true,
+  },
+
   [ROUTES.ANALYTICS]: {
     path: ROUTES.ANALYTICS,
     title: 'Analytics',
@@ -389,14 +474,14 @@ export const getBreadcrumbPath = (path: string): RouteMetadata[] => {
   if (!metadata) return [];
   
   const breadcrumbs: RouteMetadata[] = [];
-  let current = metadata;
+  let current: RouteMetadata | undefined = metadata;
   
   while (current) {
     breadcrumbs.unshift(current);
     if (current.parent) {
       current = getRouteMetadata(current.parent);
     } else {
-      break;
+      current = undefined; // Explicitly set to undefined to exit loop
     }
   }
   

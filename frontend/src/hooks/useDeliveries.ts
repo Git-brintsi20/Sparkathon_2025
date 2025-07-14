@@ -65,15 +65,72 @@ interface UseDeliveriesActions {
 }
 
 export const useDeliveries = (): UseDeliveriesState & UseDeliveriesActions => {
+  
+    const mockDeliveries: Delivery[] = [
+    {
+      id: '1',
+      orderId: 'PO-2024-001',
+      vendorId: 'vendor-1',
+      vendorName: 'ABC Suppliers Ltd',
+      deliveryDate: '2024-01-15T10:30:00Z',
+      expectedDate: '2024-01-15T10:00:00Z',
+      status: 'verified',
+      items: [
+        {
+          id: 'item-1',
+          name: 'Office Supplies',
+          quantity: 10,
+          expectedQuantity: 10,
+          unit: 'pieces',
+          price: 25.50,
+          verified: true,
+          condition: 'good'
+        }
+      ],
+      totalAmount: 255.00,
+      verificationStatus: 'verified',
+      photos: [],
+      notes: 'All items in perfect condition',
+      createdAt: '2024-01-15T10:30:00Z',
+      updatedAt: '2024-01-15T11:00:00Z'
+    },
+    {
+      id: '2',
+      orderId: 'PO-2024-002',
+      vendorId: 'vendor-2',
+      vendorName: 'XYZ Manufacturing',
+      deliveryDate: '2024-01-15T14:20:00Z',
+      expectedDate: '2024-01-15T14:00:00Z',
+      status: 'pending',
+      items: [
+        {
+          id: 'item-2',
+          name: 'Raw Materials',
+          quantity: 5,
+          expectedQuantity: 5,
+          unit: 'boxes',
+          price: 45.00,
+          verified: false,
+          condition: 'good'
+        }
+      ],
+      totalAmount: 225.00,
+      verificationStatus: 'pending',
+      photos: [],
+      notes: 'Awaiting verification',
+      createdAt: '2024-01-15T14:20:00Z',
+      updatedAt: '2024-01-15T14:20:00Z'
+    }
+  ];
   const [state, setState] = useState<UseDeliveriesState>({
-    deliveries: [],
-    loading: false,
+    deliveries: mockDeliveries, // Use mock data instead of empty array
+    loading: false, // Set to false for immediate display
     error: null,
     pagination: {
       page: 1,
       limit: 10,
-      total: 0,
-      totalPages: 0,
+      total: mockDeliveries.length,
+      totalPages: 1,
     },
     filters: {},
     metrics: null,
@@ -84,47 +141,18 @@ export const useDeliveries = (): UseDeliveriesState & UseDeliveriesActions => {
 
   // Fetch deliveries with pagination and filters
   const fetchDeliveries = useCallback(async (params?: PaginationParams & DeliveryFilters) => {
-    setState(prev => ({ ...prev, loading: true, error: null }));
+    console.log('Fetching mock deliveries...');
+    setState(prev => ({ ...prev, loading: true }));
     
-    try {
-      const finalParams = {
-        ...state.pagination,
-        ...state.filters,
-        ...params,
-      };
-
-      const response = await deliveryService.getDeliveries(finalParams);
-      
-      if (response.success && response.data) {
-        const responseData = response.data;
-        
-        // Handle DeliveryApiResponse structure
-        setState(prev => ({
-          ...prev,
-          deliveries: responseData.deliveries || [],
-          pagination: {
-            page: responseData.page || 1,
-            limit: responseData.limit || 10,
-            total: responseData.total || 0,
-            totalPages: responseData.totalPages || 0,
-          },
-          loading: false,
-        }));
-      } else {
-        setState(prev => ({
-          ...prev,
-          error: response.message || 'Failed to fetch deliveries',
-          loading: false,
-        }));
-      }
-    } catch (error) {
-      setState(prev => ({
-        ...prev,
-        error: error instanceof Error ? error.message : 'An unexpected error occurred',
-        loading: false,
+    // Simulate API delay
+    setTimeout(() => {
+      setState(prev => ({ 
+        ...prev, 
+        deliveries: mockDeliveries,
+        loading: false 
       }));
-    }
-  }, [state.pagination, state.filters]);
+    }, 500);
+  }, []);
 
   // Fetch single delivery by ID
   const fetchDeliveryById = useCallback(async (id: string): Promise<Delivery | null> => {
