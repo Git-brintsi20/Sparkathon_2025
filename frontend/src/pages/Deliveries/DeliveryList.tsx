@@ -161,7 +161,7 @@ const BlockchainStatusBadge = ({ blockchainStatus }: { blockchainStatus?: Blockc
     return (
       <div className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border bg-gray-100 text-gray-600 border-gray-300">
         <Shield className="h-3 w-3" />
-        NO BLOCKCHAIN
+       BLOCKCHAIN
       </div>
     );
   }
