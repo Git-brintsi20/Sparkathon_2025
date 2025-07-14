@@ -5,29 +5,69 @@ import DeliveryForm from '../../components/forms/DeliveryForm';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { ROUTES } from '../../config/routes';
 import { useDeliveries } from '../../hooks/useDeliveries';
-// FIX 1: Import the Layout context hook and the specific types needed.
 import { useLayout } from '../../contexts/LayoutContext';
 import type { Delivery, DeliveryFormData } from '../../types/delivery';
 
 const EditDelivery: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
-  // FIX 2: Use the correct function name from the hook.
   const { fetchDeliveryById, updateDelivery } = useDeliveries();
   const { setLayoutData } = useLayout();
 
-  // FIX 3: Use specific types instead of 'any' for better safety.
   const [delivery, setDelivery] = useState<Delivery | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Effect to fetch the delivery data when the component mounts or ID changes.
+  // Function to convert Delivery to DeliveryFormData
+  const convertDeliveryToFormData = (delivery: Delivery): Partial<DeliveryFormData> => {
+    // Map the different status values
+    const mapStatus = (status: Delivery['status']): DeliveryFormData['status'] => {
+      switch (status) {
+        case 'verified':
+          return 'delivered'; // Map verified to delivered since form doesn't have verified
+        case 'rejected':
+          return 'cancelled'; // Map rejected to cancelled
+        case 'pending':
+          return 'pending';
+        case 'in_transit':
+          return 'in_transit';
+        case 'delivered':
+          return 'delivered';
+        default:
+          return 'pending';
+      }
+    };
+
+    // Extract the first item's data for form fields (if available)
+    const firstItem = delivery.items?.[0];
+    const totalQuantity = delivery.items?.reduce((sum, item) => sum + item.quantity, 0) || 0;
+    const totalWeight = delivery.items?.reduce((sum, item) => sum + (item.price * item.quantity), 0) || 0;
+
+    return {
+      // Try to extract barcode from notes or generate a placeholder
+      barcode: delivery.notes?.match(/barcode:\s*(\w+)/i)?.[1] || `BC${delivery.id.substring(0, 8)}`,
+      purchaseOrderId: delivery.orderId,
+      vendorId: delivery.vendorId,
+      weight: totalWeight.toString(), // Convert to string as form expects
+      quantity: totalQuantity.toString(), // Convert to string as form expects
+      condition: firstItem?.condition || 'good',
+      notes: delivery.notes || '',
+      status: mapStatus(delivery.status),
+      orderId: delivery.orderId,
+      expectedDate: delivery.expectedDate,
+      actualDate: delivery.deliveryDate,
+      items: delivery.items || [],
+      // Note: deliveryPhoto and packagingPhoto are not included as they're File objects
+      // and we don't have access to the original files from the API response
+    };
+  };
+
+  // Effect to fetch the delivery data when the component mounts or ID changes
   useEffect(() => {
     const fetchDelivery = async () => {
       if (!id) return;
       
       try {
-        // Use the correctly named function.
         const deliveryData = await fetchDeliveryById(id);
         setDelivery(deliveryData);
       } catch (error) {
@@ -42,7 +82,7 @@ const EditDelivery: React.FC = () => {
     fetchDelivery();
   }, [id, fetchDeliveryById, navigate]);
 
-  // Effect to update the main layout's title and breadcrumbs.
+  // Effect to update the main layout's title and breadcrumbs
   useEffect(() => {
     if (delivery) {
       setLayoutData({
@@ -56,11 +96,10 @@ const EditDelivery: React.FC = () => {
       });
     }
 
-    // Cleanup function to reset layout data when the component unmounts.
+    // Cleanup function to reset layout data when the component unmounts
     return () => setLayoutData({});
   }, [delivery, setLayoutData]);
 
-  // FIX 4: Use the specific 'DeliveryFormData' type for the form submission.
   const handleSubmit = async (formData: DeliveryFormData) => {
     if (!id) return;
 
@@ -90,8 +129,6 @@ const EditDelivery: React.FC = () => {
   }
 
   if (!delivery) {
-    // This view is shown if the fetch fails or returns null.
-    // The main layout will still be present because this is rendered via <Outlet />.
     return (
       <div className="text-center py-12">
         <h1 className="text-2xl font-bold mb-4">Delivery Not Found</h1>
@@ -109,14 +146,12 @@ const EditDelivery: React.FC = () => {
   }
 
   return (
-    // The page only returns its own content. The main <Layout> is handled elsewhere.
     <div className="max-w-3xl mx-auto">
       <div className="bg-card rounded-lg border p-6 sm:p-8">
         <DeliveryForm 
           onSubmit={handleSubmit}
           onCancel={handleCancel}
-          initialData={delivery}
-          // FIX 5: Renamed prop from 'isLoading' to 'loading' to match the form component's props.
+          initialData={convertDeliveryToFormData(delivery)}
           loading={isSubmitting}
           mode="edit"
         />

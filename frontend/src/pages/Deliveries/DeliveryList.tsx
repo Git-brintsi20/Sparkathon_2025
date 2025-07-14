@@ -1,7 +1,7 @@
-import React, { useState, useMemo, useEffect } from 'react'; // Added useEffect
+import React, { useState, useMemo, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Package, Search, Filter, Plus, Eye, Edit, Trash2, CheckCircle, Clock, AlertTriangle } from 'lucide-react';
-import { useNavigate } from 'react-router-dom'; // Import useNavigate
+import { useNavigate } from 'react-router-dom';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,101 +11,177 @@ import { DataTable } from '@/components/common/DataTable';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { useDeliveries } from '@/hooks/useDeliveries';
 import { cn } from '@/components/lib/utils';
-// REMOVED: import { Layout } from '@/components/layout/Layout';
-// ADDED: Import useLayout hook
 import { useLayout } from '@/contexts/LayoutContext';
-import { ROUTES } from '@/config/routes'; // Import ROUTES
+import { ROUTES } from '@/config/routes';
+import type { Delivery } from '@/types/delivery';
 
-interface Delivery {
-  id: string;
-  barcode: string;
-  poNumber: string;
-  vendorName: string;
-  status: 'pending' | 'verified' | 'rejected' | 'in_transit';
-  weight: number;
-  quantity: number;
-  condition: string;
-  createdAt: string;
-  verifiedAt?: string;
-  notes?: string;
+// Extended interface for the component to handle both type systems
+interface DeliveryListItem extends Delivery {
+  barcode?: string;
+  poNumber?: string;
+  condition?: string;
+  weight?: number;
+  quantity?: number;
 }
 
 const statusColors = {
   pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
   verified: 'bg-green-100 text-green-800 border-green-200',
   rejected: 'bg-red-100 text-red-800 border-red-200',
-  in_transit: 'bg-blue-100 text-blue-800 border-blue-200'
+  in_transit: 'bg-blue-100 text-blue-800 border-blue-200',
+  delivered: 'bg-blue-100 text-blue-800 border-blue-200'
 };
 
 const statusIcons = {
   pending: Clock,
   verified: CheckCircle,
   rejected: AlertTriangle,
-  in_transit: Package
+  in_transit: Package,
+  delivered: Package
 };
 
 const DeliveryList: React.FC = () => {
-  const navigate = useNavigate(); // Initialize useNavigate
+  const navigate = useNavigate();
   const { deliveries, loading, error, refreshDeliveries } = useDeliveries();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [conditionFilter, setConditionFilter] = useState<string>('all');
-
-  // ADDED: Call the useLayout hook
   const { setLayoutData } = useLayout();
 
-  // Mock data for demonstration
-  const mockDeliveries: Delivery[] = [
+  // Mock data for demonstration - updated to match the actual Delivery type
+  const mockDeliveries: DeliveryListItem[] = [
     {
       id: '1',
+      orderId: 'PO-2024-001',
+      vendorId: 'vendor-1',
+      vendorName: 'ABC Suppliers Ltd',
+      deliveryDate: '2024-01-15T10:30:00Z',
+      expectedDate: '2024-01-15T10:00:00Z',
+      status: 'verified',
+      items: [
+        {
+          id: 'item-1',
+          name: 'Sample Item',
+          quantity: 10,
+          expectedQuantity: 10,
+          unit: 'pieces',
+          price: 25.50,
+          verified: true,
+          condition: 'good'
+        }
+      ],
+      totalAmount: 255.00,
+      verificationStatus: 'verified',
+      photos: [],
+      notes: 'All items in perfect condition',
+      createdAt: '2024-01-15T10:30:00Z',
+      updatedAt: '2024-01-15T11:00:00Z',
+      // Additional properties for display
       barcode: 'BC123456789',
       poNumber: 'PO-2024-001',
-      vendorName: 'ABC Suppliers Ltd',
-      status: 'verified',
-      weight: 15.5,
-      quantity: 10,
       condition: 'good',
-      createdAt: '2024-01-15T10:30:00Z',
-      verifiedAt: '2024-01-15T11:00:00Z',
-      notes: 'All items in perfect condition'
+      weight: 15.5,
+      quantity: 10
     },
     {
       id: '2',
+      orderId: 'PO-2024-002',
+      vendorId: 'vendor-2',
+      vendorName: 'XYZ Manufacturing',
+      deliveryDate: '2024-01-15T14:20:00Z',
+      expectedDate: '2024-01-15T14:00:00Z',
+      status: 'pending',
+      items: [
+        {
+          id: 'item-2',
+          name: 'Another Item',
+          quantity: 5,
+          expectedQuantity: 5,
+          unit: 'boxes',
+          price: 45.00,
+          verified: false,
+          condition: 'good'
+        }
+      ],
+      totalAmount: 225.00,
+      verificationStatus: 'pending',
+      photos: [],
+      notes: '',
+      createdAt: '2024-01-15T14:20:00Z',
+      updatedAt: '2024-01-15T14:20:00Z',
       barcode: 'BC987654321',
       poNumber: 'PO-2024-002',
-      vendorName: 'XYZ Manufacturing',
-      status: 'pending',
-      weight: 8.2,
-      quantity: 5,
       condition: 'excellent',
-      createdAt: '2024-01-15T14:20:00Z'
+      weight: 8.2,
+      quantity: 5
     },
     {
       id: '3',
+      orderId: 'PO-2024-003',
+      vendorId: 'vendor-3',
+      vendorName: 'Global Trade Corp',
+      deliveryDate: '2024-01-15T09:15:00Z',
+      expectedDate: '2024-01-15T09:00:00Z',
+      status: 'in_transit',
+      items: [
+        {
+          id: 'item-3',
+          name: 'Heavy Equipment',
+          quantity: 15,
+          expectedQuantity: 15,
+          unit: 'units',
+          price: 150.00,
+          verified: false,
+          condition: 'good'
+        }
+      ],
+      totalAmount: 2250.00,
+      verificationStatus: 'pending',
+      photos: [],
+      notes: '',
+      createdAt: '2024-01-15T09:15:00Z',
+      updatedAt: '2024-01-15T09:15:00Z',
       barcode: 'BC456789123',
       poNumber: 'PO-2024-003',
-      vendorName: 'Global Trade Corp',
-      status: 'in_transit',
-      weight: 22.8,
-      quantity: 15,
       condition: 'good',
-      createdAt: '2024-01-15T09:15:00Z'
+      weight: 22.8,
+      quantity: 15
     },
     {
       id: '4',
+      orderId: 'PO-2024-004',
+      vendorId: 'vendor-4',
+      vendorName: 'Tech Solutions Inc',
+      deliveryDate: '2024-01-15T16:45:00Z',
+      expectedDate: '2024-01-15T16:30:00Z',
+      status: 'rejected',
+      items: [
+        {
+          id: 'item-4',
+          name: 'Damaged Goods',
+          quantity: 2,
+          expectedQuantity: 2,
+          unit: 'pieces',
+          price: 75.00,
+          verified: true,
+          condition: 'damaged'
+        }
+      ],
+      totalAmount: 150.00,
+      verificationStatus: 'failed',
+      photos: [],
+      notes: 'Packaging damaged during transport',
+      createdAt: '2024-01-15T16:45:00Z',
+      updatedAt: '2024-01-15T16:45:00Z',
       barcode: 'BC789123456',
       poNumber: 'PO-2024-004',
-      vendorName: 'Tech Solutions Inc',
-      status: 'rejected',
-      weight: 3.1,
-      quantity: 2,
       condition: 'damaged',
-      createdAt: '2024-01-15T16:45:00Z',
-      notes: 'Packaging damaged during transport'
+      weight: 3.1,
+      quantity: 2
     }
   ];
 
-  const displayDeliveries = deliveries?.length ? deliveries : mockDeliveries;
+  const displayDeliveries = deliveries?.length ? deliveries as DeliveryListItem[] : mockDeliveries;
 
   // Filter deliveries
   const filteredDeliveries = useMemo(() => {
@@ -114,8 +190,8 @@ const DeliveryList: React.FC = () => {
     // Search filter
     if (searchTerm) {
       filtered = filtered.filter(delivery =>
-        delivery.barcode.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        delivery.poNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (delivery.barcode || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (delivery.poNumber || delivery.orderId || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
         delivery.vendorName.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
@@ -133,16 +209,15 @@ const DeliveryList: React.FC = () => {
     return filtered;
   }, [displayDeliveries, searchTerm, statusFilter, conditionFilter]);
 
-  const handleRowClick = (delivery: Delivery) => {
-    // Navigate to delivery detail page
-    navigate(`${ROUTES.DELIVERIES}/${delivery.id}`); // Use navigate for routing
+  const handleRowClick = (delivery: DeliveryListItem) => {
+    navigate(`${ROUTES.DELIVERIES}/${delivery.id}`);
   };
 
-  const handleEdit = (delivery: Delivery) => {
-    navigate(`${ROUTES.DELIVERIES}/edit/${delivery.id}`); // Use navigate for routing
+  const handleEdit = (delivery: DeliveryListItem) => {
+    navigate(`${ROUTES.DELIVERIES}/edit/${delivery.id}`);
   };
 
-  const handleDelete = (delivery: Delivery) => {
+  const handleDelete = (delivery: DeliveryListItem) => {
     console.log('Delete delivery:', delivery.id);
     // In a real app, you'd call a delete function from useDeliveries hook
   };
@@ -162,58 +237,64 @@ const DeliveryList: React.FC = () => {
 
   const columns = [
     {
-      key: 'barcode' as keyof Delivery,
+      key: 'barcode' as keyof DeliveryListItem,
       label: 'Barcode',
       sortable: true,
-      render: (value: string) => (
-        <div className="font-mono text-sm">{value}</div>
+      render: (value: string | undefined) => (
+        <div className="font-mono text-sm">{value || 'N/A'}</div>
       )
     },
     {
-      key: 'poNumber' as keyof Delivery,
+      key: 'poNumber' as keyof DeliveryListItem,
       label: 'PO Number',
       sortable: true,
-      render: (value: string) => (
-        <div className="font-medium">{value}</div>
+      render: (value: string | undefined, row: DeliveryListItem) => (
+        <div className="font-medium">{value || row.orderId || 'N/A'}</div>
       )
     },
     {
-      key: 'vendorName' as keyof Delivery,
+      key: 'vendorName' as keyof DeliveryListItem,
       label: 'Vendor',
       sortable: true
     },
     {
-      key: 'status' as keyof Delivery,
+      key: 'status' as keyof DeliveryListItem,
       label: 'Status',
       sortable: true,
       render: (value: string) => <StatusBadge status={value} />
     },
     {
-      key: 'weight' as keyof Delivery,
+      key: 'weight' as keyof DeliveryListItem,
       label: 'Weight (kg)',
       sortable: true,
-      render: (value: number) => (
-        <div className="text-right font-mono">{value.toFixed(1)}</div>
+      render: (value: number | undefined) => (
+        <div className="text-right font-mono">
+          {value ? value.toFixed(1) : 'N/A'}
+        </div>
       )
     },
     {
-      key: 'quantity' as keyof Delivery,
+      key: 'quantity' as keyof DeliveryListItem,
       label: 'Quantity',
       sortable: true,
-      render: (value: number) => (
-        <div className="text-right font-mono">{value}</div>
+      render: (value: number | undefined, row: DeliveryListItem) => (
+        <div className="text-right font-mono">
+          {value || row.items?.reduce((sum, item) => sum + item.quantity, 0) || 'N/A'}
+        </div>
       )
     },
     {
-      key: 'condition' as keyof Delivery,
+      key: 'condition' as keyof DeliveryListItem,
       label: 'Condition',
       sortable: true,
-      render: (value: string) => (
-        <div className="capitalize">{value}</div>
+      render: (value: string | undefined, row: DeliveryListItem) => (
+        <div className="capitalize">
+          {value || row.items?.[0]?.condition || 'N/A'}
+        </div>
       )
     },
     {
-      key: 'createdAt' as keyof Delivery,
+      key: 'createdAt' as keyof DeliveryListItem,
       label: 'Created',
       sortable: true,
       render: (value: string) => (
@@ -224,7 +305,7 @@ const DeliveryList: React.FC = () => {
     }
   ];
 
-  const getActions = (delivery: Delivery) => (
+  const getActions = (delivery: DeliveryListItem) => (
     <div className="flex items-center gap-1">
       <Button
         variant="ghost"
@@ -275,14 +356,13 @@ const DeliveryList: React.FC = () => {
       >
         Refresh
       </Button>
-      <Button onClick={() => navigate(ROUTES.CREATE_DELIVERY)}> {/* Use navigate here */}
+      <Button onClick={() => navigate(`${ROUTES.DELIVERIES}/create`)}>
         <Plus className="h-4 w-4 mr-2" />
         New Delivery
       </Button>
     </div>
   );
 
-  // ADDED: useEffect hook to set and clear layout data
   useEffect(() => {
     setLayoutData({
       pageTitle: "Deliveries",
@@ -291,13 +371,11 @@ const DeliveryList: React.FC = () => {
       headerActions: headerActions
     });
 
-    // Return a cleanup function
     return () => setLayoutData({});
-  }, [setLayoutData, refreshDeliveries, loading, navigate]); // Added navigate to dependencies for headerActions
+  }, [setLayoutData, refreshDeliveries, loading, navigate]);
 
   if (error) {
     return (
-      // REMOVED <Layout> wrapper
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <AlertTriangle className="h-12 w-12 mx-auto text-destructive mb-4" />
@@ -312,7 +390,6 @@ const DeliveryList: React.FC = () => {
   }
 
   return (
-    // REMOVED <Layout> wrapper
     <div className="p-6 space-y-6">
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -423,6 +500,7 @@ const DeliveryList: React.FC = () => {
                   <SelectItem value="verified">Verified</SelectItem>
                   <SelectItem value="rejected">Rejected</SelectItem>
                   <SelectItem value="in_transit">In Transit</SelectItem>
+                  <SelectItem value="delivered">Delivered</SelectItem>
                 </SelectContent>
               </Select>
 
