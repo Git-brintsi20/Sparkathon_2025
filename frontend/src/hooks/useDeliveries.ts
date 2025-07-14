@@ -67,61 +67,122 @@ interface UseDeliveriesActions {
 export const useDeliveries = (): UseDeliveriesState & UseDeliveriesActions => {
   
     const mockDeliveries: Delivery[] = [
-    {
-      id: '1',
-      orderId: 'PO-2024-001',
-      vendorId: 'vendor-1',
-      vendorName: 'ABC Suppliers Ltd',
-      deliveryDate: '2024-01-15T10:30:00Z',
-      expectedDate: '2024-01-15T10:00:00Z',
-      status: 'verified',
-      items: [
-        {
-          id: 'item-1',
-          name: 'Office Supplies',
-          quantity: 10,
-          expectedQuantity: 10,
-          unit: 'pieces',
-          price: 25.50,
-          verified: true,
-          condition: 'good'
-        }
-      ],
-      totalAmount: 255.00,
-      verificationStatus: 'verified',
-      photos: [],
-      notes: 'All items in perfect condition',
-      createdAt: '2024-01-15T10:30:00Z',
-      updatedAt: '2024-01-15T11:00:00Z'
-    },
-    {
-      id: '2',
-      orderId: 'PO-2024-002',
-      vendorId: 'vendor-2',
-      vendorName: 'XYZ Manufacturing',
-      deliveryDate: '2024-01-15T14:20:00Z',
-      expectedDate: '2024-01-15T14:00:00Z',
-      status: 'pending',
-      items: [
-        {
-          id: 'item-2',
-          name: 'Raw Materials',
-          quantity: 5,
-          expectedQuantity: 5,
-          unit: 'boxes',
-          price: 45.00,
-          verified: false,
-          condition: 'good'
-        }
-      ],
-      totalAmount: 225.00,
-      verificationStatus: 'pending',
-      photos: [],
-      notes: 'Awaiting verification',
-      createdAt: '2024-01-15T14:20:00Z',
-      updatedAt: '2024-01-15T14:20:00Z'
-    }
-  ];
+  // QR Code 1: DIV-bha-212 (The Good Delivery)
+  {
+    id: '1',
+    orderId: 'PO-2024-001',
+    vendorId: 'vendor-1',
+    vendorName: 'DIV-bha-212',
+    deliveryDate: '2024-01-15T10:30:00Z',
+    expectedDate: '2024-01-15T10:00:00Z',
+    status: 'verified',
+    items: [
+      {
+        id: 'item-1',
+        name: 'Office Supplies',
+        quantity: 10,
+        expectedQuantity: 10,
+        unit: 'pieces',
+        price: 25.50,
+        verified: true,
+        condition: 'good'
+      }
+    ],
+    totalAmount: 255.00,
+    verificationStatus: 'verified',
+    photos: [],
+    notes: 'All items in perfect condition',
+    createdAt: '2024-01-15T10:30:00Z',
+    updatedAt: '2024-01-15T11:00:00Z'
+  },
+  
+  // QR Code 2: ANA-yad-264 (The Weight Mismatch)
+  {
+    id: '2',
+    orderId: 'PO-2024-002',
+    vendorId: 'vendor-2',
+    vendorName: 'ANA-yad-264',
+    deliveryDate: '2024-01-15T14:20:00Z',
+    expectedDate: '2024-01-15T14:00:00Z',
+    status: 'flagged',
+    items: [
+      {
+        id: 'item-2',
+        name: 'Raw Materials',
+        quantity: 5,
+        expectedQuantity: 5,
+        unit: 'boxes',
+        price: 45.00,
+        verified: false,
+        condition: 'good'
+      }
+    ],
+    totalAmount: 225.00,
+    verificationStatus: 'flagged',
+    photos: [],
+    notes: 'Weight discrepancy detected - Expected: 12.5kg, Actual: 8.2kg',
+    createdAt: '2024-01-15T14:20:00Z',
+    updatedAt: '2024-01-15T14:20:00Z'
+  },
+  
+  // QR Code 3: ARY-kes-275 (The Product Mismatch)
+  {
+    id: '3',
+    orderId: 'PO-2024-003',
+    vendorId: 'vendor-3',
+    vendorName: 'ARY-kes-275',
+    deliveryDate: '2024-01-15T09:15:00Z',
+    expectedDate: '2024-01-15T09:00:00Z',
+    status: 'flagged',
+    items: [
+      {
+        id: 'item-3',
+        name: 'Heavy Equipment',
+        quantity: 12,
+        expectedQuantity: 15,
+        unit: 'units',
+        price: 150.00,
+        verified: false,
+        condition: 'good'
+      }
+    ],
+    totalAmount: 2250.00,
+    verificationStatus: 'flagged',
+    photos: [],
+    notes: 'Product quantity mismatch - Expected: 15 units, Delivered: 12 units',
+    createdAt: '2024-01-15T09:15:00Z',
+    updatedAt: '2024-01-15T09:15:00Z'
+  },
+  
+  // QR Code 4: HAR-bha-203 (The Flagged Vendor)
+  {
+    id: '4',
+    orderId: 'PO-2024-004',
+    vendorId: 'vendor-4',
+    vendorName: 'HAR-bha-203',
+    deliveryDate: '2024-01-15T16:45:00Z',
+    expectedDate: '2024-01-15T16:30:00Z',
+    status: 'flagged',
+    items: [
+      {
+        id: 'item-4',
+        name: 'Electronic Components',
+        quantity: 20,
+        expectedQuantity: 20,
+        unit: 'pieces',
+        price: 35.75,
+        verified: false,
+        condition: 'poor'
+      }
+    ],
+    totalAmount: 715.00,
+    verificationStatus: 'flagged',
+    photos: [],
+    notes: 'Vendor flagged for previous quality issues. Items show signs of damage.',
+    createdAt: '2024-01-15T16:45:00Z',
+    updatedAt: '2024-01-15T16:45:00Z'
+  }
+];
   const [state, setState] = useState<UseDeliveriesState>({
     deliveries: mockDeliveries, // Use mock data instead of empty array
     loading: false, // Set to false for immediate display

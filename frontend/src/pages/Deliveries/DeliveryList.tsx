@@ -18,27 +18,9 @@ import { ROUTES } from '@/config/routes';
 import type { Delivery } from '@/types/delivery';
 import { Shield, Hash} from 'lucide-react';
 
-// Extended interface for the component to handle both type systems
-interface BlockchainStatus {
-  status: 'confirmed' | 'pending' | 'failed';
-  blockNumber?: string;
-  confirmations?: number;
-  gasUsed?: string;
-  transactionHash?: string;
-}
-
-// 3. Update DeliveryListItem interface to include blockchain status
-interface DeliveryListItem extends Delivery {
-  barcode?: string;
-  poNumber?: string;
-  condition?: string;
-  weight?: number;
-  quantity?: number;
-  blockchainStatus?: BlockchainStatus;
-}
-
-// Mock data for demonstration - moved to top level to avoid recreating
-const mockDeliveries: DeliveryListItem[] = [
+// Mock data based on the QR code scenarios
+const mockDeliveries: Delivery[] = [
+  // QR Code 1: DIV-bha-212 (The Good Delivery)
   {
     id: '1',
     orderId: 'PO-2024-001',
@@ -64,20 +46,10 @@ const mockDeliveries: DeliveryListItem[] = [
     photos: [],
     notes: 'All items in perfect condition',
     createdAt: '2024-01-15T10:30:00Z',
-    updatedAt: '2024-01-15T11:00:00Z',
-    barcode: 'BC123456789',
-    poNumber: 'PO-2024-001',
-    condition: 'good',
-    weight: 15.5,
-    quantity: 10,
-    blockchainStatus: {
-      status: 'confirmed',
-      blockNumber: '18,742,391',
-      confirmations: 24,
-      gasUsed: '84,357',
-      transactionHash: '0x7d4f2a8c9e3b5f1a6d8e2c4b7f9a3e5d8c1b6f4a9e2d7c3b8f5a1e6d9c2b4f7a'
-    }
+    updatedAt: '2024-01-15T11:00:00Z'
   },
+  
+  // QR Code 2: ANA-yad-264 (The Weight Mismatch)
   {
     id: '2',
     orderId: 'PO-2024-002',
@@ -85,7 +57,7 @@ const mockDeliveries: DeliveryListItem[] = [
     vendorName: 'XYZ Manufacturing',
     deliveryDate: '2024-01-15T14:20:00Z',
     expectedDate: '2024-01-15T14:00:00Z',
-    status: 'pending',
+    status: 'flagged',
     items: [
       {
         id: 'item-2',
@@ -99,23 +71,14 @@ const mockDeliveries: DeliveryListItem[] = [
       }
     ],
     totalAmount: 225.00,
-    verificationStatus: 'pending',
+    verificationStatus: 'flagged',
     photos: [],
-    notes: 'Awaiting verification',
+    notes: 'Weight discrepancy detected - Expected: 12.5kg, Actual: 8.2kg',
     createdAt: '2024-01-15T14:20:00Z',
-    updatedAt: '2024-01-15T14:20:00Z',
-    barcode: 'BC987654321',
-    poNumber: 'PO-2024-002',
-    condition: 'excellent',
-    weight: 8.2,
-    quantity: 5,
-    blockchainStatus: {
-      status: 'pending',
-      blockNumber: '18,742,395',
-      confirmations: 0,
-      gasUsed: '42,150'
-    }
+    updatedAt: '2024-01-15T14:20:00Z'
   },
+  
+  // QR Code 3: ARY-kes-275 (The Product Mismatch)
   {
     id: '3',
     orderId: 'PO-2024-003',
@@ -123,12 +86,12 @@ const mockDeliveries: DeliveryListItem[] = [
     vendorName: 'Global Trade Corp',
     deliveryDate: '2024-01-15T09:15:00Z',
     expectedDate: '2024-01-15T09:00:00Z',
-    status: 'in_transit',
+    status: 'flagged',
     items: [
       {
         id: 'item-3',
         name: 'Heavy Equipment',
-        quantity: 15,
+        quantity: 12,
         expectedQuantity: 15,
         unit: 'units',
         price: 150.00,
@@ -137,82 +100,56 @@ const mockDeliveries: DeliveryListItem[] = [
       }
     ],
     totalAmount: 2250.00,
-    verificationStatus: 'pending',
+    verificationStatus: 'flagged',
     photos: [],
-    notes: 'En route to destination',
+    notes: 'Product quantity mismatch - Expected: 15 units, Delivered: 12 units',
     createdAt: '2024-01-15T09:15:00Z',
-    updatedAt: '2024-01-15T09:15:00Z',
-    barcode: 'BC456789123',
-    poNumber: 'PO-2024-003',
-    condition: 'good',
-    weight: 22.8,
-    quantity: 15,
-    blockchainStatus: {
-      status: 'failed',
-      blockNumber: '18,742,388',
-      confirmations: 0,
-      gasUsed: '28,750'
-    }
+    updatedAt: '2024-01-15T09:15:00Z'
+  },
+  
+  // QR Code 4: HAR-bha-203 (The Flagged Vendor)
+  {
+    id: '4',
+    orderId: 'PO-2024-004',
+    vendorId: 'vendor-4',
+    vendorName: 'Unreliable Vendors Inc',
+    deliveryDate: '2024-01-15T16:45:00Z',
+    expectedDate: '2024-01-15T16:30:00Z',
+    status: 'flagged',
+    items: [
+      {
+        id: 'item-4',
+        name: 'Electronic Components',
+        quantity: 20,
+        expectedQuantity: 20,
+        unit: 'pieces',
+        price: 35.75,
+        verified: false,
+        condition: 'poor'
+      }
+    ],
+    totalAmount: 715.00,
+    verificationStatus: 'flagged',
+    photos: [],
+    notes: 'Vendor flagged for previous quality issues. Items show signs of damage.',
+    createdAt: '2024-01-15T16:45:00Z',
+    updatedAt: '2024-01-15T16:45:00Z'
   }
 ];
 
-const BlockchainStatusBadge = ({ blockchainStatus }: { blockchainStatus?: BlockchainStatus }) => {
-  if (!blockchainStatus) {
-    return (
-      <div className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border bg-gray-100 text-gray-600 border-gray-300">
-        <Shield className="h-3 w-3" />
-       BLOCKCHAIN
-      </div>
-    );
-  }
-
-  const getStatusConfig = (status: string) => {
-    switch (status) {
-      case 'confirmed':
-        return { 
-          color: 'bg-green-100 text-green-800 border-green-300', 
-          icon: CheckCircle,
-          label: 'VERIFIED'
-        };
-      case 'pending':
-        return { 
-          color: 'bg-yellow-100 text-yellow-800 border-yellow-300', 
-          icon: Clock,
-          label: 'PENDING'
-        };
-      case 'failed':
-        return { 
-          color: 'bg-red-100 text-red-800 border-red-300', 
-          icon: AlertTriangle,
-          label: 'FAILED'
-        };
-      default:
-        return { 
-          color: 'bg-gray-100 text-gray-800 border-gray-300', 
-          icon: Shield,
-          label: 'UNKNOWN'
-        };
-    }
-  };
-  
-  const config = getStatusConfig(blockchainStatus.status);
-  const Icon = config.icon;
-
-  return (
-    <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border ${config.color}`}>
-      <Icon className="h-3 w-3" />
-      {config.label}
-      {blockchainStatus.status === 'confirmed' && blockchainStatus.confirmations && (
-        <span className="ml-1 text-xs opacity-75">({blockchainStatus.confirmations})</span>
-      )}
-    </div>
-  );
+// Map QR codes to mock data for easy identification
+const qrCodeMapping = {
+  'DIV-bha-212': mockDeliveries[0],
+  'ANA-yad-264': mockDeliveries[1],
+  'ARY-kes-275': mockDeliveries[2],
+  'HAR-bha-203': mockDeliveries[3]
 };
 
 const statusColors = {
   pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
   verified: 'bg-green-100 text-green-800 border-green-200',
   rejected: 'bg-red-100 text-red-800 border-red-200',
+  flagged: 'bg-orange-100 text-orange-800 border-orange-200',
   in_transit: 'bg-blue-100 text-blue-800 border-blue-200',
   delivered: 'bg-blue-100 text-blue-800 border-blue-200'
 };
@@ -221,6 +158,7 @@ const statusIcons = {
   pending: Clock,
   verified: CheckCircle,
   rejected: AlertTriangle,
+  flagged: AlertTriangle,
   in_transit: Package,
   delivered: Package
 };
@@ -230,7 +168,6 @@ const DeliveryList: React.FC = () => {
   const location = useLocation();
   
   // ✅ FIXED: Always call hooks at the top level
-  // Use error boundaries or conditional rendering instead of try-catch
   const deliveriesHook = useDeliveries();
   const layoutHook = useLayout();
   
@@ -238,7 +175,6 @@ const DeliveryList: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [conditionFilter, setConditionFilter] = useState<string>('all');
-  const [blockchainFilter, setBlockchainFilter] = useState<string>('all');
 
   // Extract data from hooks with fallbacks
   const deliveries = deliveriesHook?.deliveries || [];
@@ -259,6 +195,8 @@ const DeliveryList: React.FC = () => {
       return dataToFilter.filter(d => d.status === 'verified' || d.status === 'delivered');
     } else if (currentPath.includes('/verification')) {
       return dataToFilter.filter(d => d.status === 'pending');
+    } else if (currentPath.includes('/flagged')) {
+      return dataToFilter.filter(d => d.status === 'flagged');
     }
     
     return dataToFilter;
@@ -272,16 +210,16 @@ const DeliveryList: React.FC = () => {
 
     let filtered = [...getFilteredData];
 
-    // Search filter
+    // Search filter - search by order ID, vendor name, or item names
     if (searchTerm) {
       filtered = filtered.filter(delivery => {
-        const barcode = delivery.barcode || '';
-        const poNumber = delivery.poNumber || delivery.orderId || '';
+        const orderId = delivery.orderId || '';
         const vendorName = delivery.vendorName || '';
+        const itemNames = delivery.items?.map(item => item.name).join(' ') || '';
         
-        return barcode.toLowerCase().includes(searchTerm.toLowerCase()) ||
-               poNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-               vendorName.toLowerCase().includes(searchTerm.toLowerCase());
+        return orderId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+               vendorName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+               itemNames.toLowerCase().includes(searchTerm.toLowerCase());
       });
     }
 
@@ -292,28 +230,23 @@ const DeliveryList: React.FC = () => {
 
     // Condition filter
     if (conditionFilter !== 'all') {
-      filtered = filtered.filter(delivery => delivery.condition === conditionFilter);
-    }
-
-    // Blockchain filter
-    if (blockchainFilter !== 'all') {
       filtered = filtered.filter(delivery => 
-        delivery.blockchainStatus?.status === blockchainFilter
+        delivery.items?.some(item => item.condition === conditionFilter)
       );
     }
 
     return filtered;
-  }, [getFilteredData, searchTerm, statusFilter, conditionFilter, blockchainFilter]);
+  }, [getFilteredData, searchTerm, statusFilter, conditionFilter]);
 
-  const handleRowClick = (delivery: DeliveryListItem) => {
+  const handleRowClick = (delivery: Delivery) => {
     navigate(`${ROUTES.DELIVERIES}/${delivery.id}`);
   };
 
-  const handleEdit = (delivery: DeliveryListItem) => {
+  const handleEdit = (delivery: Delivery) => {
     navigate(`${ROUTES.DELIVERIES}/edit/${delivery.id}`);
   };
 
-  const handleDelete = (delivery: DeliveryListItem) => {
+  const handleDelete = (delivery: Delivery) => {
     console.log('Delete delivery:', delivery.id);
     // In a real app, you'd call a delete function from useDeliveries hook
   };
@@ -333,83 +266,79 @@ const DeliveryList: React.FC = () => {
 
   const columns = [
     {
-      key: 'barcode' as keyof DeliveryListItem,
-      label: 'Barcode',
+      key: 'orderId' as keyof Delivery,
+      label: 'Order ID',
       sortable: true,
-      render: (value: string | undefined) => (
-        <div className="font-mono text-sm">{value || 'N/A'}</div>
+      render: (value: string) => (
+        <div className="font-mono text-sm font-medium">{value}</div>
       )
     },
     {
-      key: 'poNumber' as keyof DeliveryListItem,
-      label: 'PO Number',
-      sortable: true,
-      render: (value: string | undefined, row: DeliveryListItem) => (
-        <div className="font-medium">{value || row.orderId || 'N/A'}</div>
-      )
-    },
-    {
-      key: 'vendorName' as keyof DeliveryListItem,
+      key: 'vendorName' as keyof Delivery,
       label: 'Vendor',
-      sortable: true
+      sortable: true,
+      render: (value: string) => (
+        <div className="font-medium">{value}</div>
+      )
     },
     {
-      key: 'status' as keyof DeliveryListItem,
+      key: 'items' as keyof Delivery,
+      label: 'Items',
+      sortable: false,
+      render: (items: any[]) => (
+        <div className="space-y-1">
+          {items?.slice(0, 2).map((item, index) => (
+            <div key={index} className="text-sm">
+              {item.name} ({item.quantity} {item.unit})
+            </div>
+          ))}
+          {items?.length > 2 && (
+            <div className="text-xs text-muted-foreground">
+              +{items.length - 2} more
+            </div>
+          )}
+        </div>
+      )
+    },
+    {
+      key: 'status' as keyof Delivery,
       label: 'Status',
       sortable: true,
       render: (value: string) => <StatusBadge status={value} />
     },
     {
-      key: 'blockchainStatus' as keyof DeliveryListItem,
-      label: 'Blockchain',
-      sortable: false,
-      render: (value: BlockchainStatus | undefined) => (
-        <BlockchainStatusBadge blockchainStatus={value} />
-      )
-    },
-    {
-      key: 'weight' as keyof DeliveryListItem,
-      label: 'Weight (kg)',
+      key: 'totalAmount' as keyof Delivery,
+      label: 'Total Amount',
       sortable: true,
-      render: (value: number | undefined) => (
-        <div className="text-right font-mono">
-          {value ? value.toFixed(1) : 'N/A'}
+      render: (value: number) => (
+        <div className="text-right font-mono font-medium">
+          ${value.toFixed(2)}
         </div>
       )
     },
     {
-      key: 'quantity' as keyof DeliveryListItem,
-      label: 'Quantity',
-      sortable: true,
-      render: (value: number | undefined, row: DeliveryListItem) => (
-        <div className="text-right font-mono">
-          {value || row.items?.reduce((sum, item) => sum + item.quantity, 0) || 'N/A'}
-        </div>
-      )
-    },
-    {
-      key: 'condition' as keyof DeliveryListItem,
-      label: 'Condition',
-      sortable: true,
-      render: (value: string | undefined, row: DeliveryListItem) => (
-        <div className="capitalize">
-          {value || row.items?.[0]?.condition || 'N/A'}
-        </div>
-      )
-    },
-    {
-      key: 'createdAt' as keyof DeliveryListItem,
-      label: 'Created',
+      key: 'deliveryDate' as keyof Delivery,
+      label: 'Delivery Date',
       sortable: true,
       render: (value: string) => (
-        <div className="text-sm text-muted-foreground">
+        <div className="text-sm">
           {new Date(value).toLocaleDateString()}
+        </div>
+      )
+    },
+    {
+      key: 'notes' as keyof Delivery,
+      label: 'Notes',
+      sortable: false,
+      render: (value: string) => (
+        <div className="text-sm text-muted-foreground max-w-xs truncate">
+          {value || 'No notes'}
         </div>
       )
     }
   ];
 
-  const getActions = (delivery: DeliveryListItem) => (
+  const getActions = (delivery: Delivery) => (
     <div className="flex items-center gap-1">
       <Button
         variant="ghost"
@@ -505,7 +434,7 @@ const DeliveryList: React.FC = () => {
   return (
     <div className="p-6 space-y-6">
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -569,31 +498,12 @@ const DeliveryList: React.FC = () => {
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
-                Rejected
+                Flagged
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-red-600">
-                {filteredDeliveries.filter(d => d.status === 'rejected').length}
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
-        >
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Blockchain Verified
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-blue-600">
-                {filteredDeliveries.filter(d => d.blockchainStatus?.status === 'confirmed').length}
+              <div className="text-2xl font-bold text-orange-600">
+                {filteredDeliveries.filter(d => d.status === 'flagged').length}
               </div>
             </CardContent>
           </Card>
@@ -604,18 +514,18 @@ const DeliveryList: React.FC = () => {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.6 }}
+        transition={{ delay: 0.5 }}
       >
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">Filters</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="relative">
                 <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search deliveries..."
+                  placeholder="Search by order ID, vendor, or items..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-8"
@@ -630,6 +540,7 @@ const DeliveryList: React.FC = () => {
                   <SelectItem value="all">All Status</SelectItem>
                   <SelectItem value="pending">Pending</SelectItem>
                   <SelectItem value="verified">Verified</SelectItem>
+                  <SelectItem value="flagged">Flagged</SelectItem>
                   <SelectItem value="rejected">Rejected</SelectItem>
                   <SelectItem value="in_transit">In Transit</SelectItem>
                   <SelectItem value="delivered">Delivered</SelectItem>
@@ -649,18 +560,43 @@ const DeliveryList: React.FC = () => {
                   <SelectItem value="damaged">Damaged</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
 
-              <Select value={blockchainFilter} onValueChange={setBlockchainFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Filter by blockchain" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Blockchain Status</SelectItem>
-                  <SelectItem value="confirmed">Confirmed</SelectItem>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="failed">Failed</SelectItem>
-                </SelectContent>
-              </Select>
+      {/* QR Code Scenarios Info */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.6 }}
+      >
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">QR Code Test Scenarios</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="p-3 bg-green-50 rounded-lg border border-green-200">
+                <div className="font-mono text-sm font-medium text-green-800">DIV-bha-212</div>
+                <div className="text-sm text-green-700">The Good Delivery</div>
+                <div className="text-xs text-green-600 mt-1">All items verified, perfect condition</div>
+              </div>
+              <div className="p-3 bg-orange-50 rounded-lg border border-orange-200">
+                <div className="font-mono text-sm font-medium text-orange-800">ANA-yad-264</div>
+                <div className="text-sm text-orange-700">The Weight Mismatch</div>
+                <div className="text-xs text-orange-600 mt-1">Weight discrepancy detected</div>
+              </div>
+              <div className="p-3 bg-red-50 rounded-lg border border-red-200">
+                <div className="font-mono text-sm font-medium text-red-800">ARY-kes-275</div>
+                <div className="text-sm text-red-700">The Product Mismatch</div>
+                <div className="text-xs text-red-600 mt-1">Quantity mismatch: 12/15 delivered</div>
+              </div>
+              <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                <div className="font-mono text-sm font-medium text-gray-800">HAR-bha-203</div>
+                <div className="text-sm text-gray-700">The Flagged Vendor</div>
+                <div className="text-xs text-gray-600 mt-1">Vendor with quality issues</div>
+              </div>
             </div>
           </CardContent>
         </Card>

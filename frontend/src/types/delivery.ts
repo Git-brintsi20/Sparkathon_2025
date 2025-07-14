@@ -7,7 +7,7 @@ export interface Delivery {
   vendorName: string;
   deliveryDate: string;
   expectedDate: string;
-  status: 'pending' | 'in_transit' | 'delivered' | 'verified' | 'rejected';
+  status: 'pending' | 'in_transit' | 'delivered' | 'verified' | 'rejected' | 'flagged';
   items: DeliveryItem[];
   totalAmount: number;
   verificationStatus: 'pending' | 'verified' | 'failed';
