@@ -29,11 +29,13 @@ export interface VendorDocument {
   id: string;
   vendorId: string;
   type: 'license' | 'certificate' | 'insurance' | 'tax' | 'other';
+  size: number; 
   name: string;
   url: string;
   expiryDate?: string;
   verified: boolean;
   uploadedAt: string;
+    status: string;
 }
 
 export interface VendorContact {
@@ -48,11 +50,18 @@ export interface VendorContact {
 export interface VendorMetrics {
   totalVendors: number;
   activeVendors: number;
+  inactiveVendors: number; // Add this line
+  suspendedVendors: number;
   pendingApproval: number;
   highRiskVendors: number;
   averageComplianceScore: number;
   complianceRate: number;
-  
+  monthlyGrowth: number;
+  categoryDistribution: Array<{
+    category: string;
+    count: number;
+    percentage: number;
+  }>;
 }
 
 export interface VendorPerformance {
@@ -64,6 +73,14 @@ export interface VendorPerformance {
   completedOrders: number;
   cancelledOrders: number;
   period: string;
+  successRate: number;
+  averageDeliveryTime: number;
+    riskLevel: string;
+  monthlyTrend: Array<{
+    month: string;
+    orders: number;
+    successRate: number;
+  }>;
 }
 
 // In src/types/vendor.ts
@@ -82,7 +99,7 @@ export interface VendorFormData {
   notes?: string;
   
   // New fields from your form component (added as optional)
-  city?: string;
+city?: string;
   state?: string;
   zipCode?: string;
   country?: string;
@@ -107,6 +124,8 @@ export interface VendorFilters {
     max: number;
   };
   search?: string;
+    sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
 }
 
 export interface VendorApiResponse {
@@ -118,6 +137,7 @@ export interface VendorApiResponse {
 }
 
 export interface VendorAnalytics {
+   totalVendors: number;
   registrationTrend: Array<{
     date: string;
     count: number;

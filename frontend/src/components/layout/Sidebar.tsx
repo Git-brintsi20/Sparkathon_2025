@@ -127,11 +127,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
   isMobile = false
 }) => {
   const location = useLocation();
-  const [expandedItems, setExpandedItems] = useState<string[]>(['vendors']);
-  const [hoveredItem, setHoveredItem] = useState<string | null>(null);
+const [expandedItems, setExpandedItems] = useState<string[]>([]);
+
+const [hoveredItem, setHoveredItem] = useState<string | null>(null);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-  const [quickActionsOpen, setQuickActionsOpen] = useState(true);
+const [quickActionsOpen, setQuickActionsOpen] = useState(() => {
+  const saved = sessionStorage.getItem('quickActionsOpen');
+  return saved ? JSON.parse(saved) : true;
+});
+  const [isInteracting, setIsInteracting] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
+  const interactionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  
+useEffect(() => {
+  sessionStorage.setItem('quickActionsOpen', JSON.stringify(quickActionsOpen));
+}, [quickActionsOpen]);
+
 
   // Track mouse position for hover effects
   useEffect(() => {
@@ -156,6 +168,47 @@ export const Sidebar: React.FC<SidebarProps> = ({
     };
   }, []);
 
+useEffect(() => {
+  const activeItem = getActiveItem();
+  if (activeItem.sub) {
+    // Find the parent item that contains this sub-item
+    const parentItem = navItems.find(item => 
+      item.subItems?.some(sub => sub.id === activeItem.sub)
+    );
+    if (parentItem && !expandedItems.includes(parentItem.id)) {
+      setExpandedItems(prev => [...prev, parentItem.id]);
+    }
+  }
+}, [location.pathname]);
+
+
+
+  // Track interaction state to prevent interference from page transitions
+  const handleInteractionStart = () => {
+    setIsInteracting(true);
+    if (interactionTimeoutRef.current) {
+      clearTimeout(interactionTimeoutRef.current);
+    }
+  };
+
+  const handleInteractionEnd = () => {
+    if (interactionTimeoutRef.current) {
+      clearTimeout(interactionTimeoutRef.current);
+    }
+    interactionTimeoutRef.current = setTimeout(() => {
+      setIsInteracting(false);
+    }, 300);
+  };
+
+  // Clean up timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (interactionTimeoutRef.current) {
+        clearTimeout(interactionTimeoutRef.current);
+      }
+    };
+  }, []);
+
   // Determine active item based on current path
   const getActiveItem = () => {
     for (const item of navItems) {
@@ -175,17 +228,31 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const { main: activeMainItem, sub: activeSubItem } = getActiveItem();
 
-  const toggleExpanded = (itemId: string) => {
+  const toggleExpanded = (itemId: string, event?: React.MouseEvent) => {
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+    
+    handleInteractionStart();
     setExpandedItems(prev => 
       prev.includes(itemId) 
         ? prev.filter(id => id !== itemId)
         : [...prev, itemId]
     );
+    handleInteractionEnd();
   };
 
-  const toggleQuickActions = () => {
-    setQuickActionsOpen(prev => !prev);
-  };
+const toggleQuickActions = (event?: React.MouseEvent) => {
+  if (event) {
+    event.preventDefault();
+    event.stopPropagation();
+  }
+  
+  handleInteractionStart();
+  setQuickActionsOpen((prev: boolean) => !prev);
+  handleInteractionEnd();
+};
 
   const getBadgeColor = (color?: 'primary' | 'success' | 'warning' | 'error') => {
     switch (color) {
@@ -199,6 +266,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
         return 'bg-primary/20 text-primary border-primary/30';
     }
   };
+
+  // Handle nav item clicks
+const handleNavItemClick = (item: NavItem, event: React.MouseEvent) => {
+  if (item.subItems) {
+    // If it has subitems, toggle expansion instead of navigation
+    event.preventDefault();
+    toggleExpanded(item.id, event);
+  } else {
+    // For regular items, allow normal navigation
+    handleInteractionStart();
+    handleInteractionEnd();
+    // Don't prevent default for items without subitems
+  }
+};
 
   // Animation variants
   const sidebarVariants = {
@@ -453,7 +534,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 )}
               </AnimatePresence>
 
-              <Link to={item.href}>
+              {/* Main nav item */}
+            <Link to={item.href} onClick={(e) => handleNavItemClick(item, e)}>
                 <motion.div
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
@@ -467,7 +549,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       'before:absolute before:inset-0 before:rounded-xl before:bg-gradient-primary before:opacity-10'
                     ]
                   )}
-                  onClick={() => item.subItems && toggleExpanded(item.id)}
                 >
                   <motion.div
                     className={cn(
@@ -528,7 +609,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     )}
                   </AnimatePresence>
                 </motion.div>
-              </Link>
+            </Link>
 
               {/* Sub Items */}
               <AnimatePresence>
@@ -546,7 +627,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         variants={itemVariants}
                         className="relative"
                       >
-                        <Link to={subItem.href}>
+                        <Link 
+                          to={subItem.href}
+                          onClick={(e) => {
+                            handleInteractionStart();
+                            handleInteractionEnd();
+                            // Allow normal navigation for subitems
+                          }}
+                        >
                           <motion.div
                             whileHover={{ scale: 1.02, x: 4 }}
                             whileTap={{ scale: 0.98 }}
@@ -620,7 +708,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={toggleQuickActions}
+                  onClick={(e) => toggleQuickActions(e)}
                   className="h-6 w-6 hover:bg-accent/50 transition-colors"
                 >
                   <motion.div

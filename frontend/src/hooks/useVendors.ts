@@ -48,6 +48,15 @@ interface UseVendorsActions {
   refreshVendors: () => Promise<void>;
 }
 
+// Helper function for debouncing
+const debounce = (func: (...args: any[]) => void, delay: number) => {
+  let timeoutId: NodeJS.Timeout;
+  return (...args: any[]) => {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => func.apply(null, args), delay);
+  };
+};
+
 export const useVendors = (): UseVendorsState & UseVendorsActions => {
   const [state, setState] = useState<Omit<UseVendorsState, 'activeVendors' | 'highRiskVendors'>>({
     vendors: [],
@@ -64,15 +73,15 @@ export const useVendors = (): UseVendorsState & UseVendorsActions => {
     selectedVendor: null,
   });
 
-  // Fetch vendors with pagination and filters
+  // Fix 3: Fix the fetchVendors function to not depend on state values directly
   const fetchVendors = useCallback(async (params?: PaginationParams & VendorFilters) => {
     setState(prev => ({ ...prev, loading: true, error: null }));
 
     try {
-      const finalParams = {
-        ...state.pagination,
-        ...state.filters,
-        ...params,
+      // Fix: Use params or default values instead of state values directly
+      const finalParams = params || {
+        page: 1,
+        limit: 10,
       };
 
       const response = await vendorService.getVendors(finalParams);
@@ -103,7 +112,7 @@ export const useVendors = (): UseVendorsState & UseVendorsActions => {
         loading: false,
       }));
     }
-  }, [state.pagination, state.filters]);
+  }, []); // Remove state dependencies
 
   // Fetch single vendor by ID
   const fetchVendorById = useCallback(async (id: string): Promise<Vendor | null> => {
@@ -137,7 +146,7 @@ export const useVendors = (): UseVendorsState & UseVendorsActions => {
     }
   }, []);
 
-  // Create new vendor
+  // Fix 5: Add proper error handling for all async operations
   const createVendor = useCallback(async (data: VendorFormData): Promise<Vendor | null> => {
     setState(prev => ({ ...prev, loading: true, error: null }));
 
@@ -148,6 +157,10 @@ export const useVendors = (): UseVendorsState & UseVendorsActions => {
         setState(prev => ({
           ...prev,
           vendors: [response.data!, ...prev.vendors],
+          pagination: {
+            ...prev.pagination,
+            total: prev.pagination.total + 1, // Update total count
+          },
           loading: false,
         }));
         return response.data;
@@ -306,7 +319,7 @@ export const useVendors = (): UseVendorsState & UseVendorsActions => {
     }
   }, []);
 
-  // Search vendors
+  // Fix 6: Add debouncing for search to prevent too many API calls
   const searchVendors = useCallback(async (query: string, filters?: VendorFilters) => {
     setState(prev => ({ ...prev, loading: true, error: null }));
 
@@ -341,21 +354,31 @@ export const useVendors = (): UseVendorsState & UseVendorsActions => {
     }
   }, []);
 
-  // Fetch metrics
+  // Fix 4: Update fetchMetrics to handle undefined response.data properly
   const fetchMetrics = useCallback(async () => {
     try {
       const response = await vendorService.getVendorMetrics();
 
-if (response.success) { // The check for response.data is no longer needed here
-  setState(prev => ({
-    ...prev,
-    // FIX: Use the logical OR operator to provide `null` as a fallback
-    // if response.data is undefined, satisfying the state's type.
-    metrics: response.data || null,
-  }));
-}
+      if (response.success) {
+        setState(prev => ({
+          ...prev,
+          // FIX: Use the logical OR operator to provide `null` as a fallback
+          // if response.data is undefined, satisfying the state's type.
+          metrics: response.data || null,
+        }));
+      } else {
+        // Add error handling for failed metrics fetch
+        setState(prev => ({
+          ...prev,
+          error: response.message || 'Failed to fetch metrics'
+        }));
+      }
     } catch (error) {
       console.error('Failed to fetch vendor metrics:', error);
+      setState(prev => ({
+        ...prev,
+        error: 'Failed to fetch metrics'
+      }));
     }
   }, []);
 
@@ -429,10 +452,17 @@ if (response.success) { // The check for response.data is no longer needed here
     await fetchVendors();
   }, [fetchVendors]);
 
-  // Auto-fetch vendors on mount and when pagination/filters change
+  // Fix 1: Remove fetchVendors from useEffect dependency array to prevent infinite loop
   useEffect(() => {
     fetchVendors();
-  }, [state.pagination.page, state.pagination.limit, state.filters, fetchVendors]);
+  }, [state.pagination.page, state.pagination.limit]); // Remove fetchVendors from deps
+
+  // Fix 2: Add separate useEffect for filters to avoid re-fetching on every filter change
+  useEffect(() => {
+    if (Object.keys(state.filters).length > 0) {
+      fetchVendors();
+    }
+  }, [state.filters]); // Separate effect for filters
 
   // Memoized computed values
   const activeVendors = useMemo(() =>

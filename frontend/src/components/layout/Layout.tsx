@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import { cn } from '@/components/lib/utils';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
@@ -117,11 +117,18 @@ const overlayVariants = {
 
 const Layout: React.FC = () => {
   const { pageTitle, pageDescription, breadcrumbs, headerActions } = useLayout();
+  const location = useLocation();
   
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
   const [isTablet, setIsTablet] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [pageTransitionKey, setPageTransitionKey] = useState('');
+  
+  // Refs for preventing unwanted re-renders
+  const sidebarRef = useRef<HTMLDivElement>(null);
+  const isTransitioningRef = useRef(false);
+  const transitionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Enhanced responsive behavior with proper breakpoints
   const checkScreenSize = useCallback(() => {
@@ -153,15 +160,52 @@ const Layout: React.FC = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, [checkScreenSize]);
 
+  // Handle page transition key updates with debouncing
+  useEffect(() => {
+    // Clear any existing timeout
+    if (transitionTimeoutRef.current) {
+      clearTimeout(transitionTimeoutRef.current);
+    }
+
+    // Set transition flag
+    isTransitioningRef.current = true;
+
+    // Debounce the page transition key update
+    transitionTimeoutRef.current = setTimeout(() => {
+      setPageTransitionKey(location.pathname);
+      isTransitioningRef.current = false;
+    }, 100);
+
+    return () => {
+      if (transitionTimeoutRef.current) {
+        clearTimeout(transitionTimeoutRef.current);
+      }
+    };
+  }, [location.pathname]);
+
   const toggleSidebar = useCallback(() => {
+    // Prevent sidebar toggle during page transitions
+    if (isTransitioningRef.current) {
+      return;
+    }
     setIsSidebarOpen(prev => !prev);
   }, []);
 
-  const handleMobileOverlayClick = useCallback(() => {
+  const handleMobileOverlayClick = useCallback((e: React.MouseEvent) => {
+    // Prevent if click is on sidebar
+    if (sidebarRef.current && sidebarRef.current.contains(e.target as Node)) {
+      return;
+    }
+    
     if (isMobile || isTablet) {
       setIsSidebarOpen(false);
     }
   }, [isMobile, isTablet]);
+
+  // Prevent sidebar interactions from affecting page transitions
+  const handleSidebarInteraction = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+  }, []);
 
   // Prevent hydration mismatch
   if (!mounted) {
@@ -188,12 +232,14 @@ const Layout: React.FC = () => {
       <div className="fixed bottom-32 left-32 w-1 h-1 bg-secondary/30 rounded-full animate-float opacity-40 pointer-events-none" style={{ animationDelay: '1s' }} />
       <div className="fixed top-1/2 right-1/4 w-1.5 h-1.5 bg-success/20 rounded-full animate-float opacity-30 pointer-events-none" style={{ animationDelay: '2s' }} />
 
-      {/* Sidebar Component */}
+      {/* Sidebar Component - Isolated from page transitions */}
       <motion.div
+        ref={sidebarRef}
         variants={sidebarVariants}
         initial="initial"
         animate="animate"
         className="fixed inset-y-0 left-0 z-50"
+        onClick={handleSidebarInteraction}
       >
         <Sidebar
           isOpen={isSidebarOpen}
@@ -281,10 +327,10 @@ const Layout: React.FC = () => {
               }}
               className="relative z-10 min-h-full"
             >
-              {/* Router outlet with page transitions */}
+              {/* Router outlet with page transitions - Using stable key */}
               <AnimatePresence mode="wait">
                 <motion.div
-                  key={location.pathname}
+                  key={pageTransitionKey || location.pathname}
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ 
                     opacity: 1, 
@@ -303,6 +349,12 @@ const Layout: React.FC = () => {
                     }
                   }}
                   className="animate-slide-in-up"
+                  onAnimationStart={() => {
+                    isTransitioningRef.current = true;
+                  }}
+                  onAnimationComplete={() => {
+                    isTransitioningRef.current = false;
+                  }}
                 >
                   <Outlet />
                 </motion.div>

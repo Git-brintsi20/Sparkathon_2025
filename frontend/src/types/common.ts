@@ -10,7 +10,7 @@ export interface ApiResponse<T> {
     message: string;
     details?: any;
   };
-  timestamp: string;
+   timestamp?: string;
 }
 
 export interface ApiError {
