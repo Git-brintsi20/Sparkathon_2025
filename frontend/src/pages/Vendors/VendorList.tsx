@@ -27,7 +27,21 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { DataTable } from '@/components/common/DataTable';
 import type { Column } from '@/components/common/DataTable';
 import { cn } from '@/components/lib/utils';
+import { Shield, ExternalLink, Link as LinkIcon ,  ShieldCheck} from 'lucide-react';
+import type  {VendorMetrics} from   '@/types/vendor';
+declare module '@/types/vendor' {
+  interface Vendor {
+    blockchainVerification?: BlockchainVerification;
+  }
+}
 
+// Add this interface after the other type definitions
+interface BlockchainVerification {
+  isVerified: boolean;
+  transactionHash: string;
+  blockNumber: number;
+  verificationDate: string;
+}
 
 
 const VendorList: React.FC = () => {
@@ -71,6 +85,27 @@ const VendorList: React.FC = () => {
       fetchVendors();
     }
   };
+
+  const BlockchainBadge = ({ verification }: { verification?: BlockchainVerification }) => {
+  if (!verification?.isVerified) return null;
+  
+  return (
+    <div className="flex items-center gap-1 text-xs text-green-600 bg-green-50 px-2 py-0.5 rounded-full border border-green-200">
+      <Shield className="h-3 w-3" />
+      <span>Verified</span>
+      <button 
+        onClick={(e) => {
+          e.stopPropagation();
+          window.open(`https://etherscan.io/tx/${verification.transactionHash}`, '_blank');
+        }}
+        className="hover:text-green-700"
+      >
+        <ExternalLink className="h-3 w-3" />
+      </button>
+    </div>
+  );
+};
+
 
   // Status badge component
   const StatusBadge = ({ status }: { status: string }) => {
@@ -143,16 +178,19 @@ const VendorList: React.FC = () => {
     {
       key: 'name',
       label: 'Vendor Name',
-      render: (value, row) => (
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
-            <Building2 className="h-4 w-4 text-primary" />
-          </div>
-          <div>
-            <div className="font-medium">{value}</div>
-            <div className="text-sm text-muted-foreground">{row.email}</div>
-          </div>
+  render: (value, row) => (
+      <div className="flex items-center gap-3">
+        <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
+          <Building2 className="h-4 w-4 text-primary" />
         </div>
+        <div>
+          <div className="font-medium flex items-center gap-2">
+            {value}
+            <BlockchainBadge verification={row.blockchainVerification} />
+          </div>
+          <div className="text-sm text-muted-foreground">{row.email}</div>
+        </div>
+      </div>
       )
     },
     {
@@ -261,32 +299,38 @@ const VendorList: React.FC = () => {
   );
 
 // Metrics cards - based on actual mock data
+// Update the metricsCards to include blockchain metrics
 const metricsCards = [
   {
     title: 'Total Vendors',
-    value: metrics?.totalVendors || 12, // 12 vendors in mock data
+    value: metrics?.totalVendors || 12,
     change: '+12%',
-    positive: true
+    positive: true,
+    blockchainInfo: `${metrics?.blockchainTransactions || 156} TX`
   },
   {
     title: 'Active Vendors',
-    value: metrics?.activeVendors || 10, // 10 active vendors
+    value: metrics?.activeVendors || 10,
     change: '+8%',
-    positive: true
+    positive: true,
+    blockchainInfo: `${metrics?.verifiedRecords || 142} verified`
   },
   {
     title: 'High Risk',
-    value: metrics?.highRiskVendors || 1, // 1 high-risk vendor (Premium Catering)
+    value: metrics?.highRiskVendors || 1,
     change: '-25%',
-    positive: true
+    positive: true,
+    blockchainInfo: `${metrics?.immutableRecords || 24} immutable`
   },
   {
     title: 'Avg Compliance',
-    value: `${metrics?.averageComplianceScore || 87}%`, // 87% average compliance
+    value: `${metrics?.averageComplianceScore || 87}%`,
     change: '+3%',
-    positive: true
+    positive: true,
+    blockchainInfo: `Block #${metrics?.lastBlockNumber || 18500000}`
   }
 ];
+
 
   // ADDED: useEffect hook to set and clear layout data
   useEffect(() => {
@@ -305,34 +349,57 @@ const metricsCards = [
     // REMOVED: The <Layout> wrapper from the return statement.
     // The page now only returns its own content.
     <div className="p-6 space-y-6">
-      {/* Metrics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {metricsCards.map((metric, index) => (
-          <motion.div
-            key={metric.title}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.1 }}
-          >
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">{metric.title}</p>
-                    <p className="text-2xl font-bold">{metric.value}</p>
-                  </div>
-                  <div className={cn(
-                    'text-sm font-medium',
-                    metric.positive ? 'text-green-600' : 'text-red-600'
-                  )}>
-                    {metric.change}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        ))}
+
+            {/* Blockchain Verification Banner */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <ShieldCheck className="h-5 w-5 text-blue-600" />
+          <div>
+            <h3 className="font-medium text-blue-800">Blockchain-Verified Vendor Network</h3>
+            <p className="text-sm text-blue-600">
+              All vendor records are immutably stored on the Ethereum blockchain
+            </p>
+          </div>
+        </div>
+        <Button variant="outline" size="sm" className="text-blue-600 border-blue-300">
+          <LinkIcon className="h-4 w-4 mr-2" />
+          View Smart Contract
+        </Button>
       </div>
+      {/* Metrics Cards */}
+   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+  {metricsCards.map((metric, index) => (
+    <motion.div
+      key={metric.title}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.1 }}
+    >
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-muted-foreground">{metric.title}</p>
+              <p className="text-2xl font-bold">{metric.value}</p>
+            </div>
+            <div className={cn(
+              'text-sm font-medium',
+              metric.positive ? 'text-green-600' : 'text-red-600'
+            )}>
+              {metric.change}
+            </div>
+          </div>
+          {metric.blockchainInfo && (
+            <div className="mt-2 flex items-center gap-1 text-xs text-muted-foreground">
+              <LinkIcon className="h-3 w-3" />
+              <span>{metric.blockchainInfo}</span>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </motion.div>
+  ))}
+</div>
 
       {/* Vendor Table */}
       <motion.div

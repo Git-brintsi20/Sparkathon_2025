@@ -18,21 +18,33 @@ import {
   CheckCircle,
   DollarSign,
   Calendar,
-  Target
+  Target,LinkIcon
 } from 'lucide-react';
 import { cn } from '@/components/lib/utils';
+import { Shield, ExternalLink, Link } from 'lucide-react';
+
+
+interface BlockchainMetrics {
+  totalTransactions: number;
+  verifiedRecords: number;
+  immutableAudits: number;
+  lastBlockchainUpdate: string;
+  networkHash: string;
+}
 
 export interface VendorMetricsProps {
   vendorId: string;
   vendorName: string;
   metrics: {
     complianceScore: number;
-    complianceHistory: Array<{
-      month: string;
-      score: number;
-      deliveries: number;
-      issues: number;
-    }>;
+ // Change the complianceHistory type to:
+complianceHistory: Array<{
+  month: string;
+  score: number;
+  deliveries: number;
+  issues: number;
+  blockchainMetrics: BlockchainMetrics;
+}>;
     performanceMetrics: {
       totalOrders: number;
       completedOrders: number;
@@ -58,6 +70,7 @@ export interface VendorMetricsProps {
     }>;
   };
   className?: string;
+ 
 }
 
 const formatCurrency = (value: number) => {
@@ -119,6 +132,60 @@ const MetricCard: React.FC<{
     <div className="text-2xl font-bold">{value}</div>
   </div>
 );
+
+const BlockchainMetricsCard: React.FC<{ metrics: BlockchainMetrics }> = ({ metrics }) => {
+  return (
+    <Card className="border-green-200 bg-green-50/50">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Shield className="h-5 w-5 text-green-600" />
+          Blockchain Verification
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid grid-cols-2 gap-4">
+          <MetricCard
+            title="Total Transactions"
+            value={metrics.totalTransactions.toLocaleString()}
+            icon={<LinkIcon className="h-4 w-4 text-blue-600" />}
+            trend="up"
+            trendValue="+5"
+          />
+          <MetricCard
+            title="Verified Records"
+            value={metrics.verifiedRecords.toLocaleString()}
+            icon={<Shield className="h-4 w-4 text-green-600" />}
+            trend="up"
+            trendValue="+12"
+          />
+        </div>
+        
+        <div className="space-y-2">
+          <div className="flex items-center justify-between text-sm">
+            <span>Immutable Audits</span>
+            <span className="font-medium">{metrics.immutableAudits}</span>
+          </div>
+          <div className="flex items-center justify-between text-sm">
+            <span>Last Update</span>
+            <span className="font-medium">{new Date(metrics.lastBlockchainUpdate).toLocaleDateString()}</span>
+          </div>
+          <div className="flex items-center justify-between text-sm">
+            <span>Network Hash</span>
+            <div className="flex items-center gap-1">
+              <span className="font-mono text-xs">{metrics.networkHash.substring(0, 8)}...</span>
+              <button
+                onClick={() => window.open(`https://etherscan.io/tx/${metrics.networkHash}`, '_blank')}
+                className="text-blue-600 hover:text-blue-800"
+              >
+                <ExternalLink className="h-3 w-3" />
+              </button>
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
 
 export const VendorMetrics: React.FC<VendorMetricsProps> = ({
   vendorId,
@@ -209,7 +276,7 @@ export const VendorMetrics: React.FC<VendorMetricsProps> = ({
         <MetricsChart
           title="Compliance Score Trend"
           type="line"
-          data={complianceHistory}
+          data={complianceHistory.map(({ blockchainMetrics, ...rest }) => rest)} 
           xAxisKey="month"
           dataKeys={['score']}
           colors={['hsl(var(--primary))']}
@@ -320,6 +387,7 @@ export const VendorMetrics: React.FC<VendorMetricsProps> = ({
         </Card>
       </div>
 
+
       {/* Compliance History Chart */}
       <Card>
         <CardHeader>
@@ -332,7 +400,7 @@ export const VendorMetrics: React.FC<VendorMetricsProps> = ({
           <MetricsChart
             title="Monthly Compliance vs Deliveries"
             type="area"
-            data={complianceHistory}
+           data={complianceHistory.map(({ blockchainMetrics, ...rest }) => rest)} 
             xAxisKey="month"
             dataKeys={['score', 'deliveries']}
             colors={['hsl(var(--primary))', 'hsl(var(--secondary))']}

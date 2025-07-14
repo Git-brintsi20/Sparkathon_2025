@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Shield, ExternalLink } from 'lucide-react';
 import { 
   Building2, 
   MapPin, 
@@ -23,6 +24,14 @@ import {
   MoreHorizontal
 } from 'lucide-react';
 import { cn } from '@/components/lib/utils';
+
+
+interface BlockchainVerification {
+  isVerified: boolean;
+  transactionHash: string;
+  blockNumber: number;
+  verificationDate: string;
+}
 
 export interface VendorCardProps {
   vendor: {
@@ -41,6 +50,7 @@ export interface VendorCardProps {
     lastActivity: string;
     riskLevel: 'low' | 'medium' | 'high';
     certifications: string[];
+    blockchainVerification?: BlockchainVerification;
   };
   onView?: (vendorId: string) => void;
   onEdit?: (vendorId: string) => void;
@@ -97,6 +107,23 @@ const getStatusIcon = (status: string) => {
   }
 };
 
+const BlockchainBadge: React.FC<{ verification: BlockchainVerification }> = ({ verification }) => {
+  if (!verification.isVerified) return null;
+  
+  return (
+    <div className="flex items-center gap-2 text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full border border-green-200">
+      <Shield className="h-3 w-3" />
+      <span>Blockchain Verified</span>
+      <button 
+        onClick={() => window.open(`https://etherscan.io/tx/${verification.transactionHash}`, '_blank')}
+        className="hover:text-green-700"
+      >
+        <ExternalLink className="h-3 w-3" />
+      </button>
+    </div>
+  );
+};
+
 export const VendorCard: React.FC<VendorCardProps> = ({
   vendor,
   onView,
@@ -124,7 +151,10 @@ export const VendorCard: React.FC<VendorCardProps> = ({
           vendor.riskLevel === 'medium' ? 'bg-yellow-500' : 'bg-green-500'
         )} />
 
-        <CardHeader className="pb-3">
+        <CardHeader className="pb-3"  >
+          {vendor.blockchainVerification && (
+  <BlockchainBadge verification={vendor.blockchainVerification} />
+)}
           <div className="flex justify-between items-start">
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-2">
@@ -211,6 +241,17 @@ export const VendorCard: React.FC<VendorCardProps> = ({
                     +{vendor.certifications.length - 3} more
                   </Badge>
                 )}
+              </div>
+            </div>
+          )}
+
+          {/* Blockchain Verification */}
+          {vendor.blockchainVerification?.isVerified && (
+            <div className="space-y-2">
+              <div className="text-sm font-medium">Blockchain Verification</div>
+              <div className="text-xs text-muted-foreground space-y-1">
+                <div>Block: #{vendor.blockchainVerification.blockNumber}</div>
+                <div>Verified: {new Date(vendor.blockchainVerification.verificationDate).toLocaleDateString()}</div>
               </div>
             </div>
           )}

@@ -49,6 +49,7 @@ export interface VendorContact {
 
 export interface VendorMetrics {
   totalVendors: number;
+
   activeVendors: number;
   inactiveVendors: number; // Add this line
   suspendedVendors: number;
@@ -62,6 +63,12 @@ export interface VendorMetrics {
     count: number;
     percentage: number;
   }>;
+     blockchainMetrics?: {
+    totalTransactions: number;
+    verifiedRecords: number;
+    immutableRecords: number;
+    lastBlockNumber: number;
+  };
 }
 
 export interface VendorPerformance {
