@@ -19,6 +19,7 @@ import {
   Radar,
   Cell,
 } from 'recharts';
+
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { cn } from '@/components/lib/utils'; // Keeping this path as per your instruction
 import {
@@ -33,6 +34,7 @@ import {
   Truck,
   Users
 } from 'lucide-react';
+import { Shield, Database, Link, Zap } from 'lucide-react';
 // ADDED: Import the useLayout hook
 import { useLayout } from '@/contexts/LayoutContext';
 
@@ -138,16 +140,56 @@ const defaultMetrics: PerformanceMetric[] = [
     trend: 'up',
     change: 0.8,
     status: 'excellent'
+  },
+  {
+    id: 'blockchain-transparency',
+    name: 'Blockchain Transparency',
+    value: 99.8,
+    target: 95.0,
+    unit: '%',
+    trend: 'up',
+    change: 2.1,
+    status: 'excellent'
+  },
+  {
+    id: 'fraud-detection',
+    name: 'Fraud Detection Rate',
+    value: 97.5,
+    target: 95.0,
+    unit: '%',
+    trend: 'up',
+    change: 4.2,
+    status: 'excellent'
   }
+
+
 ];
 
 const defaultData: PerformanceDataPoint[] = [
-  { period: 'Jan', deliveryTime: 2.8, qualityScore: 89, costEfficiency: 82, vendorReliability: 88, customerSatisfaction: 85, orderAccuracy: 94, responseTime: 1.2, complianceScore: 91 },
-  { period: 'Feb', deliveryTime: 2.6, qualityScore: 91, costEfficiency: 84, vendorReliability: 89, customerSatisfaction: 86, orderAccuracy: 95, responseTime: 1.1, complianceScore: 92 },
-  { period: 'Mar', deliveryTime: 2.4, qualityScore: 92, costEfficiency: 85, vendorReliability: 90, customerSatisfaction: 87, orderAccuracy: 96, responseTime: 1.0, complianceScore: 93 },
-  { period: 'Apr', deliveryTime: 2.3, qualityScore: 94, costEfficiency: 87, vendorReliability: 91, customerSatisfaction: 89, orderAccuracy: 97, responseTime: 0.9, complianceScore: 94 },
-  { period: 'May', deliveryTime: 2.2, qualityScore: 93, costEfficiency: 86, vendorReliability: 92, customerSatisfaction: 88, orderAccuracy: 96, responseTime: 0.8, complianceScore: 95 },
-  { period: 'Jun', deliveryTime: 2.3, qualityScore: 94, costEfficiency: 87, vendorReliability: 91, customerSatisfaction: 89, orderAccuracy: 97, responseTime: 0.9, complianceScore: 94 }
+  { period: 'Jan', deliveryTime: 2.8, qualityScore: 89, costEfficiency: 82, vendorReliability: 88, customerSatisfaction: 85, orderAccuracy: 94, responseTime: 1.2, complianceScore: 91, blockchainTransparency: 99.8,
+    fraudDetectionRate: 97.5,
+    immutableRecords: 100,
+    transactionVolume: 2450 },
+  { period: 'Feb', deliveryTime: 2.6, qualityScore: 91, costEfficiency: 84, vendorReliability: 89, customerSatisfaction: 86, orderAccuracy: 95, responseTime: 1.1, complianceScore: 92, blockchainTransparency: 99.8,
+    fraudDetectionRate: 97.5,
+    immutableRecords: 100,
+    transactionVolume: 2450},
+  { period: 'Mar', deliveryTime: 2.4, qualityScore: 92, costEfficiency: 85, vendorReliability: 90, customerSatisfaction: 87, orderAccuracy: 96, responseTime: 1.0, complianceScore: 93, blockchainTransparency: 99.8,
+    fraudDetectionRate: 97.5,
+    immutableRecords: 100,
+    transactionVolume: 2450 },
+  { period: 'Apr', deliveryTime: 2.3, qualityScore: 94, costEfficiency: 87, vendorReliability: 91, customerSatisfaction: 89, orderAccuracy: 97, responseTime: 0.9, complianceScore: 94, blockchainTransparency: 99.8,
+    fraudDetectionRate: 97.5,
+    immutableRecords: 100,
+    transactionVolume: 2450 },
+  { period: 'May', deliveryTime: 2.2, qualityScore: 93, costEfficiency: 86, vendorReliability: 92, customerSatisfaction: 88, orderAccuracy: 96, responseTime: 0.8, complianceScore: 95, blockchainTransparency: 99.8,
+    fraudDetectionRate: 97.5,
+    immutableRecords: 100,
+    transactionVolume: 2450},
+  { period: 'Jun', deliveryTime: 2.3, qualityScore: 94, costEfficiency: 87, vendorReliability: 91, customerSatisfaction: 89, orderAccuracy: 97, responseTime: 0.9, complianceScore: 94, blockchainTransparency: 99.8,
+    fraudDetectionRate: 97.5,
+    immutableRecords: 100,
+    transactionVolume: 2450}
 ];
 
 const MetricCard: React.FC<{ metric: PerformanceMetric }> = ({ metric }) => {
@@ -158,6 +200,8 @@ const MetricCard: React.FC<{ metric: PerformanceMetric }> = ({ metric }) => {
       case 'warning': return 'text-yellow-600 bg-yellow-50';
       case 'critical': return 'text-red-600 bg-red-50';
       default: return 'text-muted-foreground bg-muted';
+      case 'blockchain-transparency': return <Database className="h-5 w-5" />;
+      case 'fraud-detection': return <Shield className="h-5 w-5" />;
     }
   };
 
@@ -450,6 +494,58 @@ export const PerformanceMetrics: React.FC<PerformanceMetricsProps> = ({
           </CardContent>
         </Card>
       </div>
+      {/* Blockchain Transparency Dashboard */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <Database className="h-5 w-5" />
+            <span>Blockchain Transparency</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-green-600">99.8%</div>
+              <div className="text-sm text-muted-foreground">Verified Transactions</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-blue-600">24,567</div>
+              <div className="text-sm text-muted-foreground">Immutable Records</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-purple-600">0.2s</div>
+              <div className="text-sm text-muted-foreground">Avg Verification Time</div>
+            </div>
+          </div>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={data}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis dataKey="period" stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                <Tooltip content={<CustomTooltip />} />
+                <Legend />
+                <Line
+                  type="monotone"
+                  dataKey="blockchainTransparency"
+                  stroke={PERFORMANCE_COLORS.success}
+                  strokeWidth={2}
+                  dot={{ r: 3 }}
+                  name="Blockchain Transparency"
+                />
+                <Line
+                  type="monotone"
+                  dataKey="fraudDetectionRate"
+                  stroke={PERFORMANCE_COLORS.danger}
+                  strokeWidth={2}
+                  dot={{ r: 3 }}
+                  name="Fraud Detection Rate"
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Detailed Metrics */}
       <Card>

@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react'; // Added useEffect
 import { motion, AnimatePresence } from 'framer-motion';
+import { Database, Link2, Zap, Activity, Globe, Lock, Hash, CheckCircle2, AlertOctagon } from 'lucide-react';
 import {
   AlertTriangle,
   Shield,
@@ -18,6 +19,7 @@ import {
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 // REMOVED: import { Layout } from '@/components/layout/Layout';
 // ADDED: Import the useLayout hook
@@ -61,7 +63,270 @@ interface FraudStats {
   detectionRate: number;
   avgResponseTime: number;
 }
+interface BlockchainTransaction {
+  id: string;
+  hash: string;
+  timestamp: string;
+  type: 'delivery' | 'payment' | 'compliance' | 'audit';
+  vendorId: string;
+  amount?: number;
+  verified: boolean;
+  blockNumber: number;
+  gasUsed: number;
+  confidence: number;
+}
 
+interface BlockchainFraudMetrics {
+  immutableAuditTrail: number;
+  blockchainVerifiedTransactions: number;
+  smartContractValidations: number;
+  networkConsensusScore: number;
+  fraudPrevention: {
+    aiDetection: number;
+    blockchainVerification: number;
+    combined: number;
+  };
+  realTimeAlerts: number;
+  automaticFlags: number;
+}
+
+// ADD this component before the FraudDetection component
+const BlockchainFraudCard: React.FC<{
+  title: string;
+  value: string | number;
+  subtitle?: string;
+  icon: React.ReactNode;
+  color: string;
+  verified?: boolean;
+  blockchainHash?: string;
+}> = ({ title, value, subtitle, icon, color, verified, blockchainHash }) => (
+  <Card className="relative overflow-hidden transition-all duration-200 hover:shadow-lg border-l-4 border-blue-500">
+    <CardContent className="p-6">
+      <div className="flex items-center justify-between">
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <p className="text-sm font-medium text-muted-foreground">{title}</p>
+            {verified && <CheckCircle2 className="w-4 h-4 text-green-500" />}
+            {blockchainHash && <Database className="w-3 h-3 text-blue-500" />}
+          </div>
+          <p className="text-2xl font-bold">{value}</p>
+          {subtitle && (
+            <p className="text-xs text-muted-foreground">{subtitle}</p>
+          )}
+          {blockchainHash && (
+            <div className="flex items-center gap-2">
+              <Hash className="w-3 h-3 text-gray-400" />
+              <p className="text-xs text-blue-500 font-mono truncate w-32">
+                {blockchainHash}
+              </p>
+            </div>
+          )}
+        </div>
+        <div className={cn("p-3 rounded-full", color)}>
+          {icon}
+        </div>
+      </div>
+    </CardContent>
+  </Card>
+);
+
+// ADD this component before the FraudDetection component
+const BlockchainFraudSection: React.FC<{
+  blockchainFraudMetrics: BlockchainFraudMetrics;
+  recentTransactions: BlockchainTransaction[];
+}> = ({ blockchainFraudMetrics, recentTransactions }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ delay: 0.2 }}
+    className="space-y-6"
+  >
+    <div className="flex items-center justify-between">
+      <h3 className="text-lg font-semibold flex items-center gap-2">
+        <Database className="w-5 h-5 text-blue-600" />
+        Blockchain Fraud Detection
+      </h3>
+      <div className="flex items-center gap-2">
+        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+          <Activity className="w-3 h-3 mr-1" />
+          Real-time Monitoring
+        </Badge>
+        <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+          <Lock className="w-3 h-3 mr-1" />
+          Immutable Records
+        </Badge>
+      </div>
+    </div>
+
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <BlockchainFraudCard
+        title="Immutable Audit Trail"
+        value={blockchainFraudMetrics.immutableAuditTrail.toLocaleString()}
+        subtitle="Tamper-proof records"
+        icon={<Lock className="w-5 h-5 text-white" />}
+        color="bg-blue-600"
+        verified={true}
+        blockchainHash="0x4a7b8c9d...ef12"
+      />
+      <BlockchainFraudCard
+        title="Verified Transactions"
+        value={`${blockchainFraudMetrics.blockchainVerifiedTransactions.toLocaleString()}`}
+        subtitle="Blockchain validated"
+        icon={<CheckCircle2 className="w-5 h-5 text-white" />}
+        color="bg-green-600"
+        verified={true}
+        blockchainHash="0x8f3e4d5c...ab67"
+      />
+      <BlockchainFraudCard
+        title="Smart Contract Validations"
+        value={blockchainFraudMetrics.smartContractValidations.toLocaleString()}
+        subtitle="Automated checks"
+        icon={<Zap className="w-5 h-5 text-white" />}
+        color="bg-purple-600"
+        verified={true}
+        blockchainHash="0x2b5c8a9f...cd34"
+      />
+      <BlockchainFraudCard
+        title="Network Consensus"
+        value={`${blockchainFraudMetrics.networkConsensusScore.toFixed(1)}/10`}
+        subtitle="Validator agreement"
+        icon={<Globe className="w-5 h-5 text-white" />}
+        color="bg-indigo-600"
+        verified={true}
+        blockchainHash="0x7d4e1f2a...gh78"
+      />
+    </div>
+
+    <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Zap className="w-5 h-5 text-yellow-600" />
+            Multi-Layer Fraud Prevention
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">AI Detection</span>
+                <span className="text-lg font-bold text-blue-600">
+                  {blockchainFraudMetrics.fraudPrevention.aiDetection.toFixed(1)}%
+                </span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div
+                  className="bg-blue-500 h-2 rounded-full"
+                  style={{ width: `${blockchainFraudMetrics.fraudPrevention.aiDetection}%` }}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">Blockchain Verification</span>
+                <span className="text-lg font-bold text-green-600">
+                  {blockchainFraudMetrics.fraudPrevention.blockchainVerification.toFixed(1)}%
+                </span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div
+                  className="bg-green-500 h-2 rounded-full"
+                  style={{ width: `${blockchainFraudMetrics.fraudPrevention.blockchainVerification}%` }}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-3 pt-2 border-t">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">Combined Accuracy</span>
+                <span className="text-xl font-bold text-purple-600">
+                  {blockchainFraudMetrics.fraudPrevention.combined.toFixed(1)}%
+                </span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-3">
+                <div
+                  className="bg-gradient-to-r from-blue-500 via-green-500 to-purple-500 h-3 rounded-full"
+                  style={{ width: `${blockchainFraudMetrics.fraudPrevention.combined}%` }}
+                />
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <AlertOctagon className="w-5 h-5 text-red-600" />
+            Real-time Blockchain Alerts
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <span className="text-sm">Active Monitors</span>
+              <span className="font-bold text-green-600">
+                {blockchainFraudMetrics.realTimeAlerts}
+              </span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm">Automatic Flags</span>
+              <span className="font-bold text-red-600">
+                {blockchainFraudMetrics.automaticFlags}
+              </span>
+            </div>
+            <div className="pt-2 border-t">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Activity className="w-3 h-3" />
+                <span>Monitoring 24/7 via blockchain network</span>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Hash className="w-5 h-5 text-blue-600" />
+          Recent Blockchain Transactions
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-3">
+          {recentTransactions.slice(0, 5).map((tx, index) => (
+            <motion.div
+              key={tx.id}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: index * 0.1 }}
+              className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+            >
+              <div className="flex items-center gap-3">
+                <div className={cn(
+                  "w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold",
+                  tx.verified ? "bg-green-500" : "bg-yellow-500"
+                )}>
+                  {tx.verified ? <CheckCircle2 className="w-4 h-4" /> : <AlertOctagon className="w-4 h-4" />}
+                </div>
+                <div>
+                  <p className="text-sm font-medium">{tx.type.charAt(0).toUpperCase() + tx.type.slice(1)}</p>
+                  <p className="text-xs text-gray-500 font-mono">{tx.hash}</p>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="text-sm font-medium">Block #{tx.blockNumber}</p>
+                <p className="text-xs text-gray-500">{new Date(tx.timestamp).toLocaleTimeString()}</p>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  </motion.div>
+);
 const mockFraudAlerts: FraudAlert[] = [
   {
     id: 'F001',
@@ -160,7 +425,68 @@ const FraudDetection: React.FC = () => {
   const [selectedSeverity, setSelectedSeverity] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [isRefreshing, setIsRefreshing] = useState(false);
+const [blockchainFraudMetrics] = useState<BlockchainFraudMetrics>({
+  immutableAuditTrail: 234567,
+  blockchainVerifiedTransactions: 187432,
+  smartContractValidations: 156789,
+  networkConsensusScore: 9.7,
+  fraudPrevention: {
+    aiDetection: 94.2,
+    blockchainVerification: 99.8,
+    combined: 98.9
+  },
+  realTimeAlerts: 847,
+  automaticFlags: 23
+});
 
+const [recentTransactions] = useState<BlockchainTransaction[]>([
+  {
+    id: '1',
+    hash: '0x4a7b8c9def123456...',
+    timestamp: new Date(Date.now() - 300000).toISOString(),
+    type: 'delivery',
+    vendorId: 'V001',
+    amount: 15000,
+    verified: true,
+    blockNumber: 1847392,
+    gasUsed: 21000,
+    confidence: 99.8
+  },
+  {
+    id: '2',
+    hash: '0x8f3e4d5cab678901...',
+    timestamp: new Date(Date.now() - 600000).toISOString(),
+    type: 'payment',
+    vendorId: 'V002',
+    amount: 25000,
+    verified: true,
+    blockNumber: 1847385,
+    gasUsed: 35000,
+    confidence: 97.5
+  },
+  {
+    id: '3',
+    hash: '0x2b5c8a9fcd345678...',
+    timestamp: new Date(Date.now() - 900000).toISOString(),
+    type: 'compliance',
+    vendorId: 'V003',
+    verified: false,
+    blockNumber: 1847380,
+    gasUsed: 18000,
+    confidence: 85.2
+  },
+  {
+    id: '4',
+    hash: '0x7d4e1f2agh789012...',
+    timestamp: new Date(Date.now() - 1200000).toISOString(),
+    type: 'audit',
+    vendorId: 'V004',
+    verified: true,
+    blockNumber: 1847375,
+    gasUsed: 42000,
+    confidence: 98.7
+  }
+]);
   // ADDED: useEffect hook to set and clear layout data
   useEffect(() => {
     setLayoutData({
@@ -271,7 +597,10 @@ const FraudDetection: React.FC = () => {
           </Button>
         </div>
       </div> */}
-
+ <BlockchainFraudSection
+        blockchainFraudMetrics={blockchainFraudMetrics}
+        recentTransactions={recentTransactions}
+      />
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <motion.div
@@ -545,6 +874,7 @@ const FraudDetection: React.FC = () => {
                   </div>
                 </div>
               </motion.div>
+
             ))}
           </div>
         </CardContent>

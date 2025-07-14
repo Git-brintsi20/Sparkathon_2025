@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react'; // Added useEffect
 import { Calendar, Download, Filter, TrendingUp, AlertTriangle, CheckCircle, XCircle, Eye, FileText, BarChart3, Clock, User, Shield } from 'lucide-react';
+import { Database, Link, Zap } from 'lucide-react'; // Added blockchain-related imports
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -381,14 +382,15 @@ const ComplianceReport: React.FC = () => {
           </CardContent>
         </Card>
 
+        {/* Replaced existing Risk Score card with Blockchain Verified */}
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Risk Score</p>
-                <p className="text-2xl font-bold text-yellow-600">{data?.fraudMetrics?.riskScore?.toFixed(1)}/10</p>
+                <p className="text-sm text-gray-600">Blockchain Verified</p>
+                <p className="text-2xl font-bold text-blue-600">99.8%</p>
               </div>
-              <Shield className="w-8 h-8 text-yellow-600" />
+              <Database className="w-8 h-8 text-blue-600" />
             </div>
           </CardContent>
         </Card>
@@ -396,11 +398,12 @@ const ComplianceReport: React.FC = () => {
 
       {/* Main Content Tabs */}
       <Tabs value={selectedTab} onValueChange={setSelectedTab}>
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5"> {/* Changed grid-cols to 5 */}
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="vendors">Vendors</TabsTrigger>
           <TabsTrigger value="incidents">Incidents</TabsTrigger>
           <TabsTrigger value="alerts">Alerts</TabsTrigger>
+          <TabsTrigger value="blockchain">Blockchain</TabsTrigger> {/* New Blockchain Tab */}
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
@@ -603,6 +606,122 @@ const ComplianceReport: React.FC = () => {
                     </div>
                   </div>
                 ))}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* New Blockchain TabsContent */}
+        <TabsContent value="blockchain" className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Database className="w-5 h-5" />
+                  Transaction Verification
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <Zap className="w-5 h-5 text-green-600" />
+                      <div>
+                        <div className="font-medium">Latest Block</div>
+                        <div className="text-sm text-gray-500">#847293</div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-sm font-medium">2,450 Transactions</div>
+                      <div className="text-xs text-gray-500">Verified 12s ago</div>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span>Transaction Hash:</span>
+                      <span className="font-mono text-blue-600">0x8a7b...9c2d</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span>Verification Time:</span>
+                      <span>0.2s</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span>Gas Used:</span>
+                      <span>21,000</span>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Shield className="w-5 h-5" />
+                  Fraud Detection
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="text-center">
+                    <div className="text-3xl font-bold text-red-600">97.5%</div>
+                    <div className="text-sm text-gray-500">Detection Accuracy</div>
+                  </div>
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm">Suspicious Patterns</span>
+                      <Badge className="bg-red-100 text-red-800">3 Detected</Badge>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm">Auto-Blocked</span>
+                      <Badge className="bg-yellow-100 text-yellow-800">12 Today</Badge>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm">False Positives</span>
+                      <Badge className="bg-green-100 text-green-800">0.3%</Badge>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+          <Card>
+            <CardHeader>
+              <CardTitle>Immutable Audit Trail</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <div className="border rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-3">
+                      <Link className="w-5 h-5 text-blue-600" />
+                      <span className="font-medium">Delivery Confirmation</span>
+                      <Badge className="bg-blue-100 text-blue-800">Verified</Badge>
+                    </div>
+                    <span className="text-sm text-gray-500">2 hours ago</span>
+                  </div>
+                  <div className="text-sm text-gray-600 mb-2">
+                    Swift Logistics delivery #DL-2024-0156 verified on blockchain
+                  </div>
+                  <div className="text-xs font-mono text-blue-600">
+                    Hash: 0x7a8b9c2d3e4f5g6h7i8j9k0l1m2n3o4p5q6r7s8t9u0v1w2x3y4z5a6b7c8d9e0f
+                  </div>
+                </div>
+                <div className="border rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-3">
+                      <AlertTriangle className="w-5 h-5 text-yellow-600" />
+                      <span className="font-medium">Compliance Violation</span>
+                      <Badge className="bg-yellow-100 text-yellow-800">Recorded</Badge>
+                    </div>
+                    <span className="text-sm text-gray-500">5 hours ago</span>
+                  </div>
+                  <div className="text-sm text-gray-600 mb-2">
+                    Quality standards breach by Global Supply Co permanently recorded
+                  </div>
+                  <div className="text-xs font-mono text-blue-600">
+                    Hash: 0x1a2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p7q8r9s0t1u2v3w4x5y6z7a8b9c0d1e2f
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
