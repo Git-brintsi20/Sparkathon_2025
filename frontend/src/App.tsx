@@ -1,11 +1,13 @@
 import React, { Suspense } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { AnimatePresence } from 'framer-motion';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { LayoutProvider } from './contexts/LayoutContext';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { LoadingSpinner } from './components/common/LoadingSpinner';
 import Layout from './components/layout/Layout';
+import { PageTransition, FadeTransition, withPageTransition } from './components/common/PageTransition';
 import { ROUTES } from './config/routes';
 
 // Lazy load components for better performance
@@ -40,11 +42,40 @@ const Login = React.lazy(() => import('./pages/Auth/Login'));
 const Register = React.lazy(() => import('./pages/Auth/Register'));
 const ForgotPassword = React.lazy(() => import('./pages/Auth/ForgotPassword'));
 
+// Wrap lazy-loaded components with page transitions
+const DashboardWithTransition = withPageTransition(Dashboard, PageTransition);
+const VendorListWithTransition = withPageTransition(VendorList, PageTransition);
+const VendorDetailWithTransition = withPageTransition(VendorDetail, PageTransition);
+const CreateVendorWithTransition = withPageTransition(CreateVendor, PageTransition);
+const EditVendorWithTransition = withPageTransition(EditVendor, PageTransition);
+
+const DeliveryListWithTransition = withPageTransition(DeliveryList, PageTransition);
+const DeliveryDetailWithTransition = withPageTransition(DeliveryDetail, PageTransition);
+const CreateDeliveryWithTransition = withPageTransition(CreateDelivery, PageTransition);
+const EditDeliveryWithTransition = withPageTransition(EditDelivery, PageTransition);
+
+const AnalyticsWithTransition = withPageTransition(Analytics, PageTransition);
+const ComplianceReportWithTransition = withPageTransition(ComplianceReport, PageTransition);
+const FraudDetectionWithTransition = withPageTransition(FraudDetection, PageTransition);
+const PerformanceMetricsWithTransition = withPageTransition(PerformanceMetrics, PageTransition);
+
+const SettingsWithTransition = withPageTransition(Settings, PageTransition);
+const UserProfileWithTransition = withPageTransition(UserProfile, PageTransition);
+const ThemeSettingsWithTransition = withPageTransition(ThemeSettings, PageTransition);
+const SystemConfigWithTransition = withPageTransition(SystemConfig, PageTransition);
+
+// Auth pages use fade transition for a cleaner look
+const LoginWithTransition = withPageTransition(Login, FadeTransition);
+const RegisterWithTransition = withPageTransition(Register, FadeTransition);
+const ForgotPasswordWithTransition = withPageTransition(ForgotPassword, FadeTransition);
+
 // Loading component for route transitions
 const RouteLoader: React.FC = () => (
-  <div className="flex items-center justify-center min-h-screen">
-    <LoadingSpinner size="lg" />
-  </div>
+  <FadeTransition>
+    <div className="flex items-center justify-center min-h-screen">
+      <LoadingSpinner size="lg" />
+    </div>
+  </FadeTransition>
 );
 
 // TEMPORARILY DISABLED PROTECTION - Set this to true to re-enable auth
@@ -83,20 +114,22 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   // Check role-based access
   if (allowedRoles && state.user && !allowedRoles.includes(state.user.role)) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <h2 className="text-2xl font-semibold mb-4">Access Denied</h2>
-          <p className="text-muted-foreground mb-4">
-            You don't have permission to access this page.
-          </p>
-          <button
-            onClick={() => window.history.back()}
-            className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
-          >
-            Go Back
-          </button>
+      <FadeTransition>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <h2 className="text-2xl font-semibold mb-4">Access Denied</h2>
+            <p className="text-muted-foreground mb-4">
+              You don't have permission to access this page.
+            </p>
+            <button
+              onClick={() => window.history.back()}
+              className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+            >
+              Go Back
+            </button>
+          </div>
         </div>
-      </div>
+      </FadeTransition>
     );
   }
   
@@ -125,17 +158,19 @@ const PublicRoute: React.FC<PublicRouteProps> = ({ children }) => {
   return <>{children}</>;
 };
 
-// Route Configuration Component
-const AppRoutes: React.FC = () => {
+// Animated Routes wrapper
+const AnimatedRoutes: React.FC = () => {
+  const location = useLocation();
+  
   return (
-    <Suspense fallback={<RouteLoader />}>
-      <Routes>
+    <AnimatePresence mode="wait">
+      <Routes location={location} key={location.pathname}>
         {/* Public Routes */}
         <Route
           path={ROUTES.LOGIN}
           element={
             <PublicRoute>
-              <Login />
+              <LoginWithTransition />
             </PublicRoute>
           }
         />
@@ -143,7 +178,7 @@ const AppRoutes: React.FC = () => {
           path={ROUTES.REGISTER}
           element={
             <PublicRoute>
-              <Register />
+              <RegisterWithTransition />
             </PublicRoute>
           }
         />
@@ -151,7 +186,7 @@ const AppRoutes: React.FC = () => {
           path={ROUTES.FORGOT_PASSWORD}
           element={
             <PublicRoute>
-              <ForgotPassword />
+              <ForgotPasswordWithTransition />
             </PublicRoute>
           }
         />
@@ -167,16 +202,16 @@ const AppRoutes: React.FC = () => {
         >
           {/* Dashboard */}
           <Route index element={<Navigate to={ROUTES.DASHBOARD} replace />} />
-          <Route path="dashboard" element={<Dashboard />} />
+          <Route path="dashboard" element={<DashboardWithTransition />} />
           
           {/* Vendors */}
-          <Route path="vendors" element={<VendorList />} />
-          <Route path="vendors/:id" element={<VendorDetail />} />
+          <Route path="vendors" element={<VendorListWithTransition />} />
+          <Route path="vendors/:id" element={<VendorDetailWithTransition />} />
           <Route 
             path="vendors/create" 
             element={
               <ProtectedRoute allowedRoles={['admin', 'manager']}>
-                <CreateVendor />
+                <CreateVendorWithTransition />
               </ProtectedRoute>
             } 
           />
@@ -184,20 +219,20 @@ const AppRoutes: React.FC = () => {
             path="vendors/:id/edit" 
             element={
               <ProtectedRoute allowedRoles={['admin', 'manager']}>
-                <EditVendor />
+                <EditVendorWithTransition />
               </ProtectedRoute>
             } 
           />
           
           {/* Deliveries */}
-          <Route path="deliveries" element={<DeliveryList />} />
-          <Route path="deliveries/:id" element={<DeliveryDetail />} />
-          <Route path="deliveries/create" element={<CreateDelivery />} />
+          <Route path="deliveries" element={<DeliveryListWithTransition />} />
+          <Route path="deliveries/:id" element={<DeliveryDetailWithTransition />} />
+          <Route path="deliveries/create" element={<CreateDeliveryWithTransition />} />
           <Route 
             path="deliveries/:id/edit" 
             element={
               <ProtectedRoute allowedRoles={['admin', 'manager']}>
-                <EditDelivery />
+                <EditDeliveryWithTransition />
               </ProtectedRoute>
             } 
           />
@@ -207,7 +242,7 @@ const AppRoutes: React.FC = () => {
             path="analytics"
             element={
               <ProtectedRoute allowedRoles={['manager', 'admin']}>
-                <Analytics />
+                <AnalyticsWithTransition />
               </ProtectedRoute>
             }
           />
@@ -215,7 +250,7 @@ const AppRoutes: React.FC = () => {
             path="analytics/compliance"
             element={
               <ProtectedRoute allowedRoles={['manager', 'admin']}>
-                <ComplianceReport />
+                <ComplianceReportWithTransition />
               </ProtectedRoute>
             }
           />
@@ -223,7 +258,7 @@ const AppRoutes: React.FC = () => {
             path="analytics/fraud"
             element={
               <ProtectedRoute allowedRoles={['admin']}>
-                <FraudDetection />
+                <FraudDetectionWithTransition />
               </ProtectedRoute>
             }
           />
@@ -231,20 +266,20 @@ const AppRoutes: React.FC = () => {
             path="analytics/performance"
             element={
               <ProtectedRoute allowedRoles={['manager', 'admin']}>
-                <PerformanceMetrics />
+                <PerformanceMetricsWithTransition />
               </ProtectedRoute>
             }
           />
           
           {/* Settings */}
-          <Route path="settings" element={<Settings />} />
-          <Route path="settings/profile" element={<UserProfile />} />
-          <Route path="settings/theme" element={<ThemeSettings />} />
+          <Route path="settings" element={<SettingsWithTransition />} />
+          <Route path="settings/profile" element={<UserProfileWithTransition />} />
+          <Route path="settings/theme" element={<ThemeSettingsWithTransition />} />
           <Route
             path="settings/system"
             element={
               <ProtectedRoute allowedRoles={['admin']}>
-                <SystemConfig />
+                <SystemConfigWithTransition />
               </ProtectedRoute>
             }
           />
@@ -254,24 +289,26 @@ const AppRoutes: React.FC = () => {
         <Route
           path="*"
           element={
-            <div className="flex items-center justify-center min-h-screen">
-              <div className="text-center">
-                <h2 className="text-2xl font-semibold mb-4">Page Not Found</h2>
-                <p className="text-muted-foreground mb-4">
-                  The page you're looking for doesn't exist.
-                </p>
-                <button
-                  onClick={() => window.history.back()}
-                  className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
-                >
-                  Go Back
-                </button>
+            <FadeTransition>
+              <div className="flex items-center justify-center min-h-screen">
+                <div className="text-center">
+                  <h2 className="text-2xl font-semibold mb-4">Page Not Found</h2>
+                  <p className="text-muted-foreground mb-4">
+                    The page you're looking for doesn't exist.
+                  </p>
+                  <button
+                    onClick={() => window.history.back()}
+                    className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+                  >
+                    Go Back
+                  </button>
+                </div>
               </div>
-            </div>
+            </FadeTransition>
           }
         />
       </Routes>
-    </Suspense>
+    </AnimatePresence>
   );
 };
 
@@ -283,7 +320,9 @@ const App: React.FC = () => {
         <AuthProvider>
           <LayoutProvider>
             <div className="min-h-screen bg-background font-sans antialiased">
-              <AppRoutes />
+              <Suspense fallback={<RouteLoader />}>
+                <AnimatedRoutes />
+              </Suspense>
             </div>
           </LayoutProvider>
         </AuthProvider>

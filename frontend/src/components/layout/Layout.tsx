@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Outlet } from 'react-router-dom';
 import { cn } from '@/components/lib/utils';
@@ -6,133 +6,194 @@ import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 import { useLayout } from '@/contexts/LayoutContext';
 
+// Animation variants for smooth transitions
+const layoutVariants = {
+  expanded: {
+    marginLeft: 280,
+    width: 'calc(100% - 280px)',
+    transition: {
+      type: 'spring',
+      stiffness: 300,
+      damping: 30,
+      duration: 0.4
+    }
+  },
+  collapsed: {
+    marginLeft: 80,
+    width: 'calc(100% - 80px)',
+    transition: {
+      type: 'spring',
+      stiffness: 300,
+      damping: 30,
+      duration: 0.4
+    }
+  },
+  mobile: {
+    marginLeft: 0,
+    width: '100%',
+    transition: {
+      type: 'spring',
+      stiffness: 400,
+      damping: 35,
+      duration: 0.3
+    }
+  }
+};
+
+const sidebarVariants = {
+  initial: { 
+    x: -320,
+    opacity: 0 
+  },
+  animate: { 
+    x: 0,
+    opacity: 1,
+    transition: {
+      type: 'spring',
+      stiffness: 400,
+      damping: 40,
+      duration: 0.5
+    }
+  },
+  exit: { 
+    x: -320,
+    opacity: 0,
+    transition: {
+      duration: 0.3,
+      ease: 'easeInOut'
+    }
+  }
+};
+
+const pageVariants = {
+  initial: {
+    opacity: 0,
+    y: 20,
+    scale: 0.98
+  },
+  animate: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: {
+      duration: 0.5,
+      ease: [0.175, 0.885, 0.32, 1.275],
+      staggerChildren: 0.1
+    }
+  },
+  exit: {
+    opacity: 0,
+    y: -10,
+    scale: 0.98,
+    transition: {
+      duration: 0.3,
+      ease: 'easeOut'
+    }
+  }
+};
+
+const overlayVariants = {
+  initial: { 
+    opacity: 0,
+    backdropFilter: 'blur(0px)'
+  },
+  animate: { 
+    opacity: 1,
+    backdropFilter: 'blur(8px)',
+    transition: {
+      duration: 0.3,
+      ease: 'easeOut'
+    }
+  },
+  exit: { 
+    opacity: 0,
+    backdropFilter: 'blur(0px)',
+    transition: {
+      duration: 0.2,
+      ease: 'easeIn'
+    }
+  }
+};
+
 const Layout: React.FC = () => {
-  // Get the page data from our context
   const { pageTitle, pageDescription, breadcrumbs, headerActions } = useLayout();
   
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
+  const [isTablet, setIsTablet] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
-  // Enhanced responsive behavior with smooth transitions
-  useEffect(() => {
-    const checkMobile = () => {
-      const mobile = window.innerWidth < 1024;
-      setIsMobile(mobile);
-      if (mobile) {
-        setIsSidebarOpen(false);
-      } else {
-        setIsSidebarOpen(true);
-      }
-    };
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
+  // Enhanced responsive behavior with proper breakpoints
+  const checkScreenSize = useCallback(() => {
+    const width = window.innerWidth;
+    const mobile = width < 768;
+    const tablet = width >= 768 && width < 1024;
+    const desktop = width >= 1024;
+
+    setIsMobile(mobile);
+    setIsTablet(tablet);
+
+    // Auto-close sidebar on mobile/tablet, auto-open on desktop
+    if (mobile || tablet) {
+      setIsSidebarOpen(false);
+    } else if (desktop) {
+      setIsSidebarOpen(true);
+    }
   }, []);
 
-  const toggleSidebar = () => {
-    setIsSidebarOpen(!isSidebarOpen);
-  };
+  useEffect(() => {
+    setMounted(true);
+    checkScreenSize();
+    
+    const handleResize = () => {
+      checkScreenSize();
+    };
 
-  const handleMobileOverlayClick = () => {
-    if (isMobile) {
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [checkScreenSize]);
+
+  const toggleSidebar = useCallback(() => {
+    setIsSidebarOpen(prev => !prev);
+  }, []);
+
+  const handleMobileOverlayClick = useCallback(() => {
+    if (isMobile || isTablet) {
       setIsSidebarOpen(false);
     }
-  };
+  }, [isMobile, isTablet]);
 
-  const mainContentVariants = {
-    expanded: {
-      transition: {
-        type: 'spring',
-        stiffness: 400,
-        damping: 40,
-        duration: 0.4
-      }
-    },
-    collapsed: {
-      transition: {
-        type: 'spring',
-        stiffness: 400,
-        damping: 40,
-        duration: 0.4
-      }
-    }
-  };
+  // Prevent hydration mismatch
+  if (!mounted) {
+    return (
+      <div className="h-screen bg-background flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
-  const pageVariants = {
-    initial: {
-      opacity: 0,
-      y: 20,
-      filter: 'blur(4px)'
-    },
-    animate: {
-      opacity: 1,
-      y: 0,
-      filter: 'blur(0px)',
-      transition: {
-        duration: 0.5,
-        ease: [0.175, 0.885, 0.32, 1.275],
-        staggerChildren: 0.1
-      }
-    },
-    exit: {
-      opacity: 0,
-      y: -20,
-      filter: 'blur(4px)',
-      transition: {
-        duration: 0.3,
-        ease: 'easeOut'
-      }
-    }
-  };
-
-  const headerVariants = {
-    initial: {
-      opacity: 0,
-      y: -10
-    },
-    animate: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        delay: 0.1,
-        duration: 0.4,
-        ease: 'easeOut'
-      }
-    }
-  };
-
-  const contentVariants = {
-    initial: {
-      opacity: 0,
-      scale: 0.98
-    },
-    animate: {
-      opacity: 1,
-      scale: 1,
-      transition: {
-        delay: 0.2,
-        duration: 0.4,
-        ease: 'easeOut'
-      }
-    }
+  // Determine layout variant based on screen size and sidebar state
+  const getLayoutVariant = () => {
+    if (isMobile || isTablet) return 'mobile';
+    return isSidebarOpen ? 'expanded' : 'collapsed';
   };
 
   return (
     <div className="h-screen bg-background overflow-hidden relative">
-      {/* Background gradient overlay for depth */}
-      <div className="absolute inset-0 bg-gradient-to-br from-background via-background to-background-secondary/20 pointer-events-none" />
+      {/* Ambient background with subtle gradient */}
+      <div className="fixed inset-0 bg-gradient-to-br from-background via-background to-muted/5 pointer-events-none" />
       
-      {/* Sidebar with enhanced animations */}
+      {/* Floating decoration elements */}
+      <div className="fixed top-20 right-20 w-2 h-2 bg-primary/20 rounded-full animate-float opacity-60 pointer-events-none" />
+      <div className="fixed bottom-32 left-32 w-1 h-1 bg-secondary/30 rounded-full animate-float opacity-40 pointer-events-none" style={{ animationDelay: '1s' }} />
+      <div className="fixed top-1/2 right-1/4 w-1.5 h-1.5 bg-success/20 rounded-full animate-float opacity-30 pointer-events-none" style={{ animationDelay: '2s' }} />
+
+      {/* Sidebar Component */}
       <motion.div
-        initial={{ x: -280 }}
-        animate={{ x: 0 }}
-        transition={{ 
-          type: 'spring', 
-          stiffness: 300, 
-          damping: 30,
-          duration: 0.5
-        }}
-        className="relative z-40"
+        variants={sidebarVariants}
+        initial="initial"
+        animate="animate"
+        className="fixed inset-y-0 left-0 z-50"
       >
         <Sidebar
           isOpen={isSidebarOpen}
@@ -141,91 +202,149 @@ const Layout: React.FC = () => {
         />
       </motion.div>
 
-      {/* Main Content Area - FIXED: Proper positioning to avoid sidebar overlap */}
+      {/* Main Content Area */}
       <motion.div
-        variants={mainContentVariants}
-        animate={isSidebarOpen ? 'expanded' : 'collapsed'}
+        variants={layoutVariants}
+        animate={getLayoutVariant()}
         className="flex flex-col h-full relative z-10"
         style={{
-          // FIXED: Proper margin calculation based on sidebar state
-          marginLeft: isMobile 
-            ? '0px' 
-            : isSidebarOpen 
-              ? '280px' 
-              : '80px',
-          width: isMobile 
-            ? '100%' 
-            : isSidebarOpen 
-              ? 'calc(100% - 280px)' 
-              : 'calc(100% - 80px)',
-          transition: 'margin-left 0.3s ease, width 0.3s ease'
+          // Ensure proper positioning without overlap
+          ...(isMobile || isTablet ? {} : {
+            marginLeft: isSidebarOpen ? '280px' : '80px',
+            width: isSidebarOpen ? 'calc(100% - 280px)' : 'calc(100% - 80px)'
+          })
         }}
       >
-        {/* Header with glass effect */}
-        <motion.div
-          variants={headerVariants}
-          initial="initial"
-          animate="animate"
-          className="glass-effect border-b border-border/50 backdrop-blur-md flex-shrink-0"
+        {/* Enhanced Header with glass morphism */}
+        <motion.header
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ 
+            opacity: 1, 
+            y: 0,
+            transition: {
+              duration: 0.5,
+              delay: 0.2,
+              ease: 'easeOut'
+            }
+          }}
+          className={cn(
+            'flex-shrink-0 relative z-20',
+            'bg-background/80 backdrop-blur-xl',
+            'border-b border-border/50',
+            'shadow-sm'
+          )}
         >
-          <Header 
-            onMenuToggle={toggleSidebar}
-            pageTitle={pageTitle}
-            pageDescription={pageDescription}
-            breadcrumbs={breadcrumbs}
-            headerActions={headerActions}
-          />
-        </motion.div>
+          <div className="absolute inset-0 bg-gradient-to-r from-background/90 via-background/95 to-background/90" />
+          <div className="relative">
+            <Header 
+              onMenuToggle={toggleSidebar}
+              pageTitle={pageTitle}
+              pageDescription={pageDescription}
+              breadcrumbs={breadcrumbs}
+              headerActions={headerActions}
+            />
+          </div>
+        </motion.header>
 
-        {/* Main Content with professional animations */}
+        {/* Main Content with Enhanced Animations */}
         <motion.main
           variants={pageVariants}
           initial="initial"
           animate="animate"
           exit="exit"
           className={cn(
-            'flex-1 overflow-auto relative p-6',
-            'scrollbar-hide' // Custom utility from tailwind config
+            'flex-1 relative overflow-hidden',
+            'bg-gradient-to-br from-background via-background to-muted/2'
           )}
         >
-          {/* Scroll gradient indicators */}
-          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-border to-transparent z-20" />
-          <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-border to-transparent z-20" />
-          
-          <motion.div 
-            variants={contentVariants}
-            className="h-full min-h-0 relative"
-          >
-            {/* Content wrapper with subtle animations */}
-            <div className="animate-slide-in-up">
-              <Outlet />
-            </div>
-          </motion.div>
+          {/* Content scroll area */}
+          <div className={cn(
+            'h-full overflow-y-auto overflow-x-hidden',
+            'scrollbar-hide',
+            'p-4 md:p-6 lg:p-8'
+          )}>
+            {/* Scroll indicators */}
+            <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-border/30 to-transparent z-10" />
+            <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-border/30 to-transparent z-10" />
+            
+            {/* Content wrapper with staggered animations */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ 
+                opacity: 1, 
+                y: 0,
+                transition: {
+                  duration: 0.6,
+                  delay: 0.3,
+                  ease: [0.175, 0.885, 0.32, 1.275]
+                }
+              }}
+              className="relative z-10 min-h-full"
+            >
+              {/* Router outlet with page transitions */}
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={location.pathname}
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ 
+                    opacity: 1, 
+                    x: 0,
+                    transition: {
+                      duration: 0.4,
+                      ease: 'easeOut'
+                    }
+                  }}
+                  exit={{ 
+                    opacity: 0, 
+                    x: -20,
+                    transition: {
+                      duration: 0.3,
+                      ease: 'easeIn'
+                    }
+                  }}
+                  className="animate-slide-in-up"
+                >
+                  <Outlet />
+                </motion.div>
+              </AnimatePresence>
+            </motion.div>
+          </div>
         </motion.main>
       </motion.div>
 
-      {/* Enhanced Mobile Overlay with blur effect */}
+      {/* Enhanced Mobile/Tablet Overlay */}
       <AnimatePresence>
-        {isMobile && isSidebarOpen && (
+        {(isMobile || isTablet) && isSidebarOpen && (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3, ease: 'easeOut' }}
+            variants={overlayVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
             className={cn(
-              'fixed inset-0 z-30 lg:hidden',
-              'bg-black/60 backdrop-blur-sm',
-              'cursor-pointer'
+              'fixed inset-0 z-40',
+              'bg-black/50 backdrop-blur-sm',
+              'cursor-pointer lg:hidden'
             )}
             onClick={handleMobileOverlayClick}
           />
         )}
       </AnimatePresence>
 
-      {/* Floating elements for visual depth */}
-      <div className="fixed top-10 right-10 w-2 h-2 bg-primary/20 rounded-full animate-float opacity-60 pointer-events-none" />
-      <div className="fixed bottom-20 left-20 w-1 h-1 bg-accent/30 rounded-full animate-float opacity-40 pointer-events-none" style={{ animationDelay: '1s' }} />
-      <div className="fixed top-1/2 right-1/4 w-1.5 h-1.5 bg-success/20 rounded-full animate-float opacity-30 pointer-events-none" style={{ animationDelay: '2s' }} />
+      {/* Loading state overlay for smooth transitions */}
+      <AnimatePresence>
+        {!mounted && (
+          <motion.div
+            initial={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-background flex items-center justify-center"
+          >
+            <div className="flex flex-col items-center gap-4">
+              <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+              <p className="text-sm text-muted-foreground animate-pulse">Loading...</p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
