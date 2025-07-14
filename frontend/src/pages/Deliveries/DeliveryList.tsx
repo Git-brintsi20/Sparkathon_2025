@@ -13,7 +13,7 @@ import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { useDeliveries } from '@/hooks/useDeliveries';
 import { cn } from '@/components/lib/utils';
 import { useLayout } from '@/contexts/LayoutContext';
-import type { LayoutContextType } from '@/contexts/LayoutContext'; // Add this import
+import type { LayoutContextType } from '@/contexts/LayoutContext';
 import { ROUTES } from '@/config/routes';
 import type { Delivery } from '@/types/delivery';
 import { Shield, Hash} from 'lucide-react';
@@ -34,11 +34,11 @@ interface DeliveryListItem extends Delivery {
   condition?: string;
   weight?: number;
   quantity?: number;
-  blockchainStatus?: BlockchainStatus; // Add this line
+  blockchainStatus?: BlockchainStatus;
 }
 
 // Mock data for demonstration - moved to top level to avoid recreating
-onst mockDeliveries: DeliveryListItem[] = [
+const mockDeliveries: DeliveryListItem[] = [
   {
     id: '1',
     orderId: 'PO-2024-001',
@@ -155,6 +155,7 @@ onst mockDeliveries: DeliveryListItem[] = [
     }
   }
 ];
+
 const BlockchainStatusBadge = ({ blockchainStatus }: { blockchainStatus?: BlockchainStatus }) => {
   if (!blockchainStatus) {
     return (
@@ -193,7 +194,8 @@ const BlockchainStatusBadge = ({ blockchainStatus }: { blockchainStatus?: Blockc
         };
     }
   };
-   const config = getStatusConfig(blockchainStatus.status);
+  
+  const config = getStatusConfig(blockchainStatus.status);
   const Icon = config.icon;
 
   return (
@@ -206,6 +208,7 @@ const BlockchainStatusBadge = ({ blockchainStatus }: { blockchainStatus?: Blockc
     </div>
   );
 };
+
 const statusColors = {
   pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
   verified: 'bg-green-100 text-green-800 border-green-200',
@@ -221,27 +224,29 @@ const statusIcons = {
   in_transit: Package,
   delivered: Package
 };
- const [blockchainFilter, setBlockchainFilter] = useState<string>('all');
+
 const DeliveryList: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  
+  // ✅ FIXED: Always call hooks at the top level
+  // Use error boundaries or conditional rendering instead of try-catch
+  const deliveriesHook = useDeliveries();
+  const layoutHook = useLayout();
+  
+  // State for filters
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [conditionFilter, setConditionFilter] = useState<string>('all');
+  const [blockchainFilter, setBlockchainFilter] = useState<string>('all');
 
-  // Safe hook usage with fallback
-  let deliveries: DeliveryListItem[] = [];
-  let loading = false;
-  let error = null;
-  let refreshDeliveries = () => {};
-
-  try {
-    const hookData = useDeliveries();
-    deliveries = hookData.deliveries || [];
-    loading = hookData.loading || false;
-    error = hookData.error || null;
-    refreshDeliveries = hookData.refreshDeliveries || (() => {});
-  } catch (hookError) {
-    console.warn('useDeliveries hook failed, using mock data:', hookError);
-    // Will use mock data as fallback
-  }
+  // Extract data from hooks with fallbacks
+  const deliveries = deliveriesHook?.deliveries || [];
+  const loading = deliveriesHook?.loading || false;
+  const error = deliveriesHook?.error || null;
+  const refreshDeliveries = deliveriesHook?.refreshDeliveries || (() => {});
+  
+  const setLayoutData = layoutHook?.setLayoutData || ((data: any) => {});
 
   // Get filtered data based on route
   const getFilteredData = useMemo(() => {
@@ -259,78 +264,53 @@ const DeliveryList: React.FC = () => {
     return dataToFilter;
   }, [deliveries, location.pathname]);
 
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [conditionFilter, setConditionFilter] = useState<string>('all');
-  
-  // Safe layout context usage
-
-// Safe layout context usage
-let setLayoutData = (data: Partial<Omit<LayoutContextType, "setLayoutData">>) => {
-  // Fallback function - do nothing if layout context is unavailable
-};
-try {
-  const layoutContext = useLayout();
-  setLayoutData = layoutContext.setLayoutData;
-} catch (layoutError) {
-  console.warn('useLayout hook failed:', layoutError);
-}
-
   // Filter deliveries with safe array operations
- const filteredDeliveries = useMemo(() => {
-  if (!Array.isArray(getFilteredData)) {
-    return [];
-  }
+  const filteredDeliveries = useMemo(() => {
+    if (!Array.isArray(getFilteredData)) {
+      return [];
+    }
 
-  let filtered = [...getFilteredData];
+    let filtered = [...getFilteredData];
 
-  // Search filter
-  if (searchTerm) {
-    filtered = filtered.filter(delivery => {
-      const barcode = delivery.barcode || '';
-      const poNumber = delivery.poNumber || delivery.orderId || '';
-      const vendorName = delivery.vendorName || '';
-      
-      return barcode.toLowerCase().includes(searchTerm.toLowerCase()) ||
-             poNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-             vendorName.toLowerCase().includes(searchTerm.toLowerCase());
-    });
-  }
+    // Search filter
+    if (searchTerm) {
+      filtered = filtered.filter(delivery => {
+        const barcode = delivery.barcode || '';
+        const poNumber = delivery.poNumber || delivery.orderId || '';
+        const vendorName = delivery.vendorName || '';
+        
+        return barcode.toLowerCase().includes(searchTerm.toLowerCase()) ||
+               poNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+               vendorName.toLowerCase().includes(searchTerm.toLowerCase());
+      });
+    }
 
-  // Status filter
-  if (statusFilter !== 'all') {
-    filtered = filtered.filter(delivery => delivery.status === statusFilter);
-  }
+    // Status filter
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(delivery => delivery.status === statusFilter);
+    }
 
-  // Condition filter
-  if (conditionFilter !== 'all') {
-    filtered = filtered.filter(delivery => delivery.condition === conditionFilter);
-  }
+    // Condition filter
+    if (conditionFilter !== 'all') {
+      filtered = filtered.filter(delivery => delivery.condition === conditionFilter);
+    }
 
-  // Blockchain filter
-  if (blockchainFilter !== 'all') {
-    filtered = filtered.filter(delivery => 
-      delivery.blockchainStatus?.status === blockchainFilter
-    );
-  }
+    // Blockchain filter
+    if (blockchainFilter !== 'all') {
+      filtered = filtered.filter(delivery => 
+        delivery.blockchainStatus?.status === blockchainFilter
+      );
+    }
 
-  return filtered;
-}, [getFilteredData, searchTerm, statusFilter, conditionFilter, blockchainFilter]);
+    return filtered;
+  }, [getFilteredData, searchTerm, statusFilter, conditionFilter, blockchainFilter]);
 
   const handleRowClick = (delivery: DeliveryListItem) => {
-    try {
-      navigate(`${ROUTES.DELIVERIES}/${delivery.id}`);
-    } catch (navError) {
-      console.error('Navigation error:', navError);
-    }
+    navigate(`${ROUTES.DELIVERIES}/${delivery.id}`);
   };
 
   const handleEdit = (delivery: DeliveryListItem) => {
-    try {
-      navigate(`${ROUTES.DELIVERIES}/edit/${delivery.id}`);
-    } catch (navError) {
-      console.error('Navigation error:', navError);
-    }
+    navigate(`${ROUTES.DELIVERIES}/edit/${delivery.id}`);
   };
 
   const handleDelete = (delivery: DeliveryListItem) => {
@@ -352,82 +332,82 @@ try {
   };
 
   const columns = [
-  {
-    key: 'barcode' as keyof DeliveryListItem,
-    label: 'Barcode',
-    sortable: true,
-    render: (value: string | undefined) => (
-      <div className="font-mono text-sm">{value || 'N/A'}</div>
-    )
-  },
-  {
-    key: 'poNumber' as keyof DeliveryListItem,
-    label: 'PO Number',
-    sortable: true,
-    render: (value: string | undefined, row: DeliveryListItem) => (
-      <div className="font-medium">{value || row.orderId || 'N/A'}</div>
-    )
-  },
-  {
-    key: 'vendorName' as keyof DeliveryListItem,
-    label: 'Vendor',
-    sortable: true
-  },
-  {
-    key: 'status' as keyof DeliveryListItem,
-    label: 'Status',
-    sortable: true,
-    render: (value: string) => <StatusBadge status={value} />
-  },
-  {
-    key: 'blockchainStatus' as keyof DeliveryListItem,
-    label: 'Blockchain',
-    sortable: false,
-    render: (value: BlockchainStatus | undefined) => (
-      <BlockchainStatusBadge blockchainStatus={value} />
-    )
-  },
-  {
-    key: 'weight' as keyof DeliveryListItem,
-    label: 'Weight (kg)',
-    sortable: true,
-    render: (value: number | undefined) => (
-      <div className="text-right font-mono">
-        {value ? value.toFixed(1) : 'N/A'}
-      </div>
-    )
-  },
-  {
-    key: 'quantity' as keyof DeliveryListItem,
-    label: 'Quantity',
-    sortable: true,
-    render: (value: number | undefined, row: DeliveryListItem) => (
-      <div className="text-right font-mono">
-        {value || row.items?.reduce((sum, item) => sum + item.quantity, 0) || 'N/A'}
-      </div>
-    )
-  },
-  {
-    key: 'condition' as keyof DeliveryListItem,
-    label: 'Condition',
-    sortable: true,
-    render: (value: string | undefined, row: DeliveryListItem) => (
-      <div className="capitalize">
-        {value || row.items?.[0]?.condition || 'N/A'}
-      </div>
-    )
-  },
-  {
-    key: 'createdAt' as keyof DeliveryListItem,
-    label: 'Created',
-    sortable: true,
-    render: (value: string) => (
-      <div className="text-sm text-muted-foreground">
-        {new Date(value).toLocaleDateString()}
-      </div>
-    )
-  }
-];
+    {
+      key: 'barcode' as keyof DeliveryListItem,
+      label: 'Barcode',
+      sortable: true,
+      render: (value: string | undefined) => (
+        <div className="font-mono text-sm">{value || 'N/A'}</div>
+      )
+    },
+    {
+      key: 'poNumber' as keyof DeliveryListItem,
+      label: 'PO Number',
+      sortable: true,
+      render: (value: string | undefined, row: DeliveryListItem) => (
+        <div className="font-medium">{value || row.orderId || 'N/A'}</div>
+      )
+    },
+    {
+      key: 'vendorName' as keyof DeliveryListItem,
+      label: 'Vendor',
+      sortable: true
+    },
+    {
+      key: 'status' as keyof DeliveryListItem,
+      label: 'Status',
+      sortable: true,
+      render: (value: string) => <StatusBadge status={value} />
+    },
+    {
+      key: 'blockchainStatus' as keyof DeliveryListItem,
+      label: 'Blockchain',
+      sortable: false,
+      render: (value: BlockchainStatus | undefined) => (
+        <BlockchainStatusBadge blockchainStatus={value} />
+      )
+    },
+    {
+      key: 'weight' as keyof DeliveryListItem,
+      label: 'Weight (kg)',
+      sortable: true,
+      render: (value: number | undefined) => (
+        <div className="text-right font-mono">
+          {value ? value.toFixed(1) : 'N/A'}
+        </div>
+      )
+    },
+    {
+      key: 'quantity' as keyof DeliveryListItem,
+      label: 'Quantity',
+      sortable: true,
+      render: (value: number | undefined, row: DeliveryListItem) => (
+        <div className="text-right font-mono">
+          {value || row.items?.reduce((sum, item) => sum + item.quantity, 0) || 'N/A'}
+        </div>
+      )
+    },
+    {
+      key: 'condition' as keyof DeliveryListItem,
+      label: 'Condition',
+      sortable: true,
+      render: (value: string | undefined, row: DeliveryListItem) => (
+        <div className="capitalize">
+          {value || row.items?.[0]?.condition || 'N/A'}
+        </div>
+      )
+    },
+    {
+      key: 'createdAt' as keyof DeliveryListItem,
+      label: 'Created',
+      sortable: true,
+      render: (value: string) => (
+        <div className="text-sm text-muted-foreground">
+          {new Date(value).toLocaleDateString()}
+        </div>
+      )
+    }
+  ];
 
   const getActions = (delivery: DeliveryListItem) => (
     <div className="flex items-center gap-1">
@@ -479,37 +459,24 @@ try {
       >
         Refresh
       </Button>
-      <Button onClick={() => {
-        try {
-          navigate(`${ROUTES.DELIVERIES}/create`);
-        } catch (navError) {
-          console.error('Navigation error:', navError);
-        }
-      }}>
+      <Button onClick={() => navigate(`${ROUTES.DELIVERIES}/create`)}>
         <Plus className="h-4 w-4 mr-2" />
         New Delivery
       </Button>
     </div>
   );
- 
 
-  // Safe useEffect for layout
-useEffect(() => {
-  try {
-    if (setLayoutData) {
-      setLayoutData({
-        pageTitle: "Deliveries",
-        pageDescription: "Manage and track delivery verifications",
-        breadcrumbs: breadcrumbs,
-        headerActions: headerActions
-      });
+  // Update layout data
+  useEffect(() => {
+    setLayoutData({
+      pageTitle: "Deliveries",
+      pageDescription: "Manage and track delivery verifications",
+      breadcrumbs: breadcrumbs,
+      headerActions: headerActions
+    });
 
-      return () => setLayoutData({}); // Pass empty object to reset
-    }
-  } catch (layoutError) {
-    console.warn('Layout context error:', layoutError);
-  }
-}, [setLayoutData]);
+    return () => setLayoutData({});
+  }, [setLayoutData]);
 
   // Only show loading if we're actually loading and have no data
   if (loading && filteredDeliveries.length === 0) {
@@ -538,7 +505,7 @@ useEffect(() => {
   return (
     <div className="p-6 space-y-6">
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -612,38 +579,39 @@ useEffect(() => {
             </CardContent>
           </Card>
         </motion.div>
+
         <motion.div
-  initial={{ opacity: 0, y: 20 }}
-  animate={{ opacity: 1, y: 0 }}
-  transition={{ delay: 0.5 }}
->
-  <Card>
-    <CardHeader className="pb-2">
-      <CardTitle className="text-sm font-medium text-muted-foreground">
-        Blockchain Verified
-      </CardTitle>
-    </CardHeader>
-    <CardContent>
-      <div className="text-2xl font-bold text-blue-600">
-        {filteredDeliveries.filter(d => d.blockchainStatus?.status === 'confirmed').length}
-      </div>
-    </CardContent>
-  </Card>
-</motion.div>
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+        >
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Blockchain Verified
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-blue-600">
+                {filteredDeliveries.filter(d => d.blockchainStatus?.status === 'confirmed').length}
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
       </div>
 
       {/* Filters */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.5 }}
+        transition={{ delay: 0.6 }}
       >
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">Filters</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="relative">
                 <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -681,17 +649,18 @@ useEffect(() => {
                   <SelectItem value="damaged">Damaged</SelectItem>
                 </SelectContent>
               </Select>
+
               <Select value={blockchainFilter} onValueChange={setBlockchainFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="Filter by blockchain" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Blockchain Status</SelectItem>
-                <SelectItem value="confirmed">Confirmed</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="failed">Failed</SelectItem>
-              </SelectContent>
-            </Select>
+                <SelectTrigger>
+                  <SelectValue placeholder="Filter by blockchain" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Blockchain Status</SelectItem>
+                  <SelectItem value="confirmed">Confirmed</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="failed">Failed</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </CardContent>
         </Card>
@@ -701,7 +670,7 @@ useEffect(() => {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.6 }}
+        transition={{ delay: 0.7 }}
       >
         <DataTable
           data={filteredDeliveries}

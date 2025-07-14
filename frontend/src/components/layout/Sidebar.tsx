@@ -84,7 +84,7 @@ const navItems: NavItem[] = [
     badge: 12,
     badgeColor: 'primary',
     subItems: [
-      { id: 'active-deliveries', label: 'Active Deliveries', href: '/deliveries/active', icon: Activity, badge: 8, badgeColor: 'success' },
+      { id: 'active-deliveries', label: 'Active Deliveries', href: '/deliveries', icon: Activity, badge: 8, badgeColor: 'success' },
       { id: 'completed', label: 'Completed', href: '/deliveries/completed', icon: CheckCircle },
       { id: 'verification', label: 'Verification Queue', href: '/deliveries/verification', icon: Shield, badge: 4, badgeColor: 'warning' },
     ],

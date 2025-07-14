@@ -50,21 +50,6 @@ export default defineConfig(() => {
       host: true,
       open: true,
       cors: true,
-      proxy: {
-        '/api': {
-          target: 'http://localhost:3001',
-          changeOrigin: true,
-          secure: false,
-          ws: true,
-          // CORRECTED: This now correctly removes the /api prefix when forwarding the request.
-          rewrite: (path) => path.replace(/^\/api/, '')
-        },
-        '/ws': {
-          target: 'ws://localhost:3001',
-          ws: true,
-          changeOrigin: true
-        }
-      }
     },
 
     build: {
