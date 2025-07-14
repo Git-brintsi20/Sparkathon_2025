@@ -1,441 +1,618 @@
 // frontend/src/services/blockchainService.ts
-import apiService from './api';
-import type { ApiResponse } from '../types/common';
 
+// TypeScript interfaces for blockchain data
 export interface BlockchainTransaction {
-  id: string;
-  hash: string;
-  from: string;
-  to: string;
-  value: string;
-  gasUsed: number;
-  gasPrice: string;
+  transactionHash: string;
+  blockNumber: number;
+  gasUsed: string;
   timestamp: string;
   status: 'pending' | 'confirmed' | 'failed';
-  blockNumber?: number;
-  confirmations: number;
+  explorerUrl: string;
 }
 
-export interface SmartContractCall {
-  contractAddress: string;
-  functionName: string;
-  parameters: any[];
-  gasLimit?: number;
-  gasPrice?: string;
-}
-
-export interface ComplianceRecord {
-  id: string;
-  vendorId: string;
-  deliveryId: string;
-  transactionHash: string;
-  timestamp: string;
-  data: {
-    complianceScore: number;
-    verificationStatus: 'verified' | 'pending' | 'rejected';
-    documentHashes: string[];
-    auditTrail: any[];
-  };
-  blockNumber: number;
-  gasUsed: number;
-}
-
-export interface VendorOnChain {
-  id: string;
+export interface VendorBlockchainData {
+  vendorId: number;
+  name: string;
+  email: string;
   walletAddress: string;
-  registrationHash: string;
   complianceScore: number;
-  totalDeliveries: number;
-  lastUpdate: string;
-  verified: boolean;
-  reputation: number;
+  complianceLevel: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+  registrationDate: string;
+  isActive: boolean;
+  blockchainTx: BlockchainTransaction;
 }
 
-export interface DeliveryOnChain {
-  id: string;
-  vendorId: string;
-  transactionHash: string;
-  proofOfDelivery: string;
+export interface DeliveryBlockchainData {
+  deliveryId: number;
+  vendorId: number;
+  trackingNumber: string;
+  status: 'PENDING' | 'IN_TRANSIT' | 'DELIVERED' | 'REJECTED' | 'CANCELLED';
+  verificationStatus: 'PENDING' | 'VERIFIED' | 'FAILED';
+  createdDate: string;
+  expectedDeliveryDate: string;
+  actualDeliveryDate?: string;
+  blockchainTx: BlockchainTransaction;
+}
+
+export interface ComplianceHistory {
+  id: number;
+  vendorId: number;
+  score: number;
+  level: string;
+  reason: string;
   timestamp: string;
-  verified: boolean;
-  fraudScore: number;
-  documentHashes: string[];
+  updatedBy: string;
+  blockchainTx: BlockchainTransaction;
 }
 
-export interface BlockchainStats {
-  totalTransactions: number;
-  totalVendors: number;
-  totalDeliveries: number;
-  averageGasPrice: string;
-  networkStatus: 'healthy' | 'congested' | 'offline';
-  lastBlockNumber: number;
-  contractsDeployed: number;
+export interface NetworkInfo {
+  chainId: number;
+  name: string;
+  balance: string;
+  gasPrice: string;
+  connected: boolean;
 }
+
+export interface BlockchainEvent {
+  type: 'vendorRegistered' | 'complianceUpdated' | 'deliveryCreated' | 'deliveryStatusUpdated';
+  data: any;
+  timestamp: string;
+  transactionHash: string;
+}
+
+// Simple API service interface for blockchain calls
+interface ApiService {
+  get: (url: string) => Promise<{ data: any }>;
+  post: (url: string, data: any) => Promise<{ data: any }>;
+}
+
+// Mock API service for demo mode
+const createMockApiService = (): ApiService => ({
+  get: async (url: string) => {
+    console.log(`🎭 Mock API GET: ${url}`);
+    await new Promise(resolve => setTimeout(resolve, 500)); // Simulate network delay
+    return { data: {} };
+  },
+  post: async (url: string, data: any) => {
+    console.log(`🎭 Mock API POST: ${url}`, data);
+    await new Promise(resolve => setTimeout(resolve, 500)); // Simulate network delay
+    return { data: {} };
+  }
+});
 
 class BlockchainService {
-  private static instance: BlockchainService;
-  private contractAddresses: Record<string, string> = {};
-  private networkId: string | null = null;
+  private isDemoMode: boolean;
+  private networkInfo: NetworkInfo | null = null;
+  private eventListeners: Map<string, ((event: BlockchainEvent) => void)[]> = new Map();
+  private mockTransactionCounter = 0;
+  private apiService: ApiService;
 
-  private constructor() {
-    this.initializeContracts();
+  constructor() {
+    this.isDemoMode = import.meta.env.MODE === 'development' || import.meta.env.VITE_DEMO_MODE === 'true';
+    this.apiService = createMockApiService();
+    this.initializeDemoData();
   }
 
-  public static getInstance(): BlockchainService {
-    if (!BlockchainService.instance) {
-      BlockchainService.instance = new BlockchainService();
-    }
-    return BlockchainService.instance;
-  }
-
-  // Initialize contract addresses
-  private async initializeContracts(): Promise<void> {
+  /**
+   * Initialize blockchain service
+   */
+  async initialize(): Promise<NetworkInfo> {
     try {
-      const response = await apiService.get<Record<string, string>>('/blockchain/contracts');
-      if (response.success && response.data) {
-        this.contractAddresses = response.data;
+      console.log('🔗 Initializing blockchain service...');
+
+      if (this.isDemoMode) {
+        return this.initializeDemoMode();
       }
+
+      // For production, this would connect to actual blockchain via backend
+      try {
+        const response = await fetch('/api/blockchain/init');
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        this.networkInfo = data;
+      } catch (error) {
+        console.warn('Failed to connect to backend, falling back to demo mode:', error);
+        return this.initializeDemoMode();
+      }
+
+      console.log('✅ Blockchain service initialized');
+      return this.networkInfo!;
+
     } catch (error) {
-      console.error('Failed to initialize contracts:', error);
+      console.error('❌ Failed to initialize blockchain service:', error);
+      // Fallback to demo mode on error
+      return this.initializeDemoMode();
     }
   }
 
-  // Get network status
-  public async getNetworkStatus(): Promise<ApiResponse<BlockchainStats>> {
-    try {
-      const response = await apiService.get<BlockchainStats>('/blockchain/status');
-      return response;
-    } catch (error) {
-      console.error('Failed to get network status:', error);
-      throw error;
+  /**
+   * Initialize demo mode with mock data
+   */
+  private initializeDemoMode(): NetworkInfo {
+    console.log('🎭 Running in demo mode - using mock blockchain data');
+    
+    this.networkInfo = {
+      chainId: 1337,
+      name: 'Localhost Development',
+      balance: '10.0',
+      gasPrice: '20.0',
+      connected: true
+    };
+
+    // Simulate some blockchain events for demo
+    this.simulateBlockchainEvents();
+
+    return this.networkInfo;
+  }
+
+  /**
+   * Initialize demo data simulation
+   */
+  private initializeDemoData(): void {
+    // This runs in constructor, no async operations
+    if (this.isDemoMode) {
+      console.log('🎭 Demo mode initialized');
     }
   }
 
-  // Register vendor on blockchain
-  public async registerVendor(vendorData: {
-    id: string;
-    walletAddress: string;
-    complianceDocuments: string[];
-  }): Promise<ApiResponse<{ transactionHash: string }>> {
-    try {
-      const response = await apiService.post<{ transactionHash: string }>('/blockchain/vendor/register', vendorData);
-      return response;
-    } catch (error) {
-      console.error('Failed to register vendor:', error);
-      throw error;
-    }
-  }
-
-  // Get vendor from blockchain
-  public async getVendor(vendorId: string): Promise<ApiResponse<VendorOnChain>> {
-    try {
-      const response = await apiService.get<VendorOnChain>(`/blockchain/vendor/${vendorId}`);
-      return response;
-    } catch (error) {
-      console.error('Failed to get vendor:', error);
-      throw error;
-    }
-  }
-
-  // Update vendor compliance score
-  public async updateVendorCompliance(
-    vendorId: string,
-    complianceScore: number,
-    auditData: any
-  ): Promise<ApiResponse<{ transactionHash: string }>> {
-    try {
-      const response = await apiService.patch<{ transactionHash: string }>(`/blockchain/vendor/${vendorId}/compliance`, {
-        complianceScore,
-        auditData,
+  /**
+   * Simulate blockchain events for demo
+   */
+  private simulateBlockchainEvents(): void {
+    setTimeout(() => {
+      this.emitEvent({
+        type: 'vendorRegistered',
+        data: { vendorId: 1, name: 'Demo Vendor' },
+        timestamp: new Date().toISOString(),
+        transactionHash: this.generateMockHash()
       });
-      return response;
-    } catch (error) {
-      console.error('Failed to update vendor compliance:', error);
-      throw error;
-    }
+    }, 2000);
+
+    setTimeout(() => {
+      this.emitEvent({
+        type: 'deliveryCreated',
+        data: { deliveryId: 1, trackingNumber: 'TRK001' },
+        timestamp: new Date().toISOString(),
+        transactionHash: this.generateMockHash()
+      });
+    }, 4000);
   }
 
-  // Record delivery on blockchain
-  public async recordDelivery(deliveryData: {
-    id: string;
-    vendorId: string;
-    proofOfDelivery: string;
-    documentHashes: string[];
-    gpsCoordinates?: { lat: number; lng: number };
-    timestamp: string;
-  }): Promise<ApiResponse<{ transactionHash: string }>> {
+  /**
+   * Register vendor on blockchain
+   */
+  async registerVendor(vendorData: {
+    name: string;
+    email: string;
+    walletAddress?: string;
+    certifications?: string[];
+  }): Promise<VendorBlockchainData> {
     try {
-      const response = await apiService.post<{ transactionHash: string }>('/blockchain/delivery/record', deliveryData);
-      return response;
+      console.log(`📝 Registering vendor: ${vendorData.name} on blockchain...`);
+
+      if (this.isDemoMode) {
+        return this.generateMockVendorRegistration(vendorData);
+      }
+
+      const response = await fetch('/api/blockchain/vendor/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(vendorData),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data;
+
     } catch (error) {
-      console.error('Failed to record delivery:', error);
-      throw error;
+      console.error('❌ Failed to register vendor on blockchain:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new Error(`Blockchain registration failed: ${errorMessage}`);
     }
   }
 
-  // Get delivery from blockchain
-  public async getDelivery(deliveryId: string): Promise<ApiResponse<DeliveryOnChain>> {
+  /**
+   * Update vendor compliance score
+   */
+  async updateVendorCompliance(
+    vendorId: number, 
+    score: number, 
+    reason: string
+  ): Promise<BlockchainTransaction> {
     try {
-      const response = await apiService.get<DeliveryOnChain>(`/blockchain/delivery/${deliveryId}`);
-      return response;
+      console.log(`📊 Updating compliance score for vendor ${vendorId}: ${score}`);
+
+      if (this.isDemoMode) {
+        return this.generateMockTransaction('updateCompliance', { vendorId, score });
+      }
+
+      const response = await fetch('/api/blockchain/vendor/compliance', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          vendorId,
+          score,
+          reason
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data;
+
     } catch (error) {
-      console.error('Failed to get delivery:', error);
-      throw error;
+      console.error('❌ Failed to update vendor compliance:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new Error(`Compliance update failed: ${errorMessage}`);
     }
   }
 
-  // Verify delivery authenticity
-  public async verifyDelivery(deliveryId: string): Promise<ApiResponse<{ 
-    verified: boolean; 
-    fraudScore: number; 
-    verificationDetails: any 
-  }>> {
+  /**
+   * Create delivery record on blockchain
+   */
+  async createDelivery(deliveryData: {
+    vendorId: number;
+    purchaseOrderId: string;
+    trackingNumber: string;
+    expectedDeliveryDate: string;
+    deliveryLocation: string;
+    items?: string[];
+    totalValue?: number;
+    notes?: string;
+  }): Promise<DeliveryBlockchainData> {
     try {
-      const response = await apiService.post<{ 
-        verified: boolean; 
-        fraudScore: number; 
-        verificationDetails: any 
-      }>(`/blockchain/delivery/${deliveryId}/verify`);
-      return response;
+      console.log(`📦 Creating delivery record: ${deliveryData.trackingNumber} on blockchain...`);
+
+      if (this.isDemoMode) {
+        return this.generateMockDeliveryCreation(deliveryData);
+      }
+
+      const response = await fetch('/api/blockchain/delivery/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(deliveryData),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data;
+
     } catch (error) {
-      console.error('Failed to verify delivery:', error);
-      throw error;
+      console.error('❌ Failed to create delivery on blockchain:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new Error(`Delivery creation failed: ${errorMessage}`);
     }
   }
 
-  // Get compliance records
-  public async getComplianceRecords(params?: {
-    vendorId?: string;
-    deliveryId?: string;
-    page?: number;
-    limit?: number;
-  }): Promise<ApiResponse<ComplianceRecord[]>> {
+  /**
+   * Update delivery status
+   */
+  async updateDeliveryStatus(
+    deliveryId: number,
+    status: string,
+    location?: string,
+    notes?: string
+  ): Promise<BlockchainTransaction> {
     try {
-      const response = await apiService.get<ComplianceRecord[]>('/blockchain/compliance', params);
-      return response;
+      console.log(`📊 Updating delivery status: ${deliveryId} -> ${status}`);
+
+      if (this.isDemoMode) {
+        return this.generateMockTransaction('updateDeliveryStatus', { deliveryId, status });
+      }
+
+      const response = await fetch('/api/blockchain/delivery/status', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          deliveryId,
+          status,
+          location,
+          notes
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data;
+
     } catch (error) {
-      console.error('Failed to get compliance records:', error);
-      throw error;
+      console.error('❌ Failed to update delivery status:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new Error(`Status update failed: ${errorMessage}`);
     }
   }
 
-  // Get transaction details
-  public async getTransaction(txHash: string): Promise<ApiResponse<BlockchainTransaction>> {
+  /**
+   * Verify delivery with QR code
+   */
+  async verifyDelivery(
+    deliveryId: number,
+    scannedCode: string,
+    imageHash?: string
+  ): Promise<BlockchainTransaction> {
     try {
-      const response = await apiService.get<BlockchainTransaction>(`/blockchain/transaction/${txHash}`);
-      return response;
+      console.log(`🔍 Verifying delivery ${deliveryId} with QR code...`);
+
+      if (this.isDemoMode) {
+        return this.generateMockTransaction('verifyDelivery', { deliveryId, scannedCode });
+      }
+
+      const response = await fetch('/api/blockchain/delivery/verify', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          deliveryId,
+          scannedCode,
+          imageHash
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data;
+
     } catch (error) {
-      console.error('Failed to get transaction:', error);
-      throw error;
+      console.error('❌ Failed to verify delivery:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new Error(`Delivery verification failed: ${errorMessage}`);
     }
   }
 
-  // Get vendor transaction history
-  public async getVendorTransactions(vendorId: string, params?: {
-    page?: number;
-    limit?: number;
-    type?: 'registration' | 'delivery' | 'compliance';
-  }): Promise<ApiResponse<BlockchainTransaction[]>> {
+  /**
+   * Get vendor compliance history
+   */
+  async getVendorComplianceHistory(vendorId: number): Promise<ComplianceHistory[]> {
     try {
-      const response = await apiService.get<BlockchainTransaction[]>(`/blockchain/vendor/${vendorId}/transactions`, params);
-      return response;
+      if (this.isDemoMode) {
+        return this.generateMockComplianceHistory(vendorId);
+      }
+
+      const response = await fetch(`/api/blockchain/vendor/${vendorId}/compliance-history`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data;
+
     } catch (error) {
-      console.error('Failed to get vendor transactions:', error);
-      throw error;
+      console.error('❌ Failed to get compliance history:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new Error(`Failed to fetch compliance history: ${errorMessage}`);
     }
   }
 
-  // Call smart contract function
-  public async callContract(contractCall: SmartContractCall): Promise<ApiResponse<{ 
-    result: any; 
-    transactionHash?: string; 
-    gasUsed?: number 
-  }>> {
-    try {
-      const response = await apiService.post<{ 
-        result: any; 
-        transactionHash?: string; 
-        gasUsed?: number 
-      }>('/blockchain/contract/call', contractCall);
-      return response;
-    } catch (error) {
-      console.error('Failed to call contract:', error);
-      throw error;
+  /**
+   * Get blockchain explorer URL
+   */
+  getExplorerUrl(txHash: string): string {
+    const explorerUrls: { [key: number]: string } = {
+      1: 'https://etherscan.io/tx/',
+      3: 'https://ropsten.etherscan.io/tx/',
+      4: 'https://rinkeby.etherscan.io/tx/',
+      5: 'https://goerli.etherscan.io/tx/',
+      137: 'https://polygonscan.com/tx/',
+      80001: 'https://mumbai.polygonscan.com/tx/',
+      1337: 'http://localhost:8545/tx/' // Local development
+    };
+
+    const chainId = this.networkInfo?.chainId || 1;
+    const baseUrl = explorerUrls[chainId] || explorerUrls[1];
+    return `${baseUrl}${txHash}`;
+  }
+
+  /**
+   * Event listener management
+   */
+  addEventListener(eventType: string, callback: (event: BlockchainEvent) => void): void {
+    if (!this.eventListeners.has(eventType)) {
+      this.eventListeners.set(eventType, []);
+    }
+    this.eventListeners.get(eventType)!.push(callback);
+  }
+
+  removeEventListener(eventType: string, callback: (event: BlockchainEvent) => void): void {
+    const listeners = this.eventListeners.get(eventType);
+    if (listeners) {
+      const index = listeners.indexOf(callback);
+      if (index > -1) {
+        listeners.splice(index, 1);
+      }
     }
   }
 
-  // Get contract ABI
-  public async getContractABI(contractName: string): Promise<ApiResponse<any[]>> {
-    try {
-      const response = await apiService.get<any[]>(`/blockchain/contract/${contractName}/abi`);
-      return response;
-    } catch (error) {
-      console.error('Failed to get contract ABI:', error);
-      throw error;
+  private emitEvent(event: BlockchainEvent): void {
+    const listeners = this.eventListeners.get(event.type) || [];
+    listeners.forEach(callback => callback(event));
+  }
+
+  /**
+   * Generate mock transaction for demo
+   */
+  private generateMockTransaction(action: string, data?: any): BlockchainTransaction {
+    this.mockTransactionCounter++;
+    
+    const mockHash = this.generateMockHash();
+    const mockBlockNumber = Math.floor(Math.random() * 1000000) + 15000000;
+    const mockGasUsed = Math.floor(Math.random() * 100000) + 50000;
+    const timestamp = new Date().toISOString();
+
+    const transaction: BlockchainTransaction = {
+      transactionHash: mockHash,
+      blockNumber: mockBlockNumber,
+      gasUsed: mockGasUsed.toString(),
+      timestamp,
+      status: 'confirmed',
+      explorerUrl: this.getExplorerUrl(mockHash)
+    };
+
+    console.log(`🎭 Mock transaction generated: ${mockHash}`);
+
+    // Emit event for listeners
+    this.emitEvent({
+      type: this.getEventTypeFromAction(action),
+      data: { ...data, transaction },
+      timestamp,
+      transactionHash: mockHash
+    });
+
+    return transaction;
+  }
+
+  /**
+   * Generate mock hash
+   */
+  private generateMockHash(): string {
+    return '0x' + Array.from({length: 64}, () => 
+      Math.floor(Math.random() * 16).toString(16)
+    ).join('');
+  }
+
+  /**
+   * Generate mock wallet address
+   */
+  private generateMockWalletAddress(): string {
+    return '0x' + Array.from({length: 40}, () => 
+      Math.floor(Math.random() * 16).toString(16)
+    ).join('');
+  }
+
+  /**
+   * Generate mock vendor registration
+   */
+  private generateMockVendorRegistration(vendorData: any): VendorBlockchainData {
+    const vendorId = Math.floor(Math.random() * 1000) + 1;
+    const transaction = this.generateMockTransaction('registerVendor', { vendorId });
+
+    return {
+      vendorId,
+      name: vendorData.name,
+      email: vendorData.email,
+      walletAddress: vendorData.walletAddress || this.generateMockWalletAddress(),
+      complianceScore: Math.floor(Math.random() * 40) + 60, // 60-100 range
+      complianceLevel: 'HIGH',
+      registrationDate: new Date().toISOString(),
+      isActive: true,
+      blockchainTx: transaction
+    };
+  }
+
+  /**
+   * Generate mock delivery creation
+   */
+  private generateMockDeliveryCreation(deliveryData: any): DeliveryBlockchainData {
+    const deliveryId = Math.floor(Math.random() * 1000) + 1;
+    const transaction = this.generateMockTransaction('createDelivery', { deliveryId });
+
+    return {
+      deliveryId,
+      vendorId: deliveryData.vendorId,
+      trackingNumber: deliveryData.trackingNumber,
+      status: 'PENDING',
+      verificationStatus: 'PENDING',
+      createdDate: new Date().toISOString(),
+      expectedDeliveryDate: deliveryData.expectedDeliveryDate,
+      blockchainTx: transaction
+    };
+  }
+
+  /**
+   * Generate mock compliance history
+   */
+  private generateMockComplianceHistory(vendorId: number): ComplianceHistory[] {
+    const history: ComplianceHistory[] = [];
+    
+    for (let i = 0; i < 5; i++) {
+      const score = Math.floor(Math.random() * 40) + 60;
+      const transaction = this.generateMockTransaction('updateCompliance', { vendorId, score });
+      
+      history.push({
+        id: i + 1,
+        vendorId,
+        score,
+        level: this.getComplianceLevelFromScore(score),
+        reason: `Compliance review ${i + 1}`,
+        timestamp: new Date(Date.now() - i * 24 * 60 * 60 * 1000).toISOString(),
+        updatedBy: this.generateMockWalletAddress(),
+        blockchainTx: transaction
+      });
+    }
+
+    return history;
+  }
+
+  /**
+   * Get compliance level from score
+   */
+  private getComplianceLevelFromScore(score: number): string {
+    if (score >= 90) return 'HIGH';
+    if (score >= 70) return 'MEDIUM';
+    if (score >= 50) return 'LOW';
+    return 'CRITICAL';
+  }
+
+  /**
+   * Get event type from action
+   */
+  private getEventTypeFromAction(action: string): BlockchainEvent['type'] {
+    switch (action) {
+      case 'registerVendor':
+        return 'vendorRegistered';
+      case 'updateCompliance':
+        return 'complianceUpdated';
+      case 'createDelivery':
+        return 'deliveryCreated';
+      case 'updateDeliveryStatus':
+      case 'verifyDelivery':
+        return 'deliveryStatusUpdated';
+      default:
+        return 'vendorRegistered';
     }
   }
 
-  // Estimate gas for transaction
-  public async estimateGas(transactionData: {
-    to: string;
-    data: string;
-    value?: string;
-  }): Promise<ApiResponse<{ gasEstimate: number; gasPrice: string }>> {
-    try {
-      const response = await apiService.post<{ gasEstimate: number; gasPrice: string }>('/blockchain/gas/estimate', transactionData);
-      return response;
-    } catch (error) {
-      console.error('Failed to estimate gas:', error);
-      throw error;
-    }
+  /**
+   * Get network info
+   */
+  getNetworkInfo(): NetworkInfo | null {
+    return this.networkInfo;
   }
 
-  // Get gas prices
-  public async getGasPrices(): Promise<ApiResponse<{
-    slow: string;
-    standard: string;
-    fast: string;
-    instant: string;
-  }>> {
-    try {
-      const response = await apiService.get<{
-        slow: string;
-        standard: string;
-        fast: string;
-        instant: string;
-      }>('/blockchain/gas/prices');
-      return response;
-    } catch (error) {
-      console.error('Failed to get gas prices:', error);
-      throw error;
-    }
-  }
-
-  // Generate proof of compliance
-  public async generateComplianceProof(vendorId: string, deliveryId: string): Promise<ApiResponse<{
-    proofHash: string;
-    merkleRoot: string;
-    signature: string;
-  }>> {
-    try {
-      const response = await apiService.post<{
-        proofHash: string;
-        merkleRoot: string;
-        signature: string;
-      }>('/blockchain/compliance/proof', { vendorId, deliveryId });
-      return response;
-    } catch (error) {
-      console.error('Failed to generate compliance proof:', error);
-      throw error;
-    }
-  }
-
-  // Verify compliance proof
-  public async verifyComplianceProof(proofData: {
-    proofHash: string;
-    merkleRoot: string;
-    signature: string;
-    vendorId: string;
-    deliveryId: string;
-  }): Promise<ApiResponse<{ valid: boolean; details: any }>> {
-    try {
-      const response = await apiService.post<{ valid: boolean; details: any }>('/blockchain/compliance/verify', proofData);
-      return response;
-    } catch (error) {
-      console.error('Failed to verify compliance proof:', error);
-      throw error;
-    }
-  }
-
-  // Get audit trail
-  public async getAuditTrail(entityId: string, entityType: 'vendor' | 'delivery'): Promise<ApiResponse<any[]>> {
-    try {
-      const response = await apiService.get<any[]>(`/blockchain/audit/${entityType}/${entityId}`);
-      return response;
-    } catch (error) {
-      console.error('Failed to get audit trail:', error);
-      throw error;
-    }
-  }
-
-  // Batch process transactions
-  public async batchProcess(transactions: any[]): Promise<ApiResponse<{ 
-    processed: number; 
-    failed: number; 
-    results: any[] 
-  }>> {
-    try {
-      const response = await apiService.post<{ 
-        processed: number; 
-        failed: number; 
-        results: any[] 
-      }>('/blockchain/batch', { transactions });
-      return response;
-    } catch (error) {
-      console.error('Failed to batch process:', error);
-      throw error;
-    }
-  }
-
-  // Monitor transaction status
-  public async monitorTransaction(txHash: string): Promise<ApiResponse<{
-    status: 'pending' | 'confirmed' | 'failed';
-    confirmations: number;
-    blockNumber?: number;
-  }>> {
-    try {
-      const response = await apiService.get<{
-        status: 'pending' | 'confirmed' | 'failed';
-        confirmations: number;
-        blockNumber?: number;
-      }>(`/blockchain/monitor/${txHash}`);
-      return response;
-    } catch (error) {
-      console.error('Failed to monitor transaction:', error);
-      throw error;
-    }
-  }
-
-  // Get blockchain analytics
-  public async getBlockchainAnalytics(params?: {
-    timeRange?: string;
-    vendorId?: string;
-    type?: string;
-  }): Promise<ApiResponse<{
-    totalTransactions: number;
-    totalGasUsed: string;
-    averageTransactionTime: number;
-    successRate: number;
-    topVendors: any[];
-    timeSeriesData: any[];
-  }>> {
-    try {
-      const response = await apiService.get<{
-        totalTransactions: number;
-        totalGasUsed: string;
-        averageTransactionTime: number;
-        successRate: number;
-        topVendors: any[];
-        timeSeriesData: any[];
-      }>('/blockchain/analytics', params);
-      return response;
-    } catch (error) {
-      console.error('Failed to get blockchain analytics:', error);
-      throw error;
-    }
-  }
-
-  // Get contract addresses
-  public getContractAddresses(): Record<string, string> {
-    return { ...this.contractAddresses };
-  }
-
-  // Get network ID
-  public getNetworkId(): string | null {
-    return this.networkId;
+  /**
+   * Check if service is in demo mode
+   */
+  isDemoModeEnabled(): boolean {
+    return this.isDemoMode;
   }
 }
 
 // Export singleton instance
-const blockchainService = BlockchainService.getInstance();
+export const blockchainService = new BlockchainService();
 export default blockchainService;

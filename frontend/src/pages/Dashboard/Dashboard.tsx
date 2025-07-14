@@ -8,6 +8,7 @@ import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 // ADDED: Import the useLayout hook
 import { useLayout } from '@/contexts/LayoutContext';
+import { Shield, Link } from 'lucide-react';
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -28,6 +29,8 @@ interface DashboardMetrics {
   fraudAlerts: number;
   monthlyGrowth: number;
   deliveryAccuracy: number;
+    blockchainTransactions: number; // Add this line
+  blockchainVerifications: number;
 }
 
 // CORRECTED INTERFACE
@@ -58,6 +61,12 @@ const Dashboard: React.FC = () => {
   const [chartData, setChartData] = useState<ChartData[]>([]);
   const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
   const [loading, setLoading] = useState(true);
+  const [blockchainMetrics, setBlockchainMetrics] = useState({
+  totalTransactions: 1247,
+  verifiedDeliveries: 89,
+  complianceRecords: 234,
+  fraudPrevented: 12
+});
 
   // CORRECTED: Use a useEffect hook to set the layout data when the component mounts
   useEffect(() => {
@@ -80,15 +89,17 @@ const Dashboard: React.FC = () => {
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       setMetrics({
-        totalVendors: 247,
-        activeDeliveries: 89,
-        complianceRate: 94.5,
-        totalValue: 2847650,
-        pendingVerifications: 12,
-        fraudAlerts: 3,
-        monthlyGrowth: 12.5,
-        deliveryAccuracy: 97.8
-      });
+  totalVendors: 247,
+  activeDeliveries: 89,
+  complianceRate: 94.5,
+  totalValue: 2847650,
+  pendingVerifications: 12,
+  fraudAlerts: 3,
+  monthlyGrowth: 12.5,
+  deliveryAccuracy: 97.8,
+  blockchainTransactions: 1247, // Add this line
+  blockchainVerifications: 234   // Add this line
+});
 
       setChartData([
         { name: 'Jan', value: 2400, deliveries: 45, compliance: 92 },
@@ -180,47 +191,69 @@ const Dashboard: React.FC = () => {
       // Removed the p-6 from here as the parent Layout's <main> already has it.
       className="space-y-6"
     >
-      {/* KPI Cards Grid */}
-      <motion.div 
-        variants={itemVariants}
-        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
-      >
-        <KPICard
-          title="Total Vendors"
-          value={metrics?.totalVendors || 0}
-          icon={<Users className="w-6 h-6" />}
-          trend={metrics?.monthlyGrowth || 0}
-          trendLabel="vs last month"
-          color="blue"
-        />
-        <KPICard
-          title="Active Deliveries"
-          value={metrics?.activeDeliveries || 0}
-          icon={<Package className="w-6 h-6" />}
-          trend={8.2}
-          trendLabel="vs last week"
-          color="green"
-        />
-        <KPICard
-          title="Compliance Rate"
-          value={metrics?.complianceRate || 0}
-          suffix="%"
-          icon={<CheckCircle2 className="w-6 h-6" />}
-          trend={2.1}
-          trendLabel="improvement"
-          color="emerald"
-        />
-        <KPICard
-          title="Total Value"
-          value={metrics?.totalValue || 0}
-          prefix="$"
-          format="currency"
-          icon={<DollarSign className="w-6 h-6" />}
-          trend={15.3}
-          trendLabel="vs last month"
-          color="purple"
-        />
-      </motion.div>
+{/* KPI Cards Grid */}
+<motion.div 
+  variants={itemVariants}
+  className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
+>
+  <KPICard
+    title="Total Vendors"
+    value={metrics?.totalVendors || 0}
+    icon={<Users className="w-6 h-6" />}
+    trend={metrics?.monthlyGrowth || 0}
+    trendLabel="vs last month"
+    color="blue"
+    blockchain={{
+      isVerified: true,
+      transactionHash: "0x742d35cc6bb89dcf5f8b4b5c9b2e4b8c5d3e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b",
+      blockNumber: 18759234,
+      timestamp: new Date().toISOString()
+    }}
+  />
+  <KPICard
+    title="Active Deliveries"
+    value={metrics?.activeDeliveries || 0}
+    icon={<Package className="w-6 h-6" />}
+    trend={8.2}
+    trendLabel="vs last week"
+    color="green"
+    blockchain={{
+      isVerified: true,
+      transactionHash: "0x851f46ec7cb96fdfa6e4d8a7b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d",
+      blockNumber: 18759235,
+      timestamp: new Date().toISOString()
+    }}
+  />
+  <KPICard
+    title="Compliance Rate"
+    value={metrics?.complianceRate || 0}
+    suffix="%"
+    icon={<CheckCircle2 className="w-6 h-6" />}
+    trend={2.1}
+    trendLabel="improvement"
+    color="emerald"
+    blockchain={{
+      isVerified: true,
+      transactionHash: "0x962a57fd8ea07gfeb7f5e9c8d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f",
+      blockNumber: 18759236,
+      timestamp: new Date().toISOString()
+    }}
+  />
+  <KPICard
+    title="Blockchain Transactions"
+    value={blockchainMetrics.totalTransactions}
+    icon={<Shield className="w-6 h-6" />}
+    trend={18.7}
+    trendLabel="vs last month"
+    color="purple"
+    blockchain={{
+      isVerified: true,
+      transactionHash: "0xa73b68ge9fb18hgfc8g6f0d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0",
+      blockNumber: 18759237,
+      timestamp: new Date().toISOString()
+    }}
+  />
+</motion.div>
 
       {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -290,6 +323,45 @@ const Dashboard: React.FC = () => {
             </CardContent>
           </Card>
         </motion.div>
+        {/* Blockchain Statistics */}
+<motion.div variants={itemVariants}>
+  <Card>
+    <CardHeader>
+      <CardTitle className="flex items-center gap-2">
+        <Shield className="w-5 h-5 text-purple-600" />
+        Blockchain Network Status
+      </CardTitle>
+    </CardHeader>
+    <CardContent>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="text-center p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+          <div className="text-2xl font-bold text-purple-600">
+            {blockchainMetrics.totalTransactions.toLocaleString()}
+          </div>
+          <div className="text-sm text-muted-foreground">Total Transactions</div>
+        </div>
+        <div className="text-center p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+          <div className="text-2xl font-bold text-green-600">
+            {blockchainMetrics.verifiedDeliveries}
+          </div>
+          <div className="text-sm text-muted-foreground">Verified Deliveries</div>
+        </div>
+        <div className="text-center p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+          <div className="text-2xl font-bold text-blue-600">
+            {blockchainMetrics.complianceRecords}
+          </div>
+          <div className="text-sm text-muted-foreground">Compliance Records</div>
+        </div>
+        <div className="text-center p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
+          <div className="text-2xl font-bold text-orange-600">
+            {blockchainMetrics.fraudPrevented}
+          </div>
+          <div className="text-sm text-muted-foreground">Fraud Prevented</div>
+        </div>
+      </div>
+    </CardContent>
+  </Card>
+</motion.div>
 
         {/* Alerts Panel */}
         <motion.div variants={itemVariants}>

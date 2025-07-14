@@ -3,7 +3,16 @@ import { motion } from 'framer-motion';
 import { Card, CardContent } from '@/components/ui/card';
 import { TrendingUp, TrendingDown } from 'lucide-react';
 import { cn } from '@/components/lib/utils';
+import { Shield, ExternalLink } from 'lucide-react';
 
+interface BlockchainVerification {
+  isVerified: boolean;
+  transactionHash?: string;
+  blockNumber?: number;
+  timestamp?: string;
+}
+
+// Update the KPICardProps interface to include blockchain prop
 interface KPICardProps {
   title: string;
   value: number;
@@ -16,6 +25,7 @@ interface KPICardProps {
   color?: 'blue' | 'green' | 'purple' | 'orange' | 'emerald' | 'red';
   className?: string;
   loading?: boolean;
+  blockchain?: BlockchainVerification; // Add this line
 }
 
 export const KPICard: React.FC<KPICardProps> = ({
@@ -29,7 +39,8 @@ export const KPICard: React.FC<KPICardProps> = ({
   trendLabel,
   color = 'blue',
   className,
-  loading = false
+  loading = false,
+    blockchain
 }) => {
   const formatValue = (val: number): string => {
     if (format === 'currency') {
@@ -52,6 +63,13 @@ export const KPICard: React.FC<KPICardProps> = ({
     
     return val.toString();
   };
+
+// Add this function after the formatValue function
+const truncateHash = (hash: string): string => {
+  if (hash.length <= 10) return hash;
+  return `${hash.substring(0, 6)}...${hash.substring(hash.length - 4)}`;
+};
+
 
   const getDisplayValue = (): string => {
     if (format === 'currency') {
@@ -226,6 +244,37 @@ export const KPICard: React.FC<KPICardProps> = ({
               )}
             </div>
           )}
+
+          {/* Blockchain Verification Badge */}
+          {blockchain?.isVerified && (
+            <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1">
+                    <Shield className="w-3 h-3 text-green-600" />
+                    <span className="text-xs font-medium text-green-600">
+                      Blockchain Verified
+                    </span>
+                  </div>
+                </div>
+                {blockchain.transactionHash && (
+                  <button
+                    onClick={() => window.open(`https://etherscan.io/tx/${blockchain.transactionHash}`, '_blank')}
+                    className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 transition-colors"
+                  >
+                    <span>{truncateHash(blockchain.transactionHash)}</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
+              {blockchain.blockNumber && (
+                <div className="text-xs text-muted-foreground mt-1">
+                  Block #{blockchain.blockNumber?.toLocaleString()}
+                </div>
+              )}
+            </div>
+          )}
+
 
           {/* Background decoration */}
           <div className={cn(
