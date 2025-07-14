@@ -1,5 +1,5 @@
 // Analytics types and interfaces
-import { PaginatedResponse, ApiResponse } from './common';
+import type  { PaginatedResponse, ApiResponse } from './common';
 
 // Chart data types
 export interface ChartDataPoint {

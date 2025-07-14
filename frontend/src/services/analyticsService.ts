@@ -1,6 +1,6 @@
 // frontend/src/services/analyticsService.ts
 import apiService from './api';
-import { ApiResponse, PaginationParams } from '../types/common';
+import type { ApiResponse, PaginationParams } from '../types/common';
 
 // Analytics-specific types
 interface ComplianceReport {

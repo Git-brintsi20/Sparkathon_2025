@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useReducer, useEffect } from 'react';
+import type { ReactNode } from 'react';
 import type { ThemeName, ColorPalette } from '@/config/theme';
 import { 
   colorPalettes,  // Now imported as a value

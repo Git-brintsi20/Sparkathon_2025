@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 // REMOVED: import { Layout } from '../../components/layout/Layout';
 // ADDED: Import the useLayout hook
 import { useLayout } from '@/contexts/LayoutContext';
-import { ThemeSettings } from './ThemeSettings';
+import  ThemeSettings from './ThemeSettings';
 import {
   Settings as // Renamed to avoid conflict with component name
   User,

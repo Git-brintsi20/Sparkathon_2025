@@ -42,18 +42,24 @@ export interface VerificationDetails {
 }
 
 export interface DeliveryFormData {
-  orderId: string;
+  // Fields from the form component
+  barcode: string;
+  purchaseOrderId: string;
   vendorId: string;
-  expectedDate: string;
-  items: Array<{
-    name: string;
-    quantity: number;
-    unit: string;
-    price: number;
-  }>;
-  notes?: string;
-}
+  weight: string; // Keep as string as the form handles it this way
+  quantity: string; // Keep as string
+  condition: string;
+  notes?: string; // Optional
+  deliveryPhoto?: File | null; // Optional
+  packagingPhoto?: File | null; // Optional
 
+  // Fields that were in your original master type
+  status?: 'pending' | 'in_transit' | 'delivered' | 'delayed' | 'cancelled'; // Optional
+  orderId?: string; // Optional
+  expectedDate?: string; // Optional
+  actualDate?: string; // Optional
+  items?: DeliveryItem[]; // Optional
+}
 export interface DeliveryVerificationData {
   deliveryId: string;
   items: Array<{

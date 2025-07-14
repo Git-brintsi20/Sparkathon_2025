@@ -1,6 +1,8 @@
-import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useReducer, useEffect} from 'react';
+import type { ReactNode } from 'react';
 import type { User, AuthState, LoginCredentials, AuthToken } from '../types/common';
 
+// CORRECTED: The interface syntax is now valid.
 interface AuthContextValue {
   state: AuthState;
   login: (credentials: LoginCredentials) => Promise<void>;

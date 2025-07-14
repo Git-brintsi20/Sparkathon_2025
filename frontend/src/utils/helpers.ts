@@ -4,11 +4,13 @@ import {
   VENDOR_STATUS, 
   DELIVERY_STATUS, 
   COMPLIANCE_STATUS, 
-  RISK_LEVEL,
+
   CHART_COLORS,
-  FILE_UPLOAD,
-  VALIDATION_RULES 
+ 
 } from '../config/constants';
+import  FILE_UPLOAD from '../config/constants';
+import   VALIDATION_RULES from '../config/constants';
+import     RISK_LEVEL from '../config/constants';
 
 /**
  * Data Manipulation Utilities

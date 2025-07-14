@@ -1,6 +1,6 @@
 // frontend/src/services/blockchainService.ts
 import apiService from './api';
-import { ApiResponse } from '../types/common';
+import type { ApiResponse } from '../types/common';
 
 export interface BlockchainTransaction {
   id: string;

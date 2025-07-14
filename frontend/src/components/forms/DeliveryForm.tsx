@@ -1,33 +1,29 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Camera, Upload, Scan, Package, Scale, FileText, CheckCircle2, AlertCircle, X } from 'lucide-react';
+import type { DeliveryFormData } from '@/types/delivery';
+// Define the shape of the data that the form handles
 
-interface DeliveryFormData {
-  barcode: string;
-  purchaseOrderId: string;
-  vendorId: string;
-  weight: string;
-  quantity: string;
-  condition: string;
-  notes: string;
-  deliveryPhoto: File | null;
-  packagingPhoto: File | null;
-}
 
-interface DeliveryFormProps {
-  onSubmit: (data: DeliveryFormData) => void;
+// Define the props interface for the DeliveryForm component
+export interface DeliveryFormProps {
+  onSubmit: (data: DeliveryFormData) => Promise<void>; // Changed to Promise<void> as per common async patterns
   loading?: boolean;
   initialData?: Partial<DeliveryFormData>;
+  mode: 'create' | 'edit'; // Added the 'mode' prop
+  onCancel?: () => void; // Added onCancel prop for consistency with other forms
 }
 
-const DeliveryForm: React.FC<DeliveryFormProps> = ({ 
-  onSubmit, 
-  loading = false, 
-  initialData = {} 
+const DeliveryForm: React.FC<DeliveryFormProps> = ({
+  onSubmit,
+  loading = false,
+  initialData = {},
+  mode, // Destructure the new 'mode' prop
+  onCancel // Destructure the new 'onCancel' prop
 }) => {
-  const [formData, setFormData] = useState<DeliveryFormData>({
+ const [formData, setFormData] = useState<DeliveryFormData>({
     barcode: '',
     purchaseOrderId: '',
     vendorId: '',
@@ -37,6 +33,11 @@ const DeliveryForm: React.FC<DeliveryFormProps> = ({
     notes: '',
     deliveryPhoto: null,
     packagingPhoto: null,
+    // Provide defaults for other optional fields from the master type
+    status: 'pending', 
+    orderId: '',
+    expectedDate: '',
+    items: [],
     ...initialData
   });
 
@@ -50,6 +51,25 @@ const DeliveryForm: React.FC<DeliveryFormProps> = ({
   const deliveryPhotoRef = useRef<HTMLInputElement>(null);
   const packagingPhotoRef = useRef<HTMLInputElement>(null);
 
+  // Effect to update form data when initialData changes (e.g., for edit mode)
+  useEffect(() => {
+    if (initialData) {
+      setFormData(prev => ({
+        ...prev,
+        ...initialData,
+        // Ensure photos are handled correctly if initialData contains them
+        deliveryPhoto: initialData.deliveryPhoto || null,
+        packagingPhoto: initialData.packagingPhoto || null,
+      }));
+      // Set photo previews if initialData has them (e.g., URLs from backend)
+      setPhotoPreview({
+        delivery: initialData.deliveryPhoto ? URL.createObjectURL(initialData.deliveryPhoto) : undefined,
+        packaging: initialData.packagingPhoto ? URL.createObjectURL(initialData.packagingPhoto) : undefined,
+      });
+    }
+  }, [initialData]);
+
+
   const handleInputChange = (field: keyof DeliveryFormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     if (errors[field]) {
@@ -59,7 +79,7 @@ const DeliveryForm: React.FC<DeliveryFormProps> = ({
 
   const handleFileUpload = (field: 'deliveryPhoto' | 'packagingPhoto', file: File) => {
     setFormData(prev => ({ ...prev, [field]: file }));
-    
+
     const reader = new FileReader();
     reader.onload = (e) => {
       setPhotoPreview(prev => ({
@@ -93,10 +113,10 @@ const DeliveryForm: React.FC<DeliveryFormProps> = ({
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmitForm = async (e: React.FormEvent) => { // Renamed to avoid conflict with prop
     e.preventDefault();
     if (validateForm()) {
-      onSubmit(formData);
+      await onSubmit(formData); // Use await here
     }
   };
 
@@ -109,7 +129,7 @@ const DeliveryForm: React.FC<DeliveryFormProps> = ({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 max-w-2xl mx-auto p-6">
+    <form onSubmit={handleSubmitForm} className="space-y-6 max-w-2xl mx-auto p-6">
       <div className="flex items-center gap-2 mb-6">
         <Package className="h-6 w-6 text-primary" />
         <h2 className="text-2xl font-bold">Delivery Verification</h2>
@@ -129,7 +149,7 @@ const DeliveryForm: React.FC<DeliveryFormProps> = ({
             type="button"
             variant="outline"
             onClick={simulateBarcodeScan}
-            disabled={isScanning}
+            disabled={isScanning || loading} // Disable if loading
             className="flex items-center gap-2"
           >
             {isScanning ? (
@@ -236,7 +256,7 @@ const DeliveryForm: React.FC<DeliveryFormProps> = ({
       {/* Photo Upload */}
       <div className="space-y-4">
         <h3 className="text-lg font-medium">Photo Documentation</h3>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Delivery Photo */}
           <div className="space-y-2">
@@ -244,9 +264,9 @@ const DeliveryForm: React.FC<DeliveryFormProps> = ({
             <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-4 text-center">
               {photoPreview.delivery ? (
                 <div className="relative">
-                  <img 
-                    src={photoPreview.delivery} 
-                    alt="Delivery" 
+                  <img
+                    src={photoPreview.delivery}
+                    alt="Delivery"
                     className="w-full h-32 object-cover rounded-lg"
                   />
                   <Button
@@ -290,9 +310,9 @@ const DeliveryForm: React.FC<DeliveryFormProps> = ({
             <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-4 text-center">
               {photoPreview.packaging ? (
                 <div className="relative">
-                  <img 
-                    src={photoPreview.packaging} 
-                    alt="Packaging" 
+                  <img
+                    src={photoPreview.packaging}
+                    alt="Packaging"
                     className="w-full h-32 object-cover rounded-lg"
                   />
                   <Button
@@ -349,16 +369,18 @@ const DeliveryForm: React.FC<DeliveryFormProps> = ({
 
       {/* Submit Button */}
       <div className="flex justify-end gap-3 pt-6">
-        <Button type="button" variant="outline">
-          Cancel
-        </Button>
+        {onCancel && (
+          <Button type="button" variant="outline" onClick={onCancel} disabled={loading}>
+            Cancel
+          </Button>
+        )}
         <Button type="submit" disabled={loading} className="min-w-32">
           {loading ? (
             <div className="animate-spin h-4 w-4 border-2 border-primary-foreground border-t-transparent rounded-full" />
           ) : (
             <>
               <CheckCircle2 className="h-4 w-4 mr-2" />
-              Verify Delivery
+              {mode === 'create' ? 'Create Delivery' : 'Save Changes'}
             </>
           )}
         </Button>

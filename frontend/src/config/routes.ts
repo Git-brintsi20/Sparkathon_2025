@@ -74,6 +74,16 @@ export const MANAGER_ROUTES: RoutePath[] = [
   ROUTES.PERFORMANCE_METRICS,
 ];
 
+// User role definitions
+export const USER_ROLES = {
+  ADMIN: 'admin',
+  MANAGER: 'manager',
+  USER: 'user',
+  VENDOR: 'vendor',
+} as const;
+
+export type UserRole = typeof USER_ROLES[keyof typeof USER_ROLES];
+
 // Route metadata for navigation
 export interface RouteMetadata {
   path: RoutePath;
@@ -81,9 +91,13 @@ export interface RouteMetadata {
   description?: string;
   icon?: string;
   requiresAuth: boolean;
-  allowedRoles?: string[];
+  allowedRoles?: UserRole[];
   sidebar?: boolean;
   breadcrumb?: string;
+  parent?: RoutePath;
+  children?: RoutePath[];
+  badge?: string;
+  exact?: boolean;
 }
 
 export const ROUTE_METADATA: Record<string, RouteMetadata> = {
@@ -93,6 +107,7 @@ export const ROUTE_METADATA: Record<string, RouteMetadata> = {
     description: 'Welcome to Smart Vendor Compliance',
     requiresAuth: false,
     sidebar: false,
+    exact: true,
   },
   [ROUTES.LOGIN]: {
     path: ROUTES.LOGIN,
@@ -100,6 +115,7 @@ export const ROUTE_METADATA: Record<string, RouteMetadata> = {
     description: 'Sign in to your account',
     requiresAuth: false,
     sidebar: false,
+    exact: true,
   },
   [ROUTES.REGISTER]: {
     path: ROUTES.REGISTER,
@@ -107,6 +123,15 @@ export const ROUTE_METADATA: Record<string, RouteMetadata> = {
     description: 'Create a new account',
     requiresAuth: false,
     sidebar: false,
+    exact: true,
+  },
+  [ROUTES.FORGOT_PASSWORD]: {
+    path: ROUTES.FORGOT_PASSWORD,
+    title: 'Forgot Password',
+    description: 'Reset your password',
+    requiresAuth: false,
+    sidebar: false,
+    exact: true,
   },
   [ROUTES.DASHBOARD]: {
     path: ROUTES.DASHBOARD,
@@ -116,6 +141,7 @@ export const ROUTE_METADATA: Record<string, RouteMetadata> = {
     requiresAuth: true,
     sidebar: true,
     breadcrumb: 'Dashboard',
+    exact: true,
   },
   [ROUTES.VENDORS]: {
     path: ROUTES.VENDORS,
@@ -125,6 +151,8 @@ export const ROUTE_METADATA: Record<string, RouteMetadata> = {
     requiresAuth: true,
     sidebar: true,
     breadcrumb: 'Vendors',
+    exact: true,
+    children: [ROUTES.VENDOR_DETAIL, ROUTES.VENDOR_CREATE, ROUTES.VENDOR_EDIT],
   },
   [ROUTES.VENDOR_DETAIL]: {
     path: ROUTES.VENDOR_DETAIL,
@@ -133,6 +161,30 @@ export const ROUTE_METADATA: Record<string, RouteMetadata> = {
     requiresAuth: true,
     sidebar: false,
     breadcrumb: 'Vendor Details',
+    parent: ROUTES.VENDORS,
+    exact: true,
+  },
+  [ROUTES.VENDOR_CREATE]: {
+    path: ROUTES.VENDOR_CREATE,
+    title: 'Create Vendor',
+    description: 'Add a new vendor to the system',
+    requiresAuth: true,
+    sidebar: false,
+    breadcrumb: 'Create Vendor',
+    parent: ROUTES.VENDORS,
+    allowedRoles: [USER_ROLES.ADMIN, USER_ROLES.MANAGER],
+    exact: true,
+  },
+  [ROUTES.VENDOR_EDIT]: {
+    path: ROUTES.VENDOR_EDIT,
+    title: 'Edit Vendor',
+    description: 'Update vendor information',
+    requiresAuth: true,
+    sidebar: false,
+    breadcrumb: 'Edit Vendor',
+    parent: ROUTES.VENDORS,
+    allowedRoles: [USER_ROLES.ADMIN, USER_ROLES.MANAGER],
+    exact: true,
   },
   [ROUTES.DELIVERIES]: {
     path: ROUTES.DELIVERIES,
@@ -142,6 +194,8 @@ export const ROUTE_METADATA: Record<string, RouteMetadata> = {
     requiresAuth: true,
     sidebar: true,
     breadcrumb: 'Deliveries',
+    exact: true,
+    children: [ROUTES.DELIVERY_DETAIL, ROUTES.DELIVERY_CREATE, ROUTES.DELIVERY_EDIT],
   },
   [ROUTES.DELIVERY_DETAIL]: {
     path: ROUTES.DELIVERY_DETAIL,
@@ -150,6 +204,29 @@ export const ROUTE_METADATA: Record<string, RouteMetadata> = {
     requiresAuth: true,
     sidebar: false,
     breadcrumb: 'Delivery Details',
+    parent: ROUTES.DELIVERIES,
+    exact: true,
+  },
+  [ROUTES.DELIVERY_CREATE]: {
+    path: ROUTES.DELIVERY_CREATE,
+    title: 'Create Delivery',
+    description: 'Record a new delivery',
+    requiresAuth: true,
+    sidebar: false,
+    breadcrumb: 'Create Delivery',
+    parent: ROUTES.DELIVERIES,
+    exact: true,
+  },
+  [ROUTES.DELIVERY_EDIT]: {
+    path: ROUTES.DELIVERY_EDIT,
+    title: 'Edit Delivery',
+    description: 'Update delivery information',
+    requiresAuth: true,
+    sidebar: false,
+    breadcrumb: 'Edit Delivery',
+    parent: ROUTES.DELIVERIES,
+    allowedRoles: [USER_ROLES.ADMIN, USER_ROLES.MANAGER],
+    exact: true,
   },
   [ROUTES.ANALYTICS]: {
     path: ROUTES.ANALYTICS,
@@ -157,18 +234,45 @@ export const ROUTE_METADATA: Record<string, RouteMetadata> = {
     description: 'Compliance analytics and reports',
     icon: 'BarChart3',
     requiresAuth: true,
-    allowedRoles: ['manager', 'admin'],
+    allowedRoles: [USER_ROLES.MANAGER, USER_ROLES.ADMIN],
     sidebar: true,
     breadcrumb: 'Analytics',
+    exact: true,
+    children: [ROUTES.COMPLIANCE_REPORT, ROUTES.FRAUD_DETECTION, ROUTES.PERFORMANCE_METRICS],
   },
   [ROUTES.COMPLIANCE_REPORT]: {
     path: ROUTES.COMPLIANCE_REPORT,
     title: 'Compliance Reports',
     description: 'Detailed compliance reporting',
     requiresAuth: true,
-    allowedRoles: ['manager', 'admin'],
+    allowedRoles: [USER_ROLES.MANAGER, USER_ROLES.ADMIN],
     sidebar: false,
     breadcrumb: 'Compliance Reports',
+    parent: ROUTES.ANALYTICS,
+    exact: true,
+  },
+  [ROUTES.FRAUD_DETECTION]: {
+    path: ROUTES.FRAUD_DETECTION,
+    title: 'Fraud Detection',
+    description: 'AI-powered fraud detection analytics',
+    requiresAuth: true,
+    allowedRoles: [USER_ROLES.ADMIN],
+    sidebar: false,
+    breadcrumb: 'Fraud Detection',
+    parent: ROUTES.ANALYTICS,
+    badge: 'Admin',
+    exact: true,
+  },
+  [ROUTES.PERFORMANCE_METRICS]: {
+    path: ROUTES.PERFORMANCE_METRICS,
+    title: 'Performance Metrics',
+    description: 'Vendor performance analytics',
+    requiresAuth: true,
+    allowedRoles: [USER_ROLES.MANAGER, USER_ROLES.ADMIN],
+    sidebar: false,
+    breadcrumb: 'Performance Metrics',
+    parent: ROUTES.ANALYTICS,
+    exact: true,
   },
   [ROUTES.SETTINGS]: {
     path: ROUTES.SETTINGS,
@@ -178,6 +282,40 @@ export const ROUTE_METADATA: Record<string, RouteMetadata> = {
     requiresAuth: true,
     sidebar: true,
     breadcrumb: 'Settings',
+    exact: true,
+    children: [ROUTES.PROFILE, ROUTES.THEME, ROUTES.SYSTEM],
+  },
+  [ROUTES.PROFILE]: {
+    path: ROUTES.PROFILE,
+    title: 'Profile',
+    description: 'Manage your user profile',
+    requiresAuth: true,
+    sidebar: false,
+    breadcrumb: 'Profile',
+    parent: ROUTES.SETTINGS,
+    exact: true,
+  },
+  [ROUTES.THEME]: {
+    path: ROUTES.THEME,
+    title: 'Theme Settings',
+    description: 'Customize application appearance',
+    requiresAuth: true,
+    sidebar: false,
+    breadcrumb: 'Theme Settings',
+    parent: ROUTES.SETTINGS,
+    exact: true,
+  },
+  [ROUTES.SYSTEM]: {
+    path: ROUTES.SYSTEM,
+    title: 'System Settings',
+    description: 'System configuration and management',
+    requiresAuth: true,
+    allowedRoles: [USER_ROLES.ADMIN],
+    sidebar: false,
+    breadcrumb: 'System Settings',
+    parent: ROUTES.SETTINGS,
+    badge: 'Admin',
+    exact: true,
   },
 };
 
@@ -206,14 +344,18 @@ export const isAdminRoute = (path: string): boolean => {
   });
 };
 
-export const hasRouteAccess = (path: string, userRole?: string): boolean => {
-  if (isPublicRoute(path)) return true;
-  
-  const metadata = Object.values(ROUTE_METADATA).find(meta => {
-    const routePattern = meta.path.replace(/:[^/]+/g, '[^/]+');
+export const isManagerRoute = (path: string): boolean => {
+  return MANAGER_ROUTES.some(route => {
+    const routePattern = route.replace(/:[^/]+/g, '[^/]+');
     const regex = new RegExp(`^${routePattern}$`);
     return regex.test(path);
   });
+};
+
+export const hasRouteAccess = (path: string, userRole?: UserRole): boolean => {
+  if (isPublicRoute(path)) return true;
+  
+  const metadata = getRouteMetadata(path);
   
   if (!metadata) return false;
   if (!metadata.requiresAuth) return true;
@@ -225,17 +367,49 @@ export const hasRouteAccess = (path: string, userRole?: string): boolean => {
 
 export const getRouteMetadata = (path: string): RouteMetadata | undefined => {
   return Object.values(ROUTE_METADATA).find(meta => {
-    const routePattern = meta.path.replace(/:[^/]+/g, '[^/]+');
-    const regex = new RegExp(`^${routePattern}$`);
-    return regex.test(path);
+    if (meta.exact) {
+      return meta.path === path;
+    } else {
+      const routePattern = meta.path.replace(/:[^/]+/g, '[^/]+');
+      const regex = new RegExp(`^${routePattern}$`);
+      return regex.test(path);
+    }
   });
 };
 
-export const getSidebarRoutes = (userRole?: string): RouteMetadata[] => {
+export const getSidebarRoutes = (userRole?: UserRole): RouteMetadata[] => {
   return Object.values(ROUTE_METADATA).filter(meta => 
     meta.sidebar && 
     (!meta.allowedRoles || !userRole || meta.allowedRoles.includes(userRole))
   );
+};
+
+export const getBreadcrumbPath = (path: string): RouteMetadata[] => {
+  const metadata = getRouteMetadata(path);
+  if (!metadata) return [];
+  
+  const breadcrumbs: RouteMetadata[] = [];
+  let current = metadata;
+  
+  while (current) {
+    breadcrumbs.unshift(current);
+    if (current.parent) {
+      current = getRouteMetadata(current.parent);
+    } else {
+      break;
+    }
+  }
+  
+  return breadcrumbs;
+};
+
+export const getChildRoutes = (parentPath: RoutePath): RouteMetadata[] => {
+  const parent = getRouteMetadata(parentPath);
+  if (!parent || !parent.children) return [];
+  
+  return parent.children
+    .map(childPath => getRouteMetadata(childPath))
+    .filter((meta): meta is RouteMetadata => meta !== undefined);
 };
 
 export const generatePath = (route: RoutePath, params?: Record<string, string>): string => {
@@ -248,4 +422,96 @@ export const generatePath = (route: RoutePath, params?: Record<string, string>):
   }
   
   return path;
+};
+
+export const extractParams = (route: RoutePath, path: string): Record<string, string> => {
+  const routeParts = route.split('/').filter(Boolean);
+  const pathParts = path.split('/').filter(Boolean);
+  const params: Record<string, string> = {};
+  
+  routeParts.forEach((part, index) => {
+    if (part.startsWith(':')) {
+      const paramName = part.slice(1);
+      params[paramName] = pathParts[index] || '';
+    }
+  });
+  
+  return params;
+};
+
+export const matchesRoute = (route: RoutePath, path: string): boolean => {
+  const routePattern = route.replace(/:[^/]+/g, '[^/]+');
+  const regex = new RegExp(`^${routePattern}$`);
+  return regex.test(path);
+};
+
+export const isActiveRoute = (route: RoutePath, currentPath: string, exact = false): boolean => {
+  if (exact) {
+    return route === currentPath;
+  }
+  
+  // For non-exact matching, check if current path starts with route
+  if (route === '/') {
+    return currentPath === '/';
+  }
+  
+  return currentPath.startsWith(route);
+};
+
+// Route validation helpers
+export const validateRoute = (path: string): boolean => {
+  return Object.values(ROUTES).includes(path as RoutePath);
+};
+
+export const sanitizeRoute = (path: string): string => {
+  // Remove double slashes, trailing slashes (except root), and ensure proper format
+  return path.replace(/\/+/g, '/').replace(/\/$/, '') || '/';
+};
+
+// Navigation helpers
+export const getDefaultRouteForRole = (role: UserRole): RoutePath => {
+  switch (role) {
+    case USER_ROLES.ADMIN:
+      return ROUTES.DASHBOARD;
+    case USER_ROLES.MANAGER:
+      return ROUTES.ANALYTICS;
+    case USER_ROLES.VENDOR:
+      return ROUTES.DELIVERIES;
+    default:
+      return ROUTES.DASHBOARD;
+  }
+};
+
+export const getAllowedRoutesForRole = (role: UserRole): RoutePath[] => {
+  return Object.values(ROUTE_METADATA)
+    .filter(meta => !meta.allowedRoles || meta.allowedRoles.includes(role))
+    .map(meta => meta.path);
+};
+
+// Export for use in other modules
+export default {
+  ROUTES,
+  ROUTE_METADATA,
+  PUBLIC_ROUTES,
+  PROTECTED_ROUTES,
+  ADMIN_ROUTES,
+  MANAGER_ROUTES,
+  USER_ROLES,
+  isPublicRoute,
+  isProtectedRoute,
+  isAdminRoute,
+  isManagerRoute,
+  hasRouteAccess,
+  getRouteMetadata,
+  getSidebarRoutes,
+  getBreadcrumbPath,
+  getChildRoutes,
+  generatePath,
+  extractParams,
+  matchesRoute,
+  isActiveRoute,
+  validateRoute,
+  sanitizeRoute,
+  getDefaultRouteForRole,
+  getAllowedRoutesForRole,
 };

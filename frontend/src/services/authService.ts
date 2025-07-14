@@ -1,6 +1,6 @@
 // frontend/src/services/authService.ts
 import apiService from './api';
-import { 
+import type { 
   ApiResponse, 
   User, 
   LoginCredentials, 

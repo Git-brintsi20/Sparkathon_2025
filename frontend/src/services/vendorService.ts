@@ -1,6 +1,6 @@
 // frontend/src/services/vendorService.ts
 import apiService from './api';
-import {
+import type {
   Vendor,
   VendorFormData,
   VendorFilters,
@@ -10,7 +10,7 @@ import {
   VendorAnalytics,
   VendorDocument,
 } from '../types/vendor';
-import { ApiResponse, PaginationParams, PaginatedResponse } from '../types/common'; // Import PaginatedResponse
+import type { ApiResponse, PaginationParams, PaginatedResponse } from '../types/common'; // Import PaginatedResponse
 
 class VendorService {
   private readonly BASE_ENDPOINT = '/vendors';

@@ -17,7 +17,7 @@ import {
   Download
 } from 'lucide-react';
 
-export const ThemeSettings: React.FC = () => {
+const ThemeSettings: React.FC = () => {
   const { state, setTheme, toggleDarkMode, getAvailableThemes } = useTheme();
   const [previewTheme, setPreviewTheme] = useState<ThemeName | null>(null);
   const [showPreview, setShowPreview] = useState(false);
@@ -428,3 +428,5 @@ export const ThemeSettings: React.FC = () => {
     </motion.div>
   );
 };
+
+export default ThemeSettings;

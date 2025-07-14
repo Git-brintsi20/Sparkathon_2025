@@ -1,6 +1,6 @@
 // frontend/src/services/deliveryService.ts
 import apiService from './api';
-import { 
+import type { 
   Delivery, 
   DeliveryFormData, 
   DeliveryVerificationData, 
@@ -9,7 +9,7 @@ import {
   DeliveryApiResponse,
   DeliveryAnalytics 
 } from '../types/delivery';
-import { ApiResponse, PaginationParams } from '../types/common';
+import type { ApiResponse, PaginationParams } from '../types/common';
 
 class DeliveryService {
   private readonly endpoint = '/deliveries';

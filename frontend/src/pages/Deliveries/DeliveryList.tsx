@@ -1,7 +1,8 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react'; // Added useEffect
 import { motion } from 'framer-motion';
 import { Package, Search, Filter, Plus, Eye, Edit, Trash2, CheckCircle, Clock, AlertTriangle } from 'lucide-react';
-import { Layout } from '@/components/layout/Layout';
+import { useNavigate } from 'react-router-dom'; // Import useNavigate
+
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -10,6 +11,10 @@ import { DataTable } from '@/components/common/DataTable';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { useDeliveries } from '@/hooks/useDeliveries';
 import { cn } from '@/components/lib/utils';
+// REMOVED: import { Layout } from '@/components/layout/Layout';
+// ADDED: Import useLayout hook
+import { useLayout } from '@/contexts/LayoutContext';
+import { ROUTES } from '@/config/routes'; // Import ROUTES
 
 interface Delivery {
   id: string;
@@ -40,10 +45,14 @@ const statusIcons = {
 };
 
 const DeliveryList: React.FC = () => {
+  const navigate = useNavigate(); // Initialize useNavigate
   const { deliveries, loading, error, refreshDeliveries } = useDeliveries();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [conditionFilter, setConditionFilter] = useState<string>('all');
+
+  // ADDED: Call the useLayout hook
+  const { setLayoutData } = useLayout();
 
   // Mock data for demonstration
   const mockDeliveries: Delivery[] = [
@@ -126,15 +135,16 @@ const DeliveryList: React.FC = () => {
 
   const handleRowClick = (delivery: Delivery) => {
     // Navigate to delivery detail page
-    console.log('Navigate to delivery:', delivery.id);
+    navigate(`${ROUTES.DELIVERIES}/${delivery.id}`); // Use navigate for routing
   };
 
   const handleEdit = (delivery: Delivery) => {
-    console.log('Edit delivery:', delivery.id);
+    navigate(`${ROUTES.DELIVERIES}/edit/${delivery.id}`); // Use navigate for routing
   };
 
   const handleDelete = (delivery: Delivery) => {
     console.log('Delete delivery:', delivery.id);
+    // In a real app, you'd call a delete function from useDeliveries hook
   };
 
   const StatusBadge = ({ status }: { status: string }) => {
@@ -249,11 +259,13 @@ const DeliveryList: React.FC = () => {
     </div>
   );
 
+  // Define breadcrumbs for the layout context
   const breadcrumbs = [
-    { label: 'Dashboard', href: '/dashboard' },
+    { label: 'Dashboard', href: '/' },
     { label: 'Deliveries', isActive: true }
   ];
 
+  // Define header actions for the layout context
   const headerActions = (
     <div className="flex items-center gap-2">
       <Button
@@ -263,191 +275,193 @@ const DeliveryList: React.FC = () => {
       >
         Refresh
       </Button>
-      <Button>
+      <Button onClick={() => navigate(ROUTES.CREATE_DELIVERY)}> {/* Use navigate here */}
         <Plus className="h-4 w-4 mr-2" />
         New Delivery
       </Button>
     </div>
   );
 
+  // ADDED: useEffect hook to set and clear layout data
+  useEffect(() => {
+    setLayoutData({
+      pageTitle: "Deliveries",
+      pageDescription: "Manage and track delivery verifications",
+      breadcrumbs: breadcrumbs,
+      headerActions: headerActions
+    });
+
+    // Return a cleanup function
+    return () => setLayoutData({});
+  }, [setLayoutData, refreshDeliveries, loading, navigate]); // Added navigate to dependencies for headerActions
+
   if (error) {
     return (
-      <Layout 
-        breadcrumbs={breadcrumbs}
-        pageTitle="Deliveries"
-        pageDescription="Manage and track delivery verifications"
-      >
-        <div className="flex items-center justify-center h-64">
-          <div className="text-center">
-            <AlertTriangle className="h-12 w-12 mx-auto text-destructive mb-4" />
-            <h3 className="text-lg font-semibold mb-2">Error Loading Deliveries</h3>
-            <p className="text-muted-foreground mb-4">{error}</p>
-            <Button onClick={() => refreshDeliveries?.()}>
-              Try Again
-            </Button>
-          </div>
+      // REMOVED <Layout> wrapper
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <AlertTriangle className="h-12 w-12 mx-auto text-destructive mb-4" />
+          <h3 className="text-lg font-semibold mb-2">Error Loading Deliveries</h3>
+          <p className="text-muted-foreground mb-4">{error}</p>
+          <Button onClick={() => refreshDeliveries?.()}>
+            Try Again
+          </Button>
         </div>
-      </Layout>
+      </div>
     );
   }
 
   return (
-    <Layout 
-      breadcrumbs={breadcrumbs}
-      pageTitle="Deliveries"
-      pageDescription="Manage and track delivery verifications"
-      headerActions={headerActions}
-    >
-      <div className="p-6 space-y-6">
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-          >
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Total Deliveries
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{displayDeliveries.length}</div>
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-          >
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Verified
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-green-600">
-                  {displayDeliveries.filter(d => d.status === 'verified').length}
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-          >
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Pending
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-yellow-600">
-                  {displayDeliveries.filter(d => d.status === 'pending').length}
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-          >
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Rejected
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-red-600">
-                  {displayDeliveries.filter(d => d.status === 'rejected').length}
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        </div>
-
-        {/* Filters */}
+    // REMOVED <Layout> wrapper
+    <div className="p-6 space-y-6">
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
+          transition={{ delay: 0.1 }}
         >
           <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Filters</CardTitle>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Total Deliveries
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="relative">
-                  <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search deliveries..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-8"
-                  />
-                </div>
+              <div className="text-2xl font-bold">{filteredDeliveries.length}</div>
+            </CardContent>
+          </Card>
+        </motion.div>
 
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Filter by status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="pending">Pending</SelectItem>
-                    <SelectItem value="verified">Verified</SelectItem>
-                    <SelectItem value="rejected">Rejected</SelectItem>
-                    <SelectItem value="in_transit">In Transit</SelectItem>
-                  </SelectContent>
-                </Select>
-
-                <Select value={conditionFilter} onValueChange={setConditionFilter}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Filter by condition" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Conditions</SelectItem>
-                    <SelectItem value="excellent">Excellent</SelectItem>
-                    <SelectItem value="good">Good</SelectItem>
-                    <SelectItem value="fair">Fair</SelectItem>
-                    <SelectItem value="poor">Poor</SelectItem>
-                    <SelectItem value="damaged">Damaged</SelectItem>
-                  </SelectContent>
-                </Select>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+        >
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Verified
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-green-600">
+                {filteredDeliveries.filter(d => d.status === 'verified').length}
               </div>
             </CardContent>
           </Card>
         </motion.div>
 
-        {/* Deliveries Table */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6 }}
+          transition={{ delay: 0.3 }}
         >
-          <DataTable
-            data={filteredDeliveries}
-            columns={columns}
-            loading={loading}
-            searchable={false}
-            onRowClick={handleRowClick}
-            actions={getActions}
-            emptyMessage="No deliveries found"
-            className="w-full"
-          />
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Pending
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-yellow-600">
+                {filteredDeliveries.filter(d => d.status === 'pending').length}
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+        >
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Rejected
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-red-600">
+                {filteredDeliveries.filter(d => d.status === 'rejected').length}
+              </div>
+            </CardContent>
+          </Card>
         </motion.div>
       </div>
-    </Layout>
+
+      {/* Filters */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.5 }}
+      >
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Filters</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="relative">
+                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search deliveries..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-8"
+                />
+              </div>
+
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Filter by status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="verified">Verified</SelectItem>
+                  <SelectItem value="rejected">Rejected</SelectItem>
+                  <SelectItem value="in_transit">In Transit</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select value={conditionFilter} onValueChange={setConditionFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Filter by condition" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Conditions</SelectItem>
+                  <SelectItem value="excellent">Excellent</SelectItem>
+                  <SelectItem value="good">Good</SelectItem>
+                  <SelectItem value="fair">Fair</SelectItem>
+                  <SelectItem value="poor">Poor</SelectItem>
+                  <SelectItem value="damaged">Damaged</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
+
+      {/* Deliveries Table */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.6 }}
+      >
+        <DataTable
+          data={filteredDeliveries}
+          columns={columns}
+          loading={loading}
+          searchable={false}
+          onRowClick={handleRowClick}
+          actions={getActions}
+          emptyMessage="No deliveries found"
+          className="w-full"
+        />
+      </motion.div>
+    </div>
   );
 };
 
