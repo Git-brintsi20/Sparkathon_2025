@@ -1,12 +1,11 @@
 import React, { useState, useMemo, useEffect } from 'react'; // Added useEffect
 import { motion, AnimatePresence } from 'framer-motion';
-import { Database, Link2, Zap, Activity, Globe, Lock, Hash, CheckCircle2, AlertOctagon } from 'lucide-react';
+import { Database, Zap, Activity, Globe, Lock, Hash, CheckCircle2, AlertOctagon } from 'lucide-react';
 import {
   AlertTriangle,
   Shield,
   TrendingUp,
   Eye,
-  Calendar,
   Clock,
   MapPin,
   DollarSign,

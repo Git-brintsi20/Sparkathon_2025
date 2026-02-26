@@ -5,7 +5,6 @@ import {
   Search,
   Filter,
   Plus,
-  MoreHorizontal,
   Edit,
   Trash2,
   Eye,
@@ -19,7 +18,7 @@ import {
 import { useLayout } from '@/contexts/LayoutContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useVendors } from '@/hooks/useVendors';
 import VendorForm from '@/components/forms/VendorForm';
@@ -28,7 +27,6 @@ import { DataTable } from '@/components/common/DataTable';
 import type { Column } from '@/components/common/DataTable';
 import { cn } from '@/components/lib/utils';
 import { Shield, ExternalLink, Link as LinkIcon ,  ShieldCheck} from 'lucide-react';
-import type  {VendorMetrics} from   '@/types/vendor';
 declare module '@/types/vendor' {
   interface Vendor {
     blockchainVerification?: BlockchainVerification;
@@ -51,7 +49,7 @@ const VendorList: React.FC = () => {
   const {
     vendors,
     loading,
-    error,
+    error: _error,
     pagination,
     filters,
     metrics,
@@ -59,8 +57,8 @@ const VendorList: React.FC = () => {
     createVendor,
     updateVendor,
     deleteVendor,
-    setFilters,
-    setPage,
+    setFilters: _setFilters,
+    setPage: _setPage,
     searchVendors,
     refreshVendors
   } = useVendors();
@@ -306,28 +304,28 @@ const metricsCards = [
     value: metrics?.totalVendors || 12,
     change: '+12%',
     positive: true,
-    blockchainInfo: `${metrics?.blockchainTransactions || 156} TX`
+    blockchainInfo: `${metrics?.blockchainMetrics?.totalTransactions || 156} TX`
   },
   {
     title: 'Active Vendors',
     value: metrics?.activeVendors || 10,
     change: '+8%',
     positive: true,
-    blockchainInfo: `${metrics?.verifiedRecords || 142} verified`
+    blockchainInfo: `${metrics?.blockchainMetrics?.verifiedRecords || 142} verified`
   },
   {
     title: 'High Risk',
     value: metrics?.highRiskVendors || 1,
     change: '-25%',
     positive: true,
-    blockchainInfo: `${metrics?.immutableRecords || 24} immutable`
+    blockchainInfo: `${metrics?.blockchainMetrics?.immutableRecords || 24} immutable`
   },
   {
     title: 'Avg Compliance',
     value: `${metrics?.averageComplianceScore || 87}%`,
     change: '+3%',
     positive: true,
-    blockchainInfo: `Block #${metrics?.lastBlockNumber || 18500000}`
+    blockchainInfo: `Block #${metrics?.blockchainMetrics?.lastBlockNumber || 18500000}`
   }
 ];
 

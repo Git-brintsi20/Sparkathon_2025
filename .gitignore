@@ -1,8 +1,4 @@
-# Navigate to root directory
-cd D:/Git-REPOs/Sparkathon_2025/smart-vendor-compliance
-
-# Create or overwrite .gitignore
-echo '# Node.js and npm
+# Node.js and npm
 node_modules/
 npm-debug.log
 package-lock.json
@@ -10,6 +6,7 @@ yarn.lock
 
 # Environment variables
 .env
+.env.*
 .env.local
 .env.development
 .env.test
@@ -59,4 +56,4 @@ Thumbs.db
 *.tmp
 coverage/
 dist/
-build/' > .gitignore
+build/

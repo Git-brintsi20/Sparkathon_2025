@@ -403,4 +403,4 @@ export const featureFlags = {
   multiLanguage: env.MULTI_LANGUAGE,
   darkMode: env.DARK_MODE,
   exportFunctionality: env.EXPORT_FUNCTIONALITY,
-};c
+};

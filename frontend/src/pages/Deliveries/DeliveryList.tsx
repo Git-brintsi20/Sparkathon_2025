@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Package, Search, Filter, Plus, Eye, Edit, Trash2, CheckCircle, Clock, AlertTriangle } from 'lucide-react';
+import { Package, Search, Plus, Eye, Edit, Trash2, CheckCircle, Clock, AlertTriangle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useLocation } from 'react-router-dom';
 
@@ -13,10 +13,8 @@ import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { useDeliveries } from '@/hooks/useDeliveries';
 import { cn } from '@/components/lib/utils';
 import { useLayout } from '@/contexts/LayoutContext';
-import type { LayoutContextType } from '@/contexts/LayoutContext';
 import { ROUTES } from '@/config/routes';
 import type { Delivery } from '@/types/delivery';
-import { Shield, Hash} from 'lucide-react';
 
 // Mock data based on the QR code scenarios
 const mockDeliveries: Delivery[] = [
@@ -71,7 +69,7 @@ const mockDeliveries: Delivery[] = [
       }
     ],
     totalAmount: 225.00,
-    verificationStatus: 'flagged',
+    verificationStatus: 'failed',
     photos: [],
     notes: 'Weight discrepancy detected - Expected: 12.5kg, Actual: 8.2kg',
     createdAt: '2024-01-15T14:20:00Z',
@@ -100,7 +98,7 @@ const mockDeliveries: Delivery[] = [
       }
     ],
     totalAmount: 2250.00,
-    verificationStatus: 'flagged',
+    verificationStatus: 'failed',
     photos: [],
     notes: 'Product quantity mismatch - Expected: 15 units, Delivered: 12 units',
     createdAt: '2024-01-15T09:15:00Z',
@@ -125,11 +123,11 @@ const mockDeliveries: Delivery[] = [
         unit: 'pieces',
         price: 35.75,
         verified: false,
-        condition: 'poor'
+        condition: 'damaged'
       }
     ],
     totalAmount: 715.00,
-    verificationStatus: 'flagged',
+    verificationStatus: 'failed',
     photos: [],
     notes: 'Vendor flagged for previous quality issues. Items show signs of damage.',
     createdAt: '2024-01-15T16:45:00Z',
@@ -138,7 +136,8 @@ const mockDeliveries: Delivery[] = [
 ];
 
 // Map QR codes to mock data for easy identification
-const qrCodeMapping = {
+// @ts-expect-error -- reserved for QR code scanning feature
+const _qrCodeMapping = {
   'DIV-bha-212': mockDeliveries[0],
   'ANA-yad-264': mockDeliveries[1],
   'ARY-kes-275': mockDeliveries[2],
@@ -182,7 +181,7 @@ const DeliveryList: React.FC = () => {
   const error = deliveriesHook?.error || null;
   const refreshDeliveries = deliveriesHook?.refreshDeliveries || (() => {});
   
-  const setLayoutData = layoutHook?.setLayoutData || ((data: any) => {});
+  const setLayoutData = layoutHook?.setLayoutData || ((__data: any) => {});
 
   // Get filtered data based on route
   const getFilteredData = useMemo(() => {

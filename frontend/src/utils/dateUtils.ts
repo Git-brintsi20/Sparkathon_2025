@@ -1,6 +1,14 @@
 // Date utility functions for date formatting, calculations, and timezone handling
 
-import  { DATE_FORMATS, TIME_ZONES } from '../config/constants';
+// Date format presets (not exported from config/constants)
+const DATE_FORMATS = {
+  SHORT: 'MM/dd/yyyy',
+  MEDIUM: 'MMM dd, yyyy',
+  LONG: 'MMMM dd, yyyy',
+  ISO: 'yyyy-MM-dd',
+  DATETIME: 'MMM dd, yyyy HH:mm',
+  TIME: 'HH:mm:ss',
+} as const;
 
 /**
  * Date Formatting Utilities
@@ -218,7 +226,6 @@ export const getCalendarMonth = (date: Date): Date[][] => {
   const year = date.getFullYear();
   const month = date.getMonth();
   const firstDay = new Date(year, month, 1);
-  const lastDay = new Date(year, month + 1, 0);
   const startDate = new Date(firstDay);
   
   // Start from the first day of the week

@@ -4,13 +4,11 @@ import {
   VENDOR_STATUS, 
   DELIVERY_STATUS, 
   COMPLIANCE_STATUS, 
-
+  RISK_LEVELS,
   CHART_COLORS,
- 
+  APP_CONFIG,
+  REGEX_PATTERNS,
 } from '../config/constants';
-import  FILE_UPLOAD from '../config/constants';
-import   VALIDATION_RULES from '../config/constants';
-import     RISK_LEVEL from '../config/constants';
 
 /**
  * Data Manipulation Utilities
@@ -136,35 +134,34 @@ export const clamp = (value: number, min: number, max: number): number => {
  * Status Utilities
  */
 export const getStatusColor = (status: string, type: 'vendor' | 'delivery' | 'compliance' | 'risk'): string => {
-  const colorMap = {
+  const colorMap: Record<string, Record<string, string>> = {
     vendor: {
       [VENDOR_STATUS.ACTIVE]: 'text-green-600',
       [VENDOR_STATUS.INACTIVE]: 'text-gray-500',
-      [VENDOR_STATUS.PENDING]: 'text-yellow-600',
+      [VENDOR_STATUS.PENDING_APPROVAL]: 'text-yellow-600',
       [VENDOR_STATUS.SUSPENDED]: 'text-red-600',
-      [VENDOR_STATUS.UNDER_REVIEW]: 'text-blue-600',
+      [VENDOR_STATUS.BLACKLISTED]: 'text-red-700',
     },
     delivery: {
       [DELIVERY_STATUS.PENDING]: 'text-yellow-600',
       [DELIVERY_STATUS.IN_TRANSIT]: 'text-blue-600',
       [DELIVERY_STATUS.DELIVERED]: 'text-green-600',
-      [DELIVERY_STATUS.DELAYED]: 'text-orange-600',
+      [DELIVERY_STATUS.VERIFIED]: 'text-green-700',
       [DELIVERY_STATUS.CANCELLED]: 'text-red-600',
-      [DELIVERY_STATUS.RETURNED]: 'text-purple-600',
-      [DELIVERY_STATUS.FAILED]: 'text-red-700',
+      [DELIVERY_STATUS.REJECTED]: 'text-red-700',
     },
     compliance: {
       [COMPLIANCE_STATUS.COMPLIANT]: 'text-green-600',
       [COMPLIANCE_STATUS.NON_COMPLIANT]: 'text-red-600',
-      [COMPLIANCE_STATUS.PENDING_REVIEW]: 'text-yellow-600',
-      [COMPLIANCE_STATUS.REQUIRES_ACTION]: 'text-orange-600',
-      [COMPLIANCE_STATUS.EXEMPT]: 'text-gray-500',
+      [COMPLIANCE_STATUS.PENDING]: 'text-yellow-600',
+      [COMPLIANCE_STATUS.REVIEW_REQUIRED]: 'text-orange-600',
+      [COMPLIANCE_STATUS.EXPIRED]: 'text-gray-500',
     },
     risk: {
-      [RISK_LEVEL.LOW]: 'text-green-600',
-      [RISK_LEVEL.MEDIUM]: 'text-yellow-600',
-      [RISK_LEVEL.HIGH]: 'text-orange-600',
-      [RISK_LEVEL.CRITICAL]: 'text-red-600',
+      [RISK_LEVELS.LOW]: 'text-green-600',
+      [RISK_LEVELS.MEDIUM]: 'text-yellow-600',
+      [RISK_LEVELS.HIGH]: 'text-orange-600',
+      [RISK_LEVELS.CRITICAL]: 'text-red-600',
     },
   };
 
@@ -172,35 +169,34 @@ export const getStatusColor = (status: string, type: 'vendor' | 'delivery' | 'co
 };
 
 export const getStatusBadgeColor = (status: string, type: 'vendor' | 'delivery' | 'compliance' | 'risk'): string => {
-  const colorMap = {
+  const colorMap: Record<string, Record<string, string>> = {
     vendor: {
       [VENDOR_STATUS.ACTIVE]: 'bg-green-100 text-green-800',
       [VENDOR_STATUS.INACTIVE]: 'bg-gray-100 text-gray-800',
-      [VENDOR_STATUS.PENDING]: 'bg-yellow-100 text-yellow-800',
+      [VENDOR_STATUS.PENDING_APPROVAL]: 'bg-yellow-100 text-yellow-800',
       [VENDOR_STATUS.SUSPENDED]: 'bg-red-100 text-red-800',
-      [VENDOR_STATUS.UNDER_REVIEW]: 'bg-blue-100 text-blue-800',
+      [VENDOR_STATUS.BLACKLISTED]: 'bg-red-200 text-red-900',
     },
     delivery: {
       [DELIVERY_STATUS.PENDING]: 'bg-yellow-100 text-yellow-800',
       [DELIVERY_STATUS.IN_TRANSIT]: 'bg-blue-100 text-blue-800',
       [DELIVERY_STATUS.DELIVERED]: 'bg-green-100 text-green-800',
-      [DELIVERY_STATUS.DELAYED]: 'bg-orange-100 text-orange-800',
+      [DELIVERY_STATUS.VERIFIED]: 'bg-green-200 text-green-900',
       [DELIVERY_STATUS.CANCELLED]: 'bg-red-100 text-red-800',
-      [DELIVERY_STATUS.RETURNED]: 'bg-purple-100 text-purple-800',
-      [DELIVERY_STATUS.FAILED]: 'bg-red-100 text-red-900',
+      [DELIVERY_STATUS.REJECTED]: 'bg-red-100 text-red-900',
     },
     compliance: {
       [COMPLIANCE_STATUS.COMPLIANT]: 'bg-green-100 text-green-800',
       [COMPLIANCE_STATUS.NON_COMPLIANT]: 'bg-red-100 text-red-800',
-      [COMPLIANCE_STATUS.PENDING_REVIEW]: 'bg-yellow-100 text-yellow-800',
-      [COMPLIANCE_STATUS.REQUIRES_ACTION]: 'bg-orange-100 text-orange-800',
-      [COMPLIANCE_STATUS.EXEMPT]: 'bg-gray-100 text-gray-800',
+      [COMPLIANCE_STATUS.PENDING]: 'bg-yellow-100 text-yellow-800',
+      [COMPLIANCE_STATUS.REVIEW_REQUIRED]: 'bg-orange-100 text-orange-800',
+      [COMPLIANCE_STATUS.EXPIRED]: 'bg-gray-100 text-gray-800',
     },
     risk: {
-      [RISK_LEVEL.LOW]: 'bg-green-100 text-green-800',
-      [RISK_LEVEL.MEDIUM]: 'bg-yellow-100 text-yellow-800',
-      [RISK_LEVEL.HIGH]: 'bg-orange-100 text-orange-800',
-      [RISK_LEVEL.CRITICAL]: 'bg-red-100 text-red-800',
+      [RISK_LEVELS.LOW]: 'bg-green-100 text-green-800',
+      [RISK_LEVELS.MEDIUM]: 'bg-yellow-100 text-yellow-800',
+      [RISK_LEVELS.HIGH]: 'bg-orange-100 text-orange-800',
+      [RISK_LEVELS.CRITICAL]: 'bg-red-100 text-red-800',
     },
   };
 
@@ -215,11 +211,11 @@ export const getFileExtension = (filename: string): string => {
 };
 
 export const isImageFile = (file: File): boolean => {
-  return FILE_UPLOAD.ALLOWED_IMAGES.includes(file.type);
+  return APP_CONFIG.UPLOAD.ALLOWED_IMAGE_TYPES.includes(file.type as any);
 };
 
 export const isDocumentFile = (file: File): boolean => {
-  return FILE_UPLOAD.ALLOWED_DOCUMENTS.includes(file.type);
+  return APP_CONFIG.UPLOAD.ALLOWED_DOCUMENT_TYPES.includes(file.type as any);
 };
 
 export const formatFileSize = (bytes: number): string => {
@@ -234,24 +230,25 @@ export const formatFileSize = (bytes: number): string => {
  * Validation Utilities
  */
 export const validateEmail = (email: string): boolean => {
-  return VALIDATION_RULES.EMAIL.REGEX.test(email) && email.length <= VALIDATION_RULES.EMAIL.MAX_LENGTH;
+  return REGEX_PATTERNS.EMAIL.test(email) && email.length <= 254;
 };
 
 export const validatePassword = (password: string): boolean => {
-  return password.length >= VALIDATION_RULES.PASSWORD.MIN_LENGTH &&
-         password.length <= VALIDATION_RULES.PASSWORD.MAX_LENGTH &&
-         VALIDATION_RULES.PASSWORD.REGEX.test(password);
+  return password.length >= 8 &&
+         password.length <= 128 &&
+         REGEX_PATTERNS.PASSWORD.test(password);
 };
 
 export const validatePhone = (phone: string): boolean => {
-  return VALIDATION_RULES.PHONE.REGEX.test(phone);
+  return REGEX_PATTERNS.PHONE.test(phone);
 };
 
 /**
  * Chart Utilities
  */
 export const getChartColor = (index: number): string => {
-  return CHART_COLORS.PRIMARY[index % CHART_COLORS.PRIMARY.length];
+  const palette = [CHART_COLORS.PRIMARY, CHART_COLORS.SUCCESS, CHART_COLORS.WARNING, CHART_COLORS.ERROR, CHART_COLORS.INFO, CHART_COLORS.GRAY];
+  return palette[index % palette.length];
 };
 
 export const generateChartData = (data: any[], xKey: string, yKey: string) => {

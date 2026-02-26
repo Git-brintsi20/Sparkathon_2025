@@ -10,7 +10,6 @@ import {
   BarChart3,
   Settings,
   ChevronLeft,
-  ChevronRight,
   ChevronDown,
   ChevronUp,
   Bell,
@@ -20,7 +19,6 @@ import {
   LogOut,
   Menu,
   X,
-  Home,
   Activity,
   AlertTriangle,
   CheckCircle,
@@ -130,12 +128,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
 const [expandedItems, setExpandedItems] = useState<string[]>([]);
 
 const [hoveredItem, setHoveredItem] = useState<string | null>(null);
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [_mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
 const [quickActionsOpen, setQuickActionsOpen] = useState(() => {
   const saved = sessionStorage.getItem('quickActionsOpen');
   return saved ? JSON.parse(saved) : true;
 });
-  const [isInteracting, setIsInteracting] = useState(false);
+  const [_isInteracting, setIsInteracting] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
   const interactionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -513,7 +511,7 @@ const handleNavItemClick = (item: NavItem, event: React.MouseEvent) => {
           animate={isOpen ? 'open' : 'closed'}
           className="space-y-2"
         >
-          {navItems.map((item, index) => (
+          {navItems.map((item, _index) => (
             <motion.div
               key={item.id}
               variants={itemVariants}
@@ -629,7 +627,7 @@ const handleNavItemClick = (item: NavItem, event: React.MouseEvent) => {
                       >
                         <Link 
                           to={subItem.href}
-                          onClick={(e) => {
+                          onClick={(_e) => {
                             handleInteractionStart();
                             handleInteractionEnd();
                             // Allow normal navigation for subitems
@@ -732,7 +730,7 @@ const handleNavItemClick = (item: NavItem, event: React.MouseEvent) => {
                   className="px-4 pb-4 overflow-hidden"
                 >
                   <div className="grid grid-cols-2 gap-2">
-                    {quickActions.map((action, index) => (
+                    {quickActions.map((action, _index) => (
                       <motion.div
                         key={action.id}
                         variants={itemVariants}

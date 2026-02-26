@@ -65,133 +65,16 @@ interface UseDeliveriesActions {
 }
 
 export const useDeliveries = (): UseDeliveriesState & UseDeliveriesActions => {
-  
-    const mockDeliveries: Delivery[] = [
-  // QR Code 1: DIV-bha-212 (The Good Delivery)
-  {
-    id: '1',
-    orderId: 'PO-2024-001',
-    vendorId: 'vendor-1',
-    vendorName: 'DIV-bha-212',
-    deliveryDate: '2024-01-15T10:30:00Z',
-    expectedDate: '2024-01-15T10:00:00Z',
-    status: 'verified',
-    items: [
-      {
-        id: 'item-1',
-        name: 'Office Supplies',
-        quantity: 10,
-        expectedQuantity: 10,
-        unit: 'pieces',
-        price: 25.50,
-        verified: true,
-        condition: 'good'
-      }
-    ],
-    totalAmount: 255.00,
-    verificationStatus: 'verified',
-    photos: [],
-    notes: 'All items in perfect condition',
-    createdAt: '2024-01-15T10:30:00Z',
-    updatedAt: '2024-01-15T11:00:00Z'
-  },
-  
-  // QR Code 2: ANA-yad-264 (The Weight Mismatch)
-  {
-    id: '2',
-    orderId: 'PO-2024-002',
-    vendorId: 'vendor-2',
-    vendorName: 'ANA-yad-264',
-    deliveryDate: '2024-01-15T14:20:00Z',
-    expectedDate: '2024-01-15T14:00:00Z',
-    status: 'flagged',
-    items: [
-      {
-        id: 'item-2',
-        name: 'Raw Materials',
-        quantity: 5,
-        expectedQuantity: 5,
-        unit: 'boxes',
-        price: 45.00,
-        verified: false,
-        condition: 'good'
-      }
-    ],
-    totalAmount: 225.00,
-    verificationStatus: 'flagged',
-    photos: [],
-    notes: 'Weight discrepancy detected - Expected: 12.5kg, Actual: 8.2kg',
-    createdAt: '2024-01-15T14:20:00Z',
-    updatedAt: '2024-01-15T14:20:00Z'
-  },
-  
-  // QR Code 3: ARY-kes-275 (The Product Mismatch)
-  {
-    id: '3',
-    orderId: 'PO-2024-003',
-    vendorId: 'vendor-3',
-    vendorName: 'ARY-kes-275',
-    deliveryDate: '2024-01-15T09:15:00Z',
-    expectedDate: '2024-01-15T09:00:00Z',
-    status: 'flagged',
-    items: [
-      {
-        id: 'item-3',
-        name: 'Heavy Equipment',
-        quantity: 12,
-        expectedQuantity: 15,
-        unit: 'units',
-        price: 150.00,
-        verified: false,
-        condition: 'good'
-      }
-    ],
-    totalAmount: 2250.00,
-    verificationStatus: 'flagged',
-    photos: [],
-    notes: 'Product quantity mismatch - Expected: 15 units, Delivered: 12 units',
-    createdAt: '2024-01-15T09:15:00Z',
-    updatedAt: '2024-01-15T09:15:00Z'
-  },
-  
-  // QR Code 4: HAR-bha-203 (The Flagged Vendor)
-  {
-    id: '4',
-    orderId: 'PO-2024-004',
-    vendorId: 'vendor-4',
-    vendorName: 'HAR-bha-203',
-    deliveryDate: '2024-01-15T16:45:00Z',
-    expectedDate: '2024-01-15T16:30:00Z',
-    status: 'flagged',
-    items: [
-      {
-        id: 'item-4',
-        name: 'Electronic Components',
-        quantity: 20,
-        expectedQuantity: 20,
-        unit: 'pieces',
-        price: 35.75,
-        verified: false,
-        condition: 'poor'
-      }
-    ],
-    totalAmount: 715.00,
-    verificationStatus: 'flagged',
-    photos: [],
-    notes: 'Vendor flagged for previous quality issues. Items show signs of damage.',
-    createdAt: '2024-01-15T16:45:00Z',
-    updatedAt: '2024-01-15T16:45:00Z'
-  }
-];
+
   const [state, setState] = useState<UseDeliveriesState>({
-    deliveries: mockDeliveries, // Use mock data instead of empty array
-    loading: false, // Set to false for immediate display
+    deliveries: [],
+    loading: true,
     error: null,
     pagination: {
       page: 1,
       limit: 10,
-      total: mockDeliveries.length,
-      totalPages: 1,
+      total: 0,
+      totalPages: 0,
     },
     filters: {},
     metrics: null,
@@ -202,18 +85,45 @@ export const useDeliveries = (): UseDeliveriesState & UseDeliveriesActions => {
 
   // Fetch deliveries with pagination and filters
   const fetchDeliveries = useCallback(async (params?: PaginationParams & DeliveryFilters) => {
-    console.log('Fetching mock deliveries...');
-    setState(prev => ({ ...prev, loading: true }));
-    
-    // Simulate API delay
-    setTimeout(() => {
-      setState(prev => ({ 
-        ...prev, 
-        deliveries: mockDeliveries,
-        loading: false 
+    setState(prev => ({ ...prev, loading: true, error: null }));
+
+    try {
+      const queryParams = {
+        page: state.pagination.page,
+        limit: state.pagination.limit,
+        ...state.filters,
+        ...params,
+      };
+      const response = await deliveryService.getDeliveries(queryParams);
+
+      if (response.success && response.data) {
+        const responseData = response.data;
+        setState(prev => ({
+          ...prev,
+          deliveries: responseData.deliveries || [],
+          pagination: {
+            page: responseData.page || 1,
+            limit: responseData.limit || 10,
+            total: responseData.total || 0,
+            totalPages: responseData.totalPages || 0,
+          },
+          loading: false,
+        }));
+      } else {
+        setState(prev => ({
+          ...prev,
+          error: response.message || 'Failed to fetch deliveries',
+          loading: false,
+        }));
+      }
+    } catch (error) {
+      setState(prev => ({
+        ...prev,
+        error: error instanceof Error ? error.message : 'An unexpected error occurred',
+        loading: false,
       }));
-    }, 500);
-  }, []);
+    }
+  }, [state.pagination.page, state.pagination.limit, state.filters]);
 
   // Fetch single delivery by ID
   const fetchDeliveryById = useCallback(async (id: string): Promise<Delivery | null> => {

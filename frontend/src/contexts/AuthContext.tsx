@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useReducer, useEffect} from 'react';
 import type { ReactNode } from 'react';
-import type { User, AuthState, LoginCredentials, AuthToken } from '../types/common';
+import type { User, AuthState, LoginCredentials } from '../types/common';
 
 // CORRECTED: The interface syntax is now valid.
 interface AuthContextValue {
@@ -32,7 +32,7 @@ const initialState: AuthState = {
   isAuthenticated: false,
 };
 
-const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+export const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 const authReducer = (state: AuthState, action: AuthAction): AuthState => {
   switch (action.type) {

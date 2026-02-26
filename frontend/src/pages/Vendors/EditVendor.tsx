@@ -10,7 +10,7 @@ import { useVendors } from '../../hooks/useVendors';
 import { useLayout } from '@/contexts/LayoutContext';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
-import type { VendorFormData, Vendor } from '@/types/vendor';
+import type { VendorFormData } from '@/types/vendor';
 
 const EditVendor: React.FC = () => {
   const navigate = useNavigate();

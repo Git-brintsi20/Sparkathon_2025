@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react'; // Added useEffect
-import { Calendar, Download, Filter, TrendingUp, AlertTriangle, CheckCircle, XCircle, Eye, FileText, BarChart3, Clock, User, Shield } from 'lucide-react';
+import { Download, Filter, AlertTriangle, CheckCircle, XCircle, Eye, FileText, BarChart3, Clock, User, Shield } from 'lucide-react';
 import { Database, Link, Zap } from 'lucide-react'; // Added blockchain-related imports
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,7 +13,6 @@ import { ComplianceChart } from '@/components/charts/ComplianceChart';
 // REMOVED: import { Layout } from '@/components/layout/Layout';
 // ADDED: Import the useLayout hook
 import { useLayout } from '@/contexts/LayoutContext';
-import { cn } from '@/components/lib/utils'; // Keeping this path as per your instruction
 
 interface ComplianceIncident {
   id: string;
@@ -39,7 +38,7 @@ const ComplianceReport: React.FC = () => {
   // ADDED: Call the useLayout hook
   const { setLayoutData } = useLayout();
 
-  const { data, loading, error, updateFilters, exportData } = useAnalytics();
+  const { data, loading, error, updateFilters: _updateFilters, exportData } = useAnalytics();
 
   const [selectedDateRange, setSelectedDateRange] = useState('last6months');
   const [selectedVendor, setSelectedVendor] = useState('all');

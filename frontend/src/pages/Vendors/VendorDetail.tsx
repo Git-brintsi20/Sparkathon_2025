@@ -21,7 +21,7 @@ import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { cn } from '@/components/lib/utils';
 // CORRECTED: Use a type-only import for the Vendor type
 import type { Vendor } from '@/types/vendor';
-import { Shield, ExternalLink, Link } from 'lucide-react';
+import { Shield, ExternalLink } from 'lucide-react';
 
 interface Delivery {
   id: string;

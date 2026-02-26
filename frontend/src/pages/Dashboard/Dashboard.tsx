@@ -8,16 +8,13 @@ import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 // ADDED: Import the useLayout hook
 import { useLayout } from '@/contexts/LayoutContext';
-import { Shield, Link } from 'lucide-react';
+import { Shield } from 'lucide-react';
 import { 
-  TrendingUp, 
-  TrendingDown, 
   Users, 
   Package, 
   AlertTriangle,
   CheckCircle2,
-  Clock,
-  DollarSign
+  Clock
 } from 'lucide-react';
 
 interface DashboardMetrics {
@@ -61,6 +58,8 @@ const Dashboard: React.FC = () => {
   const [chartData, setChartData] = useState<ChartData[]>([]);
   const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
   const [loading, setLoading] = useState(true);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  // @ts-expect-error -- setter kept for future blockchain refresh
   const [blockchainMetrics, setBlockchainMetrics] = useState({
   totalTransactions: 1247,
   verifiedDeliveries: 89,

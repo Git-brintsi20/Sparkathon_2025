@@ -131,9 +131,6 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
         console.warn('Using mock WebSocket.');
         setIsMock(true);
         const mockWs = new MockWebSocket(url);
-        if (mockResponseGenerator) {
-          mockWs.setResponseGenerator(mockResponseGenerator);
-        }
         socket = mockWs as unknown as WebSocket;
       } else {
         setIsMock(false);

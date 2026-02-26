@@ -104,14 +104,14 @@ export const useAuth = (): UseAuthReturn => {
     return {
       isAdmin: role === 'admin',
       isManager: role === 'manager',
-      isUser: role === 'user',
+      isUser: role === 'viewer',
       permissions,
       role,
       userInitials: user 
-        ? `${user.firstName?.[0] || ''}${user.lastName?.[0] || ''}`.toUpperCase()
+        ? `${user.name?.[0] || ''}`.toUpperCase()
         : '',
       userDisplayName: user 
-        ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email || 'User'
+        ? user.name || user.email || 'User'
         : 'Guest',
     };
   }, [state.user]);

@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:7
+    container_name: svc-mongodb
+    ports:
+      - '27017:27017'
+    volumes:
+      - mongo-data:/data/db
+    environment:
+      MONGO_INITDB_DATABASE: vendor-compliance
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: svc-backend
+    ports:
+      - '3000:3000'
+    depends_on:
+      - mongodb
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      MONGODB_URI: mongodb://mongodb:27017/vendor-compliance
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-change-me-refresh}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
+      DEMO_MODE: 'true'
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: svc-frontend
+    ports:
+      - '5173:80'
+    depends_on:
+      - backend
+
+volumes:
+  mongo-data:

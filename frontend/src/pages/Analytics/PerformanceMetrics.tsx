@@ -4,8 +4,6 @@ import {
   Line,
   AreaChart,
   Area,
-  BarChart,
-  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -17,7 +15,6 @@ import {
   PolarAngleAxis,
   PolarRadiusAxis,
   Radar,
-  Cell,
 } from 'recharts';
 
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -28,13 +25,12 @@ import {
   Activity,
   Target,
   CheckCircle,
-  AlertTriangle,
   Clock,
   DollarSign,
   Truck,
   Users
 } from 'lucide-react';
-import { Shield, Database, Link, Zap } from 'lucide-react';
+import { Shield, Database } from 'lucide-react';
 // ADDED: Import the useLayout hook
 import { useLayout } from '@/contexts/LayoutContext';
 
@@ -309,7 +305,7 @@ export const PerformanceMetrics: React.FC<PerformanceMetricsProps> = ({
   className,
   data = defaultData,
   metrics = defaultMetrics,
-  showComparison = true,
+  showComparison: _showComparison = true,
   // REMOVED: timeRange and onTimeRangeChange from props
 }) => {
   // ADDED: Call the useLayout hook

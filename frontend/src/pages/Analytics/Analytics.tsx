@@ -5,6 +5,7 @@ import { Calendar, Download, RefreshCw, TrendingUp, AlertTriangle, Shield, Users
 import { MetricsChart } from '@/components/charts/MetricsChart';
 import { ComplianceChart } from '@/components/charts/ComplianceChart';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';

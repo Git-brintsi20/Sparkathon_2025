@@ -3,14 +3,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
-import { Shield, Hash, CheckCircle2, Link as LinkIcon } from 'lucide-react';
+import { Shield, Hash, CheckCircle2 } from 'lucide-react';
 import { 
-  Camera, 
   Check, 
   X, 
   AlertTriangle, 
   FileText, 
-  Image as ImageIcon, 
   Upload,
   Eye,
   Download,
@@ -133,7 +131,7 @@ const VerificationPanel: React.FC<VerificationPanelProps> = ({
   items,
   onVerify,
   onUploadImage,
-  currentUser,
+  currentUser: _currentUser,
   canApprove,
   blockchainStatus = defaultBlockchainStatus
 }) => {

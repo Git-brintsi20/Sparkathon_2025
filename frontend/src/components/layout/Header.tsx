@@ -18,12 +18,9 @@ import {
   Shield,
   HelpCircle,
   Menu,
-  X,
-  Filter,
   Calendar,
   Download,
   Command,
-  Globe,
   Star,
   Zap
 } from 'lucide-react';
@@ -105,7 +102,7 @@ const quickSearchFilters = [
 export const Header: React.FC<HeaderProps> = ({
   onMenuToggle,
   pageTitle,
-  pageDescription,
+  pageDescription: _pageDescription,
   breadcrumbs,
   headerActions,
 }) => {
@@ -168,7 +165,7 @@ export const Header: React.FC<HeaderProps> = ({
     // Apply dark mode logic here
   };
 
-  const markNotificationAsRead = (id: string) => {
+  const markNotificationAsRead = (_id: string) => {
     setUnreadCount(prev => Math.max(0, prev - 1));
   };
 

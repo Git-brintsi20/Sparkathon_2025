@@ -66,7 +66,8 @@ interface ApiService {
   post: (url: string, data: any) => Promise<{ data: any }>;
 }
 
-// Mock API service for demo mode
+// Mock API service for demo mode (available for blockchain API integration)
+// @ts-expect-error -- reserved for production blockchain API calls
 const createMockApiService = (): ApiService => ({
   get: async (url: string) => {
     console.log(`🎭 Mock API GET: ${url}`);
@@ -85,11 +86,9 @@ class BlockchainService {
   private networkInfo: NetworkInfo | null = null;
   private eventListeners: Map<string, ((event: BlockchainEvent) => void)[]> = new Map();
   private mockTransactionCounter = 0;
-  private apiService: ApiService;
 
   constructor() {
     this.isDemoMode = import.meta.env.MODE === 'development' || import.meta.env.VITE_DEMO_MODE === 'true';
-    this.apiService = createMockApiService();
     this.initializeDemoData();
   }
 

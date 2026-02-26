@@ -21,7 +21,7 @@ import {
   Target,LinkIcon
 } from 'lucide-react';
 import { cn } from '@/components/lib/utils';
-import { Shield, ExternalLink, Link } from 'lucide-react';
+import { Shield, ExternalLink } from 'lucide-react';
 
 
 interface BlockchainMetrics {
@@ -133,7 +133,8 @@ const MetricCard: React.FC<{
   </div>
 );
 
-const BlockchainMetricsCard: React.FC<{ metrics: BlockchainMetrics }> = ({ metrics }) => {
+// @ts-expect-error -- reserved for blockchain metrics panel
+const _BlockchainMetricsCard: React.FC<{ metrics: BlockchainMetrics }> = ({ metrics }) => {
   return (
     <Card className="border-green-200 bg-green-50/50">
       <CardHeader>
@@ -188,7 +189,7 @@ const BlockchainMetricsCard: React.FC<{ metrics: BlockchainMetrics }> = ({ metri
 };
 
 export const VendorMetrics: React.FC<VendorMetricsProps> = ({
-  vendorId,
+  vendorId: _vendorId,
   vendorName,
   metrics,
   className,

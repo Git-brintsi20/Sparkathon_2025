@@ -10,7 +10,6 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   ResponsiveContainer,
   PieChart,
   Pie,
@@ -274,7 +273,7 @@ const PieChartComponent: React.FC<Pick<BaseChartComponentProps, 'data' | 'dataKe
         dataKey={dataKeys[0]}
         animationDuration={animate ? 1000 : 0}
       >
-        {data.map((entry, index) => (
+        {data.map((_entry, index) => (
           <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
         ))}
       </Pie>

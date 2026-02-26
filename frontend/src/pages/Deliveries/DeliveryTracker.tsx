@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Shield, Hash, CheckCircle2 } from 'lucide-react';
+import { Shield, CheckCircle2 } from 'lucide-react';
 import { 
   Truck, 
   MapPin, 
@@ -43,7 +43,8 @@ interface DeliveryTrackerProps {
   onRefresh?: () => void;
 }
 
-const blockchainSteps: DeliveryStep[] = [
+// @ts-expect-error -- reserved for blockchain-enhanced delivery tracking
+const _blockchainSteps: DeliveryStep[] = [
   {
     id: 'blockchain-1',
     title: 'Initial Blockchain Commit',

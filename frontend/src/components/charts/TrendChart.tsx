@@ -192,9 +192,9 @@ export const TrendChart: React.FC<TrendChartProps> = ({
               )}
               
               {/* Reference Line */}
-              {showReferenceLines && getReferenceValue() && (
+              {showReferenceLines && getReferenceValue() !== null && (
                 <ReferenceLine 
-                  y={getReferenceValue()} 
+                  y={getReferenceValue()!} 
                   stroke="hsl(var(--muted-foreground))" 
                   strokeDasharray="8 8"
                   strokeWidth={1}

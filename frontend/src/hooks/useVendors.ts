@@ -49,7 +49,8 @@ interface UseVendorsActions {
 }
 
 // Helper function for debouncing
-const debounce = (func: (...args: any[]) => void, delay: number) => {
+// @ts-expect-error -- kept for future debounced search
+const _debounce = (func: (...args: any[]) => void, delay: number) => {
   let timeoutId: NodeJS.Timeout;
   return (...args: any[]) => {
     clearTimeout(timeoutId);

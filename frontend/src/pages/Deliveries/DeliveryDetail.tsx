@@ -5,7 +5,6 @@ import {
   Shield, 
   Link, 
   Hash, 
-  Zap, 
   Database,
   Package,
   CheckCircle,
@@ -16,8 +15,6 @@ import {
   Camera,
   Scale,
   Barcode,
-  FileText,
-  Calendar,
   User,
   MapPin,
   Truck,
@@ -29,8 +26,6 @@ import {
 } from 'lucide-react';
 // ADDED: Import the useLayout hook
 import { useLayout } from '@/contexts/LayoutContext';
-import { Card, CardContent } from '@/components/ui/card'; // Keeping these imports as they are used within the component
-import { cn } from '@/components/lib/utils'; // Keeping this path as per your instruction
 
 interface BlockchainVerification {
   blockNumber: string;

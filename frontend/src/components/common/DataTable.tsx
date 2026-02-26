@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { ChevronUp, ChevronDown, Search, Filter, MoreHorizontal } from 'lucide-react';
+import { ChevronUp, ChevronDown, Search, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -121,8 +121,9 @@ export const DataTable = <T extends Record<string, any>>({
     });
   };
 
-  // Handle filter change
-  const handleFilterChange = (key: string, value: string) => {
+  // Handle filter change (reserved for future filter UI)
+  // @ts-expect-error -- kept for future filter UI implementation
+  const _handleFilterChange = (key: string, value: string) => {
     setFilters(prev => ({ ...prev, [key]: value }));
     setCurrentPage(1);
   };
