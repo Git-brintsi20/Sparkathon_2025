@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Eye, EyeOff, Lock, Mail, User, Building, AlertCircle, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import apiService from '@/services/api';
 
 interface RegisterFormData {
   firstName: string;
@@ -116,16 +117,20 @@ const [errors, setErrors] = useState<Partial<Record<keyof RegisterFormData, stri
     setIsSubmitting(true);
     
     try {
-      // Mock API call - replace with actual registration service
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await apiService.post('/auth/register', {
+        name: `${formData.firstName} ${formData.lastName}`,
+        email: formData.email,
+        password: formData.password,
+        role: 'viewer',
+      });
       setIsSuccess(true);
       
-      // Redirect to login after success
       setTimeout(() => {
         window.location.href = '/login';
       }, 3000);
-    } catch (error) {
-      setErrors({ email: 'Registration failed. Please try again.' });
+    } catch (error: any) {
+      const msg = error?.response?.data?.message || 'Registration failed. Please try again.';
+      setErrors({ email: msg });
     } finally {
       setIsSubmitting(false);
     }

@@ -1,12 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-// REMOVED: No longer import Layout from here
-// import { Layout } from '@/components/layout/Layout';
 import { KPICard } from './KPICard';
 import { MetricsChart } from '@/components/charts/MetricsChart';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-// ADDED: Import the useLayout hook
 import { useLayout } from '@/contexts/LayoutContext';
 import { Shield } from 'lucide-react';
 import { 
@@ -16,28 +13,23 @@ import {
   CheckCircle2,
   Clock
 } from 'lucide-react';
+import apiService from '@/services/api';
 
-interface DashboardMetrics {
+interface DashboardOverview {
   totalVendors: number;
-  activeDeliveries: number;
-  complianceRate: number;
-  totalValue: number;
-  pendingVerifications: number;
-  fraudAlerts: number;
-  monthlyGrowth: number;
-  deliveryAccuracy: number;
-    blockchainTransactions: number; // Add this line
-  blockchainVerifications: number;
+  activeVendors: number;
+  totalDeliveries: number;
+  pendingDeliveries: number;
+  totalOrders: number;
+  fraudDetected: number;
+  averageCompliance: number;
 }
 
-// CORRECTED INTERFACE
 interface ChartData {
   name: string;
   value: number;
   deliveries: number;
   compliance: number;
-  // This index signature tells TypeScript that any string key is valid,
-  // which is what the generic MetricsChart component needs.
   [key: string]: string | number;
 }
 
@@ -51,100 +43,103 @@ interface RecentActivity {
 }
 
 const Dashboard: React.FC = () => {
-  // CORRECTED: Use the useLayout hook to get the setLayoutData function
   const { setLayoutData } = useLayout();
 
-  const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
+  const [overview, setOverview] = useState<DashboardOverview | null>(null);
   const [chartData, setChartData] = useState<ChartData[]>([]);
   const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
   const [loading, setLoading] = useState(true);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  // @ts-expect-error -- setter kept for future blockchain refresh
   const [blockchainMetrics, setBlockchainMetrics] = useState({
-  totalTransactions: 1247,
-  verifiedDeliveries: 89,
-  complianceRecords: 234,
-  fraudPrevented: 12
-});
+    totalTransactions: 0,
+    verifiedDeliveries: 0,
+    complianceRecords: 0,
+    fraudPrevented: 0,
+  });
 
-  // CORRECTED: Use a useEffect hook to set the layout data when the component mounts
   useEffect(() => {
     setLayoutData({
       pageTitle: 'Dashboard',
       pageDescription: 'Overview of vendor compliance and delivery metrics.',
-      breadcrumbs: [
-        { label: 'Dashboard', isActive: true }
-      ]
+      breadcrumbs: [{ label: 'Dashboard', isActive: true }],
     });
-
-    // Clean up the layout data when the component unmounts
     return () => setLayoutData({});
-  }, [setLayoutData]); // Dependency array ensures this runs only once per mount
+  }, [setLayoutData]);
 
   useEffect(() => {
     const loadDashboardData = async () => {
       setLoading(true);
-      
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      setMetrics({
-  totalVendors: 247,
-  activeDeliveries: 89,
-  complianceRate: 94.5,
-  totalValue: 2847650,
-  pendingVerifications: 12,
-  fraudAlerts: 3,
-  monthlyGrowth: 12.5,
-  deliveryAccuracy: 97.8,
-  blockchainTransactions: 1247, // Add this line
-  blockchainVerifications: 234   // Add this line
-});
+      try {
+        // Fetch real data from API
+        const [dashboardRes, trendsRes, blockchainRes] = await Promise.all([
+          apiService.get<any>('/analytics/dashboard'),
+          apiService.get<any>('/analytics/trends'),
+          apiService.get<any>('/blockchain/network').catch(() => ({ data: null })),
+        ]);
 
-      setChartData([
-        { name: 'Jan', value: 2400, deliveries: 45, compliance: 92 },
-        { name: 'Feb', value: 2210, deliveries: 52, compliance: 94 },
-        { name: 'Mar', value: 2290, deliveries: 61, compliance: 96 },
-        { name: 'Apr', value: 2000, deliveries: 48, compliance: 93 },
-        { name: 'May', value: 2181, deliveries: 67, compliance: 95 },
-        { name: 'Jun', value: 2500, deliveries: 89, compliance: 97 },
-      ]);
+        const data = dashboardRes.data;
+        const trends = trendsRes.data;
 
-      setRecentActivity([
-        {
-          id: '1',
-          type: 'delivery',
-          title: 'New Delivery Verified',
-          description: 'Vendor ABC Corp - Order #12345',
-          time: '2 minutes ago',
-          status: 'success'
-        },
-        {
-          id: '2',
-          type: 'alert',
-          title: 'Compliance Alert',
-          description: 'Vendor XYZ Ltd - Missing documentation',
-          time: '15 minutes ago',
-          status: 'warning'
-        },
-        {
-          id: '3',
-          type: 'vendor',
-          title: 'New Vendor Registered',
-          description: 'TechCorp Solutions added to system',
-          time: '1 hour ago',
-          status: 'success'
-        },
-        {
-          id: '4',
-          type: 'verification',
-          title: 'Verification Pending',
-          description: 'Delivery #67890 awaiting approval',
-          time: '2 hours ago',
-          status: 'pending'
-        }
-      ]);
+        // Set overview from real API data
+        setOverview(data.overview);
 
-      setLoading(false);
+        // Build chart data from delivery trends
+        const deliveryTrend = trends.deliveryTrend || [];
+        const complianceTrend = trends.complianceTrend || [];
+
+        const chartPoints: ChartData[] = deliveryTrend.map((dt: any) => {
+          const ct = complianceTrend.find((c: any) => c._id === dt._id);
+          return {
+            name: dt._id || 'N/A',
+            value: dt.total || 0,
+            deliveries: dt.total || 0,
+            compliance: Math.round(ct?.avgScore || 0),
+          };
+        });
+        setChartData(chartPoints.length > 0 ? chartPoints : [
+          { name: 'Current', value: data.overview.totalDeliveries, deliveries: data.overview.totalDeliveries, compliance: Math.round(data.overview.averageCompliance) },
+        ]);
+
+        // Build recent activity from real deliveries and compliance logs
+        const activities: RecentActivity[] = [];
+        (data.recentDeliveries || []).slice(0, 3).forEach((d: any, i: number) => {
+          activities.push({
+            id: `del-${i}`,
+            type: d.fraudFlag ? 'alert' : 'delivery',
+            title: d.fraudFlag ? 'Fraud Alert' : `Delivery ${d.status === 'verified' ? 'Verified' : d.status}`,
+            description: `${d.vendorName} - ${d.orderId}`,
+            time: new Date(d.createdAt).toLocaleDateString(),
+            status: d.fraudFlag ? 'error' : d.status === 'verified' ? 'success' : d.status === 'pending' ? 'pending' : 'warning',
+          });
+        });
+        (data.recentComplianceLogs || []).slice(0, 2).forEach((log: any, i: number) => {
+          activities.push({
+            id: `log-${i}`,
+            type: log.type === 'violation' ? 'alert' : 'verification',
+            title: log.title,
+            description: log.description,
+            time: new Date(log.createdAt).toLocaleDateString(),
+            status: log.severity === 'critical' ? 'error' : log.severity === 'high' ? 'warning' : 'success',
+          });
+        });
+        setRecentActivity(activities);
+
+        // Blockchain metrics from real data
+        const verifiedCount = (data.recentDeliveries || []).filter((d: any) => d.verificationStatus === 'verified').length;
+        setBlockchainMetrics({
+          totalTransactions: data.overview.totalDeliveries + (data.recentComplianceLogs?.length || 0),
+          verifiedDeliveries: verifiedCount,
+          complianceRecords: data.recentComplianceLogs?.length || 0,
+          fraudPrevented: data.overview.fraudDetected,
+        });
+      } catch (err) {
+        console.error('Dashboard load error:', err);
+        // Set empty defaults on error
+        setOverview({ totalVendors: 0, activeVendors: 0, totalDeliveries: 0, pendingDeliveries: 0, totalOrders: 0, fraudDetected: 0, averageCompliance: 0 });
+        setChartData([]);
+        setRecentActivity([]);
+      } finally {
+        setLoading(false);
+      }
     };
 
     loadDashboardData();
@@ -197,60 +192,36 @@ const Dashboard: React.FC = () => {
 >
   <KPICard
     title="Total Vendors"
-    value={metrics?.totalVendors || 0}
+    value={overview?.totalVendors || 0}
     icon={<Users className="w-6 h-6" />}
-    trend={metrics?.monthlyGrowth || 0}
-    trendLabel="vs last month"
+    trend={overview?.activeVendors ? Math.round((overview.activeVendors / overview.totalVendors) * 100) : 0}
+    trendLabel="active rate"
     color="blue"
-    blockchain={{
-      isVerified: true,
-      transactionHash: "0x742d35cc6bb89dcf5f8b4b5c9b2e4b8c5d3e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b",
-      blockNumber: 18759234,
-      timestamp: new Date().toISOString()
-    }}
   />
   <KPICard
     title="Active Deliveries"
-    value={metrics?.activeDeliveries || 0}
+    value={overview?.totalDeliveries || 0}
     icon={<Package className="w-6 h-6" />}
-    trend={8.2}
-    trendLabel="vs last week"
+    trend={overview?.pendingDeliveries || 0}
+    trendLabel="pending"
     color="green"
-    blockchain={{
-      isVerified: true,
-      transactionHash: "0x851f46ec7cb96fdfa6e4d8a7b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d",
-      blockNumber: 18759235,
-      timestamp: new Date().toISOString()
-    }}
   />
   <KPICard
     title="Compliance Rate"
-    value={metrics?.complianceRate || 0}
+    value={Math.round(overview?.averageCompliance || 0)}
     suffix="%"
     icon={<CheckCircle2 className="w-6 h-6" />}
-    trend={2.1}
-    trendLabel="improvement"
+    trend={0}
+    trendLabel="avg score"
     color="emerald"
-    blockchain={{
-      isVerified: true,
-      transactionHash: "0x962a57fd8ea07gfeb7f5e9c8d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f",
-      blockNumber: 18759236,
-      timestamp: new Date().toISOString()
-    }}
   />
   <KPICard
-    title="Blockchain Transactions"
-    value={blockchainMetrics.totalTransactions}
+    title="Fraud Detected"
+    value={overview?.fraudDetected || 0}
     icon={<Shield className="w-6 h-6" />}
-    trend={18.7}
-    trendLabel="vs last month"
+    trend={0}
+    trendLabel="flagged deliveries"
     color="purple"
-    blockchain={{
-      isVerified: true,
-      transactionHash: "0xa73b68ge9fb18hgfc8g6f0d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0",
-      blockNumber: 18759237,
-      timestamp: new Date().toISOString()
-    }}
   />
 </motion.div>
 
@@ -379,7 +350,7 @@ const Dashboard: React.FC = () => {
                     <p className="text-xs text-muted-foreground">Requires attention</p>
                   </div>
                   <div className="text-xl font-bold text-red-600">
-                    {metrics?.fraudAlerts || 0}
+                    {overview?.fraudDetected || 0}
                   </div>
                 </div>
                 
@@ -389,17 +360,17 @@ const Dashboard: React.FC = () => {
                     <p className="text-xs text-muted-foreground">Awaiting review</p>
                   </div>
                   <div className="text-xl font-bold text-yellow-600">
-                    {metrics?.pendingVerifications || 0}
+                    {overview?.pendingDeliveries || 0}
                   </div>
                 </div>
 
                 <div className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
                   <div>
-                    <p className="text-sm font-medium">Delivery Accuracy</p>
-                    <p className="text-xs text-muted-foreground">This month</p>
+                    <p className="text-sm font-medium">Compliance Score</p>
+                    <p className="text-xs text-muted-foreground">Average across vendors</p>
                   </div>
                   <div className="text-xl font-bold text-green-600">
-                    {metrics?.deliveryAccuracy || 0}%
+                    {Math.round(overview?.averageCompliance || 0)}%
                   </div>
                 </div>
               </div>

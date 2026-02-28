@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ArrowLeft, Mail, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import apiService from '@/services/api';
 
 interface ForgotPasswordState {
   email: string;
@@ -36,21 +37,20 @@ const ForgotPassword: React.FC = () => {
     setState(prev => ({ ...prev, isSubmitting: true, error: null }));
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Mock success response
+      await apiService.post('/auth/forgot-password', { email: state.email });
       setState(prev => ({ 
         ...prev, 
         isSubmitting: false, 
         isEmailSent: true,
         error: null 
       }));
-    } catch (error) {
+    } catch (error: any) {
+      // Still show success to prevent email enumeration
       setState(prev => ({ 
         ...prev, 
         isSubmitting: false, 
-        error: 'Failed to send reset email. Please try again.' 
+        isEmailSent: true,
+        error: null 
       }));
     }
   };

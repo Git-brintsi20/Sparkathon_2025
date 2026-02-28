@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from 'react'; // Added useEffect
+import React, { useState, useEffect, useCallback } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { toast } from 'sonner';
 
 import {
-  Shield, 
-  Link, 
-  Hash, 
-  Database,
+  Shield,
+  Link,
+  Hash,
   Package,
   CheckCircle,
   CheckCircle2,
@@ -22,78 +23,95 @@ import {
   Printer,
   Share2,
   ExternalLink,
-  X
+  X,
+  AlertCircle,
+  Info
 } from 'lucide-react';
-// ADDED: Import the useLayout hook
 import { useLayout } from '@/contexts/LayoutContext';
+import { LoadingSpinner } from '@/components/common/LoadingSpinner';
+import apiService from '@/services/api';
 
-interface BlockchainVerification {
-  blockNumber: string;
-  transactionHash: string;
-  gasUsed: string;
-  confirmations: number;
-  timestamp: string;
-  status: 'pending' | 'confirmed' | 'failed';
-  photoHashes: {
-    deliveryPhoto: string;
-    packagingPhoto: string;
-  };
-  immutableRecord: {
-    weight: number;
-    quantity: number;
-    condition: string;
-    verifiedBy: string;
-    timestamp: string;
-  };
-}
-interface DeliveryDetail {
-  id: string;
-  barcode: string;
-  poNumber: string;
-  vendorName: string;
-  vendorContact: string;
-  status: 'pending' | 'verified' | 'rejected' | 'in_transit';
-  weight: number;
-  expectedWeight: number;
+// Types matching the backend API response
+interface DeliveryItem {
+  name: string;
   quantity: number;
   expectedQuantity: number;
-  condition: string;
-  createdAt: string;
-  verifiedAt?: string;
-  rejectedAt?: string;
+  price: number;
+  verified: boolean;
+  condition: 'good' | 'damaged' | 'expired';
   notes?: string;
-  deliveryAddress: string;
-  deliveryPhoto?: string;
-  packagingPhoto?: string;
-  verifiedBy?: string;
-  trackingNumber?: string;
-  complianceScore: number;
-  blockchain: BlockchainVerification;
-  timeline: Array<{
-    id: string;
-    status: string;
-    timestamp: string;
-    description: string;
-    user?: string;
-  }>;
 }
 
-const statusColors = {
+interface DeliveryVerification {
+  verifiedBy?: string;
+  verifiedAt?: string;
+  qrCodeScanned?: boolean;
+  photosUploaded?: boolean;
+  quantityVerified?: boolean;
+  qualityVerified?: boolean;
+  discrepancies?: string[];
+  verificationScore?: number;
+}
+
+interface Delivery {
+  _id: string;
+  orderId: string;
+  vendorId: string;
+  vendorName: string;
+  status: 'pending' | 'in_transit' | 'delivered' | 'verified' | 'rejected' | 'flagged';
+  verificationStatus: 'pending' | 'verified' | 'failed';
+  expectedDate?: string;
+  deliveryDate?: string;
+  items: DeliveryItem[];
+  deliveryLocation?: string;
+  trackingNumber?: string;
+  notes?: string;
+  totalAmount?: number;
+  fraudFlag?: boolean;
+  photos?: string[];
+  verification?: DeliveryVerification;
+  blockchain?: {
+    transactionHash?: string;
+    blockNumber?: string;
+    status?: string;
+    confirmations?: number;
+    gasUsed?: string;
+    timestamp?: string;
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+
+const statusColors: Record<string, string> = {
   pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
   verified: 'bg-green-100 text-green-800 border-green-200',
   rejected: 'bg-red-100 text-red-800 border-red-200',
-  in_transit: 'bg-blue-100 text-blue-800 border-blue-200'
+  in_transit: 'bg-blue-100 text-blue-800 border-blue-200',
+  delivered: 'bg-indigo-100 text-indigo-800 border-indigo-200',
+  flagged: 'bg-orange-100 text-orange-800 border-orange-200',
+  failed: 'bg-red-100 text-red-800 border-red-200',
 };
 
-const statusIcons = {
+const statusIcons: Record<string, React.ElementType> = {
   pending: Clock,
   verified: CheckCircle,
   rejected: AlertTriangle,
-  in_transit: Package
+  in_transit: Package,
+  delivered: CheckCircle2,
+  flagged: AlertTriangle,
+  failed: AlertTriangle,
 };
 
-const BlockchainStatus = ({ verification }: { verification: BlockchainVerification }) => {
-  const getStatusColor = (status: string) => {
+const conditionColors: Record<string, string> = {
+  good: 'bg-green-100 text-green-800',
+  damaged: 'bg-red-100 text-red-800',
+  expired: 'bg-orange-100 text-orange-800',
+};
+
+const BlockchainStatus = ({ blockchain }: { blockchain: Delivery['blockchain'] }) => {
+  if (!blockchain) return null;
+
+  const getStatusColor = (status?: string) => {
     switch (status) {
       case 'confirmed':
         return 'text-green-600 bg-green-50 border-green-200';
@@ -105,7 +123,8 @@ const BlockchainStatus = ({ verification }: { verification: BlockchainVerificati
         return 'text-gray-600 bg-gray-50 border-gray-200';
     }
   };
-    const getStatusIcon = (status: string) => {
+
+  const getStatusIcon = (status?: string) => {
     switch (status) {
       case 'confirmed':
         return <CheckCircle2 className="w-4 h-4" />;
@@ -117,159 +136,125 @@ const BlockchainStatus = ({ verification }: { verification: BlockchainVerificati
         return <Clock className="w-4 h-4" />;
     }
   };
-  
+
   return (
-    <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium border ${getStatusColor(verification.status)}`}>
-      {getStatusIcon(verification.status)}
-      {verification.status.toUpperCase()}
-      {verification.status === 'confirmed' && (
-        <span className="text-xs">({verification.confirmations} confirmations)</span>
+    <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium border ${getStatusColor(blockchain.status)}`}>
+      {getStatusIcon(blockchain.status)}
+      {(blockchain.status || 'unknown').toUpperCase()}
+      {blockchain.status === 'confirmed' && blockchain.confirmations && (
+        <span className="text-xs">({blockchain.confirmations} confirmations)</span>
       )}
     </div>
   );
 };
 
 const DeliveryDetail: React.FC = () => {
-  // ADDED: Call the useLayout hook
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const { setLayoutData } = useLayout();
 
   const [activeTab, setActiveTab] = useState<'overview' | 'photos' | 'timeline'>('overview');
-  const [loading, setLoading] = useState(false);
+  const [delivery, setDelivery] = useState<Delivery | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [showFullImage, setShowFullImage] = useState<string | null>(null);
 
-  // Mock data for demonstration
-  const mockDelivery: DeliveryDetail = {
-    id: '1',
-    barcode: 'BC123456789',
-    poNumber: 'PO-2024-001',
-    vendorName: 'ABC Suppliers Ltd',
-    vendorContact: 'john.doe@abcsuppliers.com',
-    status: 'verified',
-    weight: 15.5,
-    expectedWeight: 15.0,
-    quantity: 10,
-    expectedQuantity: 10,
-    condition: 'good',
-    createdAt: '2024-01-15T10:30:00Z',
-    verifiedAt: '2024-01-15T11:00:00Z',
-    notes: 'All items in perfect condition. Packaging slightly damaged but contents intact.',
-    deliveryAddress: '123 Business Park, Tech City, TC 12345',
-    deliveryPhoto: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=400&h=300&fit=crop',
-    packagingPhoto: 'https://images.unsplash.com/photo-1566576721346-d4a3b4eaeb55?w=400&h=300&fit=crop',
-    verifiedBy: 'Sarah Johnson',
-    trackingNumber: 'TRK-2024-001-ABC',
-    complianceScore: 95,
-    blockchain: {
-    blockNumber: '18,742,391',
-    transactionHash: '0x7d4f2a8c9e3b5f1a6d8e2c4b7f9a3e5d8c1b6f4a9e2d7c3b8f5a1e6d9c2b4f7a',
-    gasUsed: '84,357',
-    confirmations: 24,
-    timestamp: '2024-01-15T11:05:00Z',
-    status: 'confirmed',
-    photoHashes: {
-      deliveryPhoto: 'QmX7zF9aB2cD3eF4gH5iJ6kL7mN8oP9qR0sT1uV2wX3yZ4',
-      packagingPhoto: 'QmA1bC2dE3fG4hI5jK6lM7nO8pQ9rS0tU1vW2xY3zA4bC5'
-    },
-    immutableRecord: {
-      weight: 15.5,
-      quantity: 10,
-      condition: 'good',
-      verifiedBy: 'Sarah Johnson',
-      timestamp: '2024-01-15T11:00:00Z'
-    }
-  },
-    timeline: [
-      {
-        id: '1',
-        status: 'created',
-        timestamp: '2024-01-15T10:30:00Z',
-        description: 'Delivery verification initiated',
-        user: 'System'
-      },
-      {
-        id: '2',
-        status: 'scanned',
-        timestamp: '2024-01-15T10:45:00Z',
-        description: 'Barcode scanned and validated',
-        user: 'Sarah Johnson'
-      },
-      {
-        id: '3',
-        status: 'weighed',
-        timestamp: '2024-01-15T10:50:00Z',
-        description: 'Weight verification completed',
-        user: 'Sarah Johnson'
-      },
-      {
-        id: '4',
-        status: 'verified',
-        timestamp: '2024-01-15T11:00:00Z',
-        description: 'Delivery verified and approved',
-        user: 'Sarah Johnson'
+  const fetchDelivery = useCallback(async () => {
+    if (!id) return;
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await apiService.get<{ delivery: Delivery }>(`/deliveries/${id}`);
+      if (response.success && response.data) {
+        setDelivery(response.data.delivery);
+      } else {
+        setError('Failed to load delivery details.');
       }
-    ]
+    } catch (err: any) {
+      setError(err?.error?.message || 'Failed to load delivery details.');
+    } finally {
+      setLoading(false);
+    }
+  }, [id]);
+
+  useEffect(() => {
+    fetchDelivery();
+  }, [fetchDelivery]);
+
+  const handleApprove = async () => {
+    if (!id) return;
+    try {
+      setActionLoading(true);
+      await apiService.post(`/deliveries/${id}/verify`, { status: 'verified', notes: '' });
+      toast.success('Delivery approved successfully');
+      await fetchDelivery();
+    } catch (err: any) {
+      toast.error(err?.error?.message || 'Failed to approve delivery');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleReject = async () => {
+    if (!id) return;
+    try {
+      setActionLoading(true);
+      await apiService.post(`/deliveries/${id}/verify`, { status: 'rejected', notes: '' });
+      toast.success('Delivery rejected');
+      await fetchDelivery();
+    } catch (err: any) {
+      toast.error(err?.error?.message || 'Failed to reject delivery');
+    } finally {
+      setActionLoading(false);
+    }
   };
 
   const handleEdit = () => {
-    console.log('Edit delivery');
+    navigate(`/deliveries/${id}/edit`);
   };
 
-  const handleApprove = () => {
-    setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      console.log('Delivery approved');
-    }, 1000);
-  };
-
-  const handleReject = () => {
-    setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      console.log('Delivery rejected');
-    }, 1000);
-  };
-
-  // ADDED: useEffect hook to set and clear layout data
+  // Set layout data
   useEffect(() => {
-    setLayoutData({
-      pageTitle: `Delivery ${mockDelivery.poNumber}`,
-      pageDescription: `Verification details for ${mockDelivery.vendorName}`,
-      breadcrumbs: [
-        { label: 'Dashboard', href: '/dashboard' },
-        { label: 'Deliveries', href: '/deliveries' },
-        { label: mockDelivery.poNumber, isActive: true }
-      ],
-      headerActions: (
-        <div className="flex items-center gap-2">
-          <button className="inline-flex items-center px-3 py-1 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
-            <Download className="h-4 w-4 mr-2" />
-            Export
-          </button>
-          <button className="inline-flex items-center px-3 py-1 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
-            <Printer className="h-4 w-4 mr-2" />
-            Print
-          </button>
-          <button className="inline-flex items-center px-3 py-1 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
-            <Share2 className="h-4 w-4 mr-2" />
-            Share
-          </button>
-          <button onClick={handleEdit} className="inline-flex items-center px-3 py-1 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700">
-            <Edit className="h-4 w-4 mr-2" />
-            Edit
-          </button>
-        </div>
-      )
-    });
+    if (delivery) {
+      setLayoutData({
+        pageTitle: `Delivery ${delivery.orderId || delivery._id}`,
+        pageDescription: `Verification details for ${delivery.vendorName}`,
+        breadcrumbs: [
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Deliveries', href: '/deliveries' },
+          { label: delivery.orderId || delivery._id, isActive: true }
+        ],
+        headerActions: (
+          <div className="flex items-center gap-2">
+            <button className="inline-flex items-center px-3 py-1 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+              <Download className="h-4 w-4 mr-2" />
+              Export
+            </button>
+            <button className="inline-flex items-center px-3 py-1 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+              <Printer className="h-4 w-4 mr-2" />
+              Print
+            </button>
+            <button className="inline-flex items-center px-3 py-1 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+              <Share2 className="h-4 w-4 mr-2" />
+              Share
+            </button>
+            <button onClick={handleEdit} className="inline-flex items-center px-3 py-1 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700">
+              <Edit className="h-4 w-4 mr-2" />
+              Edit
+            </button>
+          </div>
+        )
+      });
+    }
 
-    // Return a cleanup function
     return () => setLayoutData({});
-  }, [setLayoutData, mockDelivery.poNumber, mockDelivery.vendorName, loading]); // Added loading to dependencies for headerActions to update correctly
+  }, [setLayoutData, delivery, actionLoading]);
 
   const StatusBadge = ({ status }: { status: string }) => {
-    const Icon = statusIcons[status as keyof typeof statusIcons];
+    const Icon = statusIcons[status] || Clock;
     return (
-      <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium border ${statusColors[status as keyof typeof statusColors]}`}>
+      <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium border ${statusColors[status] || statusColors.pending}`}>
         <Icon className="h-4 w-4" />
         {status.replace('_', ' ').toUpperCase()}
       </div>
@@ -277,9 +262,9 @@ const DeliveryDetail: React.FC = () => {
   };
 
   const ComplianceScore = ({ score }: { score: number }) => {
-    const getColor = (score: number) => {
-      if (score >= 90) return 'text-green-600';
-      if (score >= 70) return 'text-yellow-600';
+    const getColor = (s: number) => {
+      if (s >= 90) return 'text-green-600';
+      if (s >= 70) return 'text-yellow-600';
       return 'text-red-600';
     };
 
@@ -293,11 +278,112 @@ const DeliveryDetail: React.FC = () => {
     );
   };
 
+  // Build timeline from real delivery data
+  const buildTimeline = (d: Delivery) => {
+    const events: Array<{ id: string; status: string; timestamp: string; description: string; user?: string }> = [];
+
+    events.push({
+      id: '1',
+      status: 'created',
+      timestamp: d.createdAt,
+      description: 'Delivery record created',
+      user: 'System'
+    });
+
+    if (d.expectedDate) {
+      events.push({
+        id: '2',
+        status: 'expected',
+        timestamp: d.expectedDate,
+        description: 'Expected delivery date',
+      });
+    }
+
+    if (d.deliveryDate) {
+      events.push({
+        id: '3',
+        status: 'delivered',
+        timestamp: d.deliveryDate,
+        description: 'Delivery received',
+      });
+    }
+
+    if (d.verification?.verifiedAt) {
+      events.push({
+        id: '4',
+        status: d.status === 'rejected' ? 'rejected' : 'verified',
+        timestamp: d.verification.verifiedAt,
+        description: d.status === 'rejected' ? 'Delivery rejected' : 'Delivery verified and approved',
+        user: d.verification.verifiedBy,
+      });
+    }
+
+    if (d.updatedAt && d.updatedAt !== d.createdAt) {
+      events.push({
+        id: '5',
+        status: 'updated',
+        timestamp: d.updatedAt,
+        description: 'Record last updated',
+      });
+    }
+
+    // Sort by timestamp
+    events.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+
+    return events;
+  };
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <LoadingSpinner size="lg" />
+      </div>
+    );
+  }
+
+  // Error state
+  if (error || !delivery) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <AlertCircle className="h-12 w-12 text-red-500 mx-auto" />
+          <h2 className="text-xl font-semibold text-gray-900">Failed to load delivery</h2>
+          <p className="text-gray-600">{error || 'Delivery not found.'}</p>
+          <button
+            onClick={() => fetchDelivery()}
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const timeline = buildTimeline(delivery);
+  const totalExpectedQty = delivery.items.reduce((sum, item) => sum + item.expectedQuantity, 0);
+  const totalActualQty = delivery.items.reduce((sum, item) => sum + item.quantity, 0);
+  const verificationScore = delivery.verification?.verificationScore;
+
   return (
-    // REMOVED: The outer header div that contained the page title, breadcrumbs, and actions.
-    // This content is now managed by the Layout component via context.
     <div className="min-h-screen bg-gray-50">
       <div className="p-6 space-y-6">
+        {/* Fraud Flag Warning */}
+        {delivery.fraudFlag && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-red-50 border border-red-300 rounded-lg p-4 flex items-center gap-3"
+          >
+            <AlertTriangle className="h-5 w-5 text-red-600 flex-shrink-0" />
+            <div>
+              <p className="font-medium text-red-800">Fraud Flag Detected</p>
+              <p className="text-sm text-red-600">This delivery has been flagged for potential fraud. Please review carefully.</p>
+            </div>
+          </motion.div>
+        )}
+
         {/* Status and Actions */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -308,122 +394,115 @@ const DeliveryDetail: React.FC = () => {
           <div className="p-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <StatusBadge status={mockDelivery.status} />
+                <StatusBadge status={delivery.status} />
                 <div className="text-sm text-gray-600">
-                  Created: {new Date(mockDelivery.createdAt).toLocaleString()}
+                  Created: {new Date(delivery.createdAt).toLocaleString()}
                 </div>
-                {mockDelivery.verifiedAt && (
+                {delivery.verification?.verifiedAt && (
                   <div className="text-sm text-gray-600">
-                    Verified: {new Date(mockDelivery.verifiedAt).toLocaleString()}
+                    Verified: {new Date(delivery.verification.verifiedAt).toLocaleString()}
                   </div>
                 )}
               </div>
 
-              {mockDelivery.status === 'pending' && (
+              {(delivery.status === 'pending' || delivery.status === 'delivered') && (
                 <div className="flex items-center gap-2">
                   <button
                     onClick={handleReject}
-                    disabled={loading}
+                    disabled={actionLoading}
                     className="px-4 py-2 border border-red-300 text-red-700 rounded-md hover:bg-red-50 disabled:opacity-50"
                   >
                     Reject
                   </button>
                   <button
                     onClick={handleApprove}
-                    disabled={loading}
+                    disabled={actionLoading}
                     className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50"
                   >
-                    {loading ? 'Processing...' : 'Approve'}
+                    {actionLoading ? 'Processing...' : 'Approve'}
                   </button>
                 </div>
               )}
             </div>
           </div>
         </motion.div>
+
         {/* Blockchain Verification */}
-<div className="bg-white rounded-lg shadow-sm border border-gray-200">
-  <div className="p-6 border-b border-gray-200">
-    <h3 className="text-lg font-semibold flex items-center gap-2">
-      <Shield className="h-5 w-5" />
-      Blockchain Verification
-    </h3>
-  </div>
-  <div className="p-6 space-y-4">
-    <div className="flex items-center justify-between">
-      <span className="text-sm text-gray-600">Verification Status</span>
-      <BlockchainStatus verification={mockDelivery.blockchain} />
-    </div>
-    
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-gray-600">Block Number</span>
-          <span className="font-mono text-sm">{mockDelivery.blockchain.blockNumber}</span>
-        </div>
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-gray-600">Gas Used</span>
-          <span className="font-mono text-sm">{mockDelivery.blockchain.gasUsed}</span>
-        </div>
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-gray-600">Confirmations</span>
-          <span className="font-mono text-sm">{mockDelivery.blockchain.confirmations}</span>
-        </div>
-      </div>
-      
-      <div className="space-y-3">
-        <div className="space-y-2">
-          <span className="text-sm text-gray-600">Transaction Hash</span>
-          <div className="flex items-center gap-2">
-            <Hash className="w-4 h-4 text-gray-400" />
-            <span className="font-mono text-xs break-all">{mockDelivery.blockchain.transactionHash}</span>
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+          <div className="p-6 border-b border-gray-200">
+            <h3 className="text-lg font-semibold flex items-center gap-2">
+              <Shield className="h-5 w-5" />
+              Blockchain Verification
+            </h3>
           </div>
-        </div>
-      </div>
-    </div>
+          {delivery.blockchain?.transactionHash ? (
+            <div className="p-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-600">Verification Status</span>
+                <BlockchainStatus blockchain={delivery.blockchain} />
+              </div>
 
-    <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-      <h4 className="font-medium text-blue-900 mb-3 flex items-center gap-2">
-        <Database className="w-4 h-4" />
-        Photo Hash Storage
-      </h4>
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-blue-800">Delivery Photo</span>
-          <span className="font-mono text-xs text-blue-600">{mockDelivery.blockchain.photoHashes.deliveryPhoto}</span>
-        </div>
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-blue-800">Packaging Photo</span>
-          <span className="font-mono text-xs text-blue-600">{mockDelivery.blockchain.photoHashes.packagingPhoto}</span>
-        </div>
-      </div>
-    </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-3">
+                  {delivery.blockchain.blockNumber && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600">Block Number</span>
+                      <span className="font-mono text-sm">{delivery.blockchain.blockNumber}</span>
+                    </div>
+                  )}
+                  {delivery.blockchain.gasUsed && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600">Gas Used</span>
+                      <span className="font-mono text-sm">{delivery.blockchain.gasUsed}</span>
+                    </div>
+                  )}
+                  {delivery.blockchain.confirmations != null && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600">Confirmations</span>
+                      <span className="font-mono text-sm">{delivery.blockchain.confirmations}</span>
+                    </div>
+                  )}
+                </div>
 
-    <div className="mt-4 p-4 bg-green-50 rounded-lg border border-green-200">
-      <h4 className="font-medium text-green-900 mb-3 flex items-center gap-2">
-        <Link className="w-4 h-4" />
-        Immutable Record
-      </h4>
-      <div className="grid grid-cols-2 gap-4 text-sm">
-        <div>
-          <span className="text-green-700">Weight: </span>
-          <span className="font-mono">{mockDelivery.blockchain.immutableRecord.weight} kg</span>
+                <div className="space-y-3">
+                  <div className="space-y-2">
+                    <span className="text-sm text-gray-600">Transaction Hash</span>
+                    <div className="flex items-center gap-2">
+                      <Hash className="w-4 h-4 text-gray-400" />
+                      <span className="font-mono text-xs break-all">{delivery.blockchain.transactionHash}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {delivery.blockchain.timestamp && (
+                <div className="mt-4 p-4 bg-green-50 rounded-lg border border-green-200">
+                  <h4 className="font-medium text-green-900 mb-3 flex items-center gap-2">
+                    <Link className="w-4 h-4" />
+                    On-Chain Record
+                  </h4>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="text-green-700">Recorded At: </span>
+                      <span className="font-mono">{new Date(delivery.blockchain.timestamp).toLocaleString()}</span>
+                    </div>
+                    <div>
+                      <span className="text-green-700">Status: </span>
+                      <span className="font-mono">{delivery.blockchain.status}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="p-6">
+              <div className="flex items-center gap-3 text-gray-500">
+                <Info className="h-5 w-5" />
+                <span>Not yet recorded on blockchain</span>
+              </div>
+            </div>
+          )}
         </div>
-        <div>
-          <span className="text-green-700">Quantity: </span>
-          <span className="font-mono">{mockDelivery.blockchain.immutableRecord.quantity}</span>
-        </div>
-        <div>
-          <span className="text-green-700">Condition: </span>
-          <span className="font-mono">{mockDelivery.blockchain.immutableRecord.condition}</span>
-        </div>
-        <div>
-          <span className="text-green-700">Verified By: </span>
-          <span className="font-mono">{mockDelivery.blockchain.immutableRecord.verifiedBy}</span>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
 
         {/* Tabs */}
         <div className="flex space-x-1 border-b border-gray-200 bg-white rounded-t-lg">
@@ -466,41 +545,95 @@ const DeliveryDetail: React.FC = () => {
                   <div className="p-6 space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <div className="text-sm text-gray-600">Barcode</div>
+                        <div className="text-sm text-gray-600">Order ID</div>
                         <div className="flex items-center gap-2">
                           <Barcode className="h-4 w-4" />
-                          <span className="font-mono">{mockDelivery.barcode}</span>
+                          <span className="font-mono">{delivery.orderId || '—'}</span>
                         </div>
                       </div>
                       <div className="space-y-2">
                         <div className="text-sm text-gray-600">Tracking Number</div>
                         <div className="flex items-center gap-2">
                           <Truck className="h-4 w-4" />
-                          <span className="font-mono">{mockDelivery.trackingNumber}</span>
+                          <span className="font-mono">{delivery.trackingNumber || '—'}</span>
                         </div>
                       </div>
                       <div className="space-y-2">
                         <div className="text-sm text-gray-600">Vendor</div>
                         <div className="flex items-center gap-2">
                           <User className="h-4 w-4" />
-                          <span>{mockDelivery.vendorName}</span>
+                          <span>{delivery.vendorName}</span>
                         </div>
                       </div>
                       <div className="space-y-2">
-                        <div className="text-sm text-gray-600">Contact</div>
-                        <div className="text-sm">{mockDelivery.vendorContact}</div>
+                        <div className="text-sm text-gray-600">Total Amount</div>
+                        <div className="text-sm font-semibold">
+                          {delivery.totalAmount != null ? `$${delivery.totalAmount.toLocaleString()}` : '—'}
+                        </div>
                       </div>
                     </div>
 
-                    <div className="space-y-2">
-                      <div className="text-sm text-gray-600">Delivery Address</div>
-                      <div className="flex items-center gap-2">
-                        <MapPin className="h-4 w-4" />
-                        <span>{mockDelivery.deliveryAddress}</span>
+                    {delivery.deliveryLocation && (
+                      <div className="space-y-2">
+                        <div className="text-sm text-gray-600">Delivery Location</div>
+                        <div className="flex items-center gap-2">
+                          <MapPin className="h-4 w-4" />
+                          <span>{delivery.deliveryLocation}</span>
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </div>
                 </div>
+
+                {/* Items Table */}
+                {delivery.items.length > 0 && (
+                  <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+                    <div className="p-6 border-b border-gray-200">
+                      <h3 className="text-lg font-semibold flex items-center gap-2">
+                        <Package className="h-5 w-5" />
+                        Items ({delivery.items.length})
+                      </h3>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead className="bg-gray-50 border-b border-gray-200">
+                          <tr>
+                            <th className="text-left px-6 py-3 text-gray-600 font-medium">Item</th>
+                            <th className="text-center px-4 py-3 text-gray-600 font-medium">Expected Qty</th>
+                            <th className="text-center px-4 py-3 text-gray-600 font-medium">Actual Qty</th>
+                            <th className="text-center px-4 py-3 text-gray-600 font-medium">Price</th>
+                            <th className="text-center px-4 py-3 text-gray-600 font-medium">Condition</th>
+                            <th className="text-center px-4 py-3 text-gray-600 font-medium">Verified</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {delivery.items.map((item, idx) => (
+                            <tr key={idx} className="border-b border-gray-100 last:border-0">
+                              <td className="px-6 py-3 font-medium">{item.name}</td>
+                              <td className="text-center px-4 py-3">{item.expectedQuantity}</td>
+                              <td className={`text-center px-4 py-3 font-semibold ${item.quantity === item.expectedQuantity ? 'text-green-600' : 'text-yellow-600'}`}>
+                                {item.quantity}
+                              </td>
+                              <td className="text-center px-4 py-3">${item.price.toLocaleString()}</td>
+                              <td className="text-center px-4 py-3">
+                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${conditionColors[item.condition] || 'bg-gray-100 text-gray-800'}`}>
+                                  {item.condition}
+                                </span>
+                              </td>
+                              <td className="text-center px-4 py-3">
+                                {item.verified ? (
+                                  <CheckCircle className="h-4 w-4 text-green-500 mx-auto" />
+                                ) : (
+                                  <Clock className="h-4 w-4 text-yellow-500 mx-auto" />
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
 
                 <div className="bg-white rounded-lg shadow-sm border border-gray-200">
                   <div className="p-6 border-b border-gray-200">
@@ -513,57 +646,74 @@ const DeliveryDetail: React.FC = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="space-y-4">
                         <div className="space-y-2">
-                          <div className="text-sm text-gray-600">Weight Verification</div>
+                          <div className="text-sm text-gray-600">Quantity Verification</div>
                           <div className="flex items-center justify-between">
-                            <span>Expected: {mockDelivery.expectedWeight} kg</span>
-                            <span className={`font-semibold ${
-                              mockDelivery.weight === mockDelivery.expectedWeight
-                                ? 'text-green-600'
-                                : 'text-yellow-600'
-                            }`}>
-                              Actual: {mockDelivery.weight} kg
+                            <span>Expected: {totalExpectedQty}</span>
+                            <span className={`font-semibold ${totalActualQty === totalExpectedQty ? 'text-green-600' : 'text-yellow-600'}`}>
+                              Actual: {totalActualQty}
                             </span>
                           </div>
                         </div>
 
                         <div className="space-y-2">
-                          <div className="text-sm text-gray-600">Quantity Verification</div>
-                          <div className="flex items-center justify-between">
-                            <span>Expected: {mockDelivery.expectedQuantity}</span>
-                            <span className={`font-semibold ${
-                              mockDelivery.quantity === mockDelivery.expectedQuantity
-                                ? 'text-green-600'
-                                : 'text-yellow-600'
-                            }`}>
-                              Actual: {mockDelivery.quantity}
-                            </span>
-                          </div>
+                          <div className="text-sm text-gray-600">Verification Status</div>
+                          <StatusBadge status={delivery.verificationStatus} />
                         </div>
+
+                        {delivery.verification && (
+                          <div className="space-y-2">
+                            <div className="text-sm text-gray-600">Verification Checks</div>
+                            <div className="space-y-1 text-sm">
+                              <div className="flex items-center gap-2">
+                                {delivery.verification.qrCodeScanned ? <CheckCircle className="h-4 w-4 text-green-500" /> : <Clock className="h-4 w-4 text-gray-400" />}
+                                <span>QR Code Scanned</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                {delivery.verification.photosUploaded ? <CheckCircle className="h-4 w-4 text-green-500" /> : <Clock className="h-4 w-4 text-gray-400" />}
+                                <span>Photos Uploaded</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                {delivery.verification.quantityVerified ? <CheckCircle className="h-4 w-4 text-green-500" /> : <Clock className="h-4 w-4 text-gray-400" />}
+                                <span>Quantity Verified</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                {delivery.verification.qualityVerified ? <CheckCircle className="h-4 w-4 text-green-500" /> : <Clock className="h-4 w-4 text-gray-400" />}
+                                <span>Quality Verified</span>
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
 
                       <div className="space-y-4">
-                        <div className="space-y-2">
-                          <div className="text-sm text-gray-600">Condition</div>
-                          <div className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium inline-block">
-                            {mockDelivery.condition}
+                        {delivery.verification?.verifiedBy && (
+                          <div className="space-y-2">
+                            <div className="text-sm text-gray-600">Verified By</div>
+                            <div className="flex items-center gap-2">
+                              <User className="h-4 w-4" />
+                              <span>{delivery.verification.verifiedBy}</span>
+                            </div>
                           </div>
-                        </div>
+                        )}
 
-                        <div className="space-y-2">
-                          <div className="text-sm text-gray-600">Verified By</div>
-                          <div className="flex items-center gap-2">
-                            <User className="h-4 w-4" />
-                            <span>{mockDelivery.verifiedBy}</span>
+                        {delivery.verification?.discrepancies && delivery.verification.discrepancies.length > 0 && (
+                          <div className="space-y-2">
+                            <div className="text-sm text-gray-600">Discrepancies</div>
+                            <ul className="list-disc list-inside text-sm text-red-600 space-y-1">
+                              {delivery.verification.discrepancies.map((d, i) => (
+                                <li key={i}>{d}</li>
+                              ))}
+                            </ul>
                           </div>
-                        </div>
+                        )}
                       </div>
                     </div>
 
-                    {mockDelivery.notes && (
+                    {delivery.notes && (
                       <div className="mt-6 space-y-2">
                         <div className="text-sm text-gray-600">Notes</div>
                         <div className="bg-gray-50 p-3 rounded-md text-sm">
-                          {mockDelivery.notes}
+                          {delivery.notes}
                         </div>
                       </div>
                     )}
@@ -571,14 +721,44 @@ const DeliveryDetail: React.FC = () => {
                 </div>
               </div>
 
-              {/* Compliance Score */}
+              {/* Sidebar */}
               <div className="space-y-6">
+                {verificationScore != null && (
+                  <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+                    <div className="p-6 border-b border-gray-200">
+                      <h3 className="text-lg font-semibold">Verification Score</h3>
+                    </div>
+                    <div className="p-6">
+                      <ComplianceScore score={verificationScore} />
+                    </div>
+                  </div>
+                )}
+
                 <div className="bg-white rounded-lg shadow-sm border border-gray-200">
                   <div className="p-6 border-b border-gray-200">
-                    <h3 className="text-lg font-semibold">Compliance Score</h3>
+                    <h3 className="text-lg font-semibold">Quick Info</h3>
                   </div>
-                  <div className="p-6">
-                    <ComplianceScore score={mockDelivery.complianceScore} />
+                  <div className="p-6 space-y-3 text-sm">
+                    {delivery.expectedDate && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-600">Expected Date</span>
+                        <span>{new Date(delivery.expectedDate).toLocaleDateString()}</span>
+                      </div>
+                    )}
+                    {delivery.deliveryDate && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-600">Delivery Date</span>
+                        <span>{new Date(delivery.deliveryDate).toLocaleDateString()}</span>
+                      </div>
+                    )}
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-600">Items Count</span>
+                      <span>{delivery.items.length}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-600">Last Updated</span>
+                      <span>{new Date(delivery.updatedAt).toLocaleDateString()}</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -598,41 +778,33 @@ const DeliveryDetail: React.FC = () => {
                 </h3>
               </div>
               <div className="p-6 space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-3">
-                    <h4 className="font-medium">Delivery Photo</h4>
-                    <div
-                      className="relative cursor-pointer group"
-                      onClick={() => setShowFullImage(mockDelivery.deliveryPhoto!)}
-                    >
-                      <img
-                        src={mockDelivery.deliveryPhoto}
-                        alt="Delivery"
-                        className="w-full h-64 object-cover rounded-lg"
-                      />
-                      <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 rounded-lg flex items-center justify-center">
-                        <ExternalLink className="h-8 w-8 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                {delivery.photos && delivery.photos.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {delivery.photos.map((photo, index) => (
+                      <div key={index} className="space-y-3">
+                        <h4 className="font-medium">Photo {index + 1}</h4>
+                        <div
+                          className="relative cursor-pointer group"
+                          onClick={() => setShowFullImage(photo)}
+                        >
+                          <img
+                            src={photo}
+                            alt={`Delivery photo ${index + 1}`}
+                            className="w-full h-64 object-cover rounded-lg"
+                          />
+                          <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 rounded-lg flex items-center justify-center">
+                            <ExternalLink className="h-8 w-8 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                          </div>
+                        </div>
                       </div>
-                    </div>
+                    ))}
                   </div>
-
-                  <div className="space-y-3">
-                    <h4 className="font-medium">Packaging Photo</h4>
-                    <div
-                      className="relative cursor-pointer group"
-                      onClick={() => setShowFullImage(mockDelivery.packagingPhoto!)}
-                    >
-                      <img
-                        src={mockDelivery.packagingPhoto}
-                        alt="Packaging"
-                        className="w-full h-64 object-cover rounded-lg"
-                      />
-                      <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 rounded-lg flex items-center justify-center">
-                        <ExternalLink className="h-8 w-8 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
-                      </div>
-                    </div>
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    <Camera className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                    <p>No photos uploaded for this delivery</p>
                   </div>
-                </div>
+                )}
               </div>
             </motion.div>
           )}
@@ -651,13 +823,13 @@ const DeliveryDetail: React.FC = () => {
               </div>
               <div className="p-6">
                 <div className="space-y-4">
-                  {mockDelivery.timeline.map((event, index) => (
+                  {timeline.map((event, index) => (
                     <div key={event.id} className="flex items-start gap-4">
                       <div className="relative">
                         <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
                           <div className="w-3 h-3 bg-blue-600 rounded-full"></div>
                         </div>
-                        {index !== mockDelivery.timeline.length - 1 && (
+                        {index !== timeline.length - 1 && (
                           <div className="absolute top-8 left-1/2 transform -translate-x-1/2 w-px h-8 bg-gray-200"></div>
                         )}
                       </div>
