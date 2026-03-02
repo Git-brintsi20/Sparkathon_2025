@@ -16,134 +16,6 @@ import { useLayout } from '@/contexts/LayoutContext';
 import { ROUTES } from '@/config/routes';
 import type { Delivery } from '@/types/delivery';
 
-// Mock data based on the QR code scenarios
-const mockDeliveries: Delivery[] = [
-  // QR Code 1: DIV-bha-212 (The Good Delivery)
-  {
-    id: '1',
-    orderId: 'PO-2024-001',
-    vendorId: 'vendor-1',
-    vendorName: 'ABC Suppliers Ltd',
-    deliveryDate: '2024-01-15T10:30:00Z',
-    expectedDate: '2024-01-15T10:00:00Z',
-    status: 'verified',
-    items: [
-      {
-        id: 'item-1',
-        name: 'Office Supplies',
-        quantity: 10,
-        expectedQuantity: 10,
-        unit: 'pieces',
-        price: 25.50,
-        verified: true,
-        condition: 'good'
-      }
-    ],
-    totalAmount: 255.00,
-    verificationStatus: 'verified',
-    photos: [],
-    notes: 'All items in perfect condition',
-    createdAt: '2024-01-15T10:30:00Z',
-    updatedAt: '2024-01-15T11:00:00Z'
-  },
-  
-  // QR Code 2: ANA-yad-264 (The Weight Mismatch)
-  {
-    id: '2',
-    orderId: 'PO-2024-002',
-    vendorId: 'vendor-2',
-    vendorName: 'XYZ Manufacturing',
-    deliveryDate: '2024-01-15T14:20:00Z',
-    expectedDate: '2024-01-15T14:00:00Z',
-    status: 'flagged',
-    items: [
-      {
-        id: 'item-2',
-        name: 'Raw Materials',
-        quantity: 5,
-        expectedQuantity: 5,
-        unit: 'boxes',
-        price: 45.00,
-        verified: false,
-        condition: 'good'
-      }
-    ],
-    totalAmount: 225.00,
-    verificationStatus: 'failed',
-    photos: [],
-    notes: 'Weight discrepancy detected - Expected: 12.5kg, Actual: 8.2kg',
-    createdAt: '2024-01-15T14:20:00Z',
-    updatedAt: '2024-01-15T14:20:00Z'
-  },
-  
-  // QR Code 3: ARY-kes-275 (The Product Mismatch)
-  {
-    id: '3',
-    orderId: 'PO-2024-003',
-    vendorId: 'vendor-3',
-    vendorName: 'Global Trade Corp',
-    deliveryDate: '2024-01-15T09:15:00Z',
-    expectedDate: '2024-01-15T09:00:00Z',
-    status: 'flagged',
-    items: [
-      {
-        id: 'item-3',
-        name: 'Heavy Equipment',
-        quantity: 12,
-        expectedQuantity: 15,
-        unit: 'units',
-        price: 150.00,
-        verified: false,
-        condition: 'good'
-      }
-    ],
-    totalAmount: 2250.00,
-    verificationStatus: 'failed',
-    photos: [],
-    notes: 'Product quantity mismatch - Expected: 15 units, Delivered: 12 units',
-    createdAt: '2024-01-15T09:15:00Z',
-    updatedAt: '2024-01-15T09:15:00Z'
-  },
-  
-  // QR Code 4: HAR-bha-203 (The Flagged Vendor)
-  {
-    id: '4',
-    orderId: 'PO-2024-004',
-    vendorId: 'vendor-4',
-    vendorName: 'Unreliable Vendors Inc',
-    deliveryDate: '2024-01-15T16:45:00Z',
-    expectedDate: '2024-01-15T16:30:00Z',
-    status: 'flagged',
-    items: [
-      {
-        id: 'item-4',
-        name: 'Electronic Components',
-        quantity: 20,
-        expectedQuantity: 20,
-        unit: 'pieces',
-        price: 35.75,
-        verified: false,
-        condition: 'damaged'
-      }
-    ],
-    totalAmount: 715.00,
-    verificationStatus: 'failed',
-    photos: [],
-    notes: 'Vendor flagged for previous quality issues. Items show signs of damage.',
-    createdAt: '2024-01-15T16:45:00Z',
-    updatedAt: '2024-01-15T16:45:00Z'
-  }
-];
-
-// Map QR codes to mock data for easy identification
-// @ts-expect-error -- reserved for QR code scanning feature
-const _qrCodeMapping = {
-  'DIV-bha-212': mockDeliveries[0],
-  'ANA-yad-264': mockDeliveries[1],
-  'ARY-kes-275': mockDeliveries[2],
-  'HAR-bha-203': mockDeliveries[3]
-};
-
 const statusColors = {
   pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
   verified: 'bg-green-100 text-green-800 border-green-200',
@@ -186,7 +58,7 @@ const DeliveryList: React.FC = () => {
   // Get filtered data based on route
   const getFilteredData = useMemo(() => {
     const currentPath = location.pathname;
-    const dataToFilter = deliveries.length > 0 ? deliveries : mockDeliveries;
+    const dataToFilter = deliveries;
     
     if (currentPath.includes('/active')) {
       return dataToFilter.filter(d => d.status === 'in_transit' || d.status === 'pending');
@@ -559,43 +431,6 @@ const DeliveryList: React.FC = () => {
                   <SelectItem value="damaged">Damaged</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
-          </CardContent>
-        </Card>
-      </motion.div>
-
-      {/* QR Code Scenarios Info */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.6 }}
-      >
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">QR Code Test Scenarios</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="p-3 bg-green-50 rounded-lg border border-green-200">
-                <div className="font-mono text-sm font-medium text-green-800">DIV-bha-212</div>
-                <div className="text-sm text-green-700">The Good Delivery</div>
-                <div className="text-xs text-green-600 mt-1">All items verified, perfect condition</div>
-              </div>
-              <div className="p-3 bg-orange-50 rounded-lg border border-orange-200">
-                <div className="font-mono text-sm font-medium text-orange-800">ANA-yad-264</div>
-                <div className="text-sm text-orange-700">The Weight Mismatch</div>
-                <div className="text-xs text-orange-600 mt-1">Weight discrepancy detected</div>
-              </div>
-              <div className="p-3 bg-red-50 rounded-lg border border-red-200">
-                <div className="font-mono text-sm font-medium text-red-800">ARY-kes-275</div>
-                <div className="text-sm text-red-700">The Product Mismatch</div>
-                <div className="text-xs text-red-600 mt-1">Quantity mismatch: 12/15 delivered</div>
-              </div>
-              <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-                <div className="font-mono text-sm font-medium text-gray-800">HAR-bha-203</div>
-                <div className="text-sm text-gray-700">The Flagged Vendor</div>
-                <div className="text-xs text-gray-600 mt-1">Vendor with quality issues</div>
-              </div>
             </div>
           </CardContent>
         </Card>

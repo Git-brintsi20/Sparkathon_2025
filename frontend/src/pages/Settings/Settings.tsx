@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react'; // Added useEffect
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-// REMOVED: import { Layout } from '../../components/layout/Layout';
-// ADDED: Import the useLayout hook
 import { useLayout } from '@/contexts/LayoutContext';
-import  ThemeSettings from './ThemeSettings';
+import ThemeSettings from './ThemeSettings';
+import apiService from '@/services/api';
+import { toast } from 'sonner';
 import {
   Settings as // Renamed to avoid conflict with component name
   User,
@@ -67,21 +67,54 @@ const Settings: React.FC = () => {
   });
 
   const [userProfile, setUserProfile] = useState({
-    name: 'John Doe',
-    email: 'john.doe@company.com',
-    role: 'Compliance Officer',
-    department: 'Supply Chain',
-    phone: '+1 (555) 123-4567'
+    name: '',
+    email: '',
+    role: '',
+    department: '',
+    phone: ''
   });
 
   const [isSaving, setIsSaving] = useState(false);
+  const [_profileLoading, setProfileLoading] = useState(true);
+
+  // Load user profile from API on mount
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const res: any = await apiService.get('/auth/me');
+        if (res.data?.success && res.data.data) {
+          const u = res.data.data;
+          setUserProfile({
+            name: u.name || '',
+            email: u.email || '',
+            role: u.role || '',
+            department: u.department || '',
+            phone: u.phone || ''
+          });
+        }
+      } catch (err) {
+        console.error('Failed to load profile:', err);
+      } finally {
+        setProfileLoading(false);
+      }
+    };
+    fetchProfile();
+  }, []);
 
   const handleSaveSettings = async () => {
     setIsSaving(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    setIsSaving(false);
-    // Show success message
+    try {
+      await apiService.put('/auth/profile', {
+        name: userProfile.name,
+        phone: userProfile.phone,
+        department: userProfile.department
+      });
+      toast.success('Settings saved successfully');
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Failed to save settings');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleResetSettings = () => {

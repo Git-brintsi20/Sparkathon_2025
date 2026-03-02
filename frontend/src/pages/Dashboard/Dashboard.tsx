@@ -70,7 +70,7 @@ const Dashboard: React.FC = () => {
       setLoading(true);
       try {
         // Fetch real data from API
-        const [dashboardRes, trendsRes, blockchainRes] = await Promise.all([
+        const [dashboardRes, trendsRes, _blockchainRes] = await Promise.all([
           apiService.get<any>('/analytics/dashboard'),
           apiService.get<any>('/analytics/trends'),
           apiService.get<any>('/blockchain/network').catch(() => ({ data: null })),

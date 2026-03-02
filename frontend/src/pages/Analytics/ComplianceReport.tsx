@@ -10,9 +10,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { MetricsChart } from '@/components/charts/MetricsChart';
 import { ComplianceChart } from '@/components/charts/ComplianceChart';
-// REMOVED: import { Layout } from '@/components/layout/Layout';
-// ADDED: Import the useLayout hook
 import { useLayout } from '@/contexts/LayoutContext';
+import apiService from '@/services/api';
 
 interface ComplianceIncident {
   id: string;
@@ -48,7 +47,58 @@ const ComplianceReport: React.FC = () => {
   const [sortBy, setSortBy] = useState('complianceScore');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
-  // ADDED: useEffect hook to set and clear layout data
+  // Real data from API
+  const [incidents, setIncidents] = useState<ComplianceIncident[]>([]);
+  const [alerts, setAlerts] = useState<ComplianceAlert[]>([]);
+  const [blockchainData, setBlockchainData] = useState<any>(null);
+
+  // Fetch compliance incidents and alerts from API
+  useEffect(() => {
+    const fetchComplianceData = async () => {
+      try {
+        const [complianceRes, blockchainRes] = await Promise.all([
+          apiService.get<any>('/analytics/compliance-report'),
+          apiService.get<any>('/blockchain/network'),
+        ]);
+
+        if (complianceRes.success && complianceRes.data) {
+          const logs = complianceRes.data.logs || complianceRes.data.complianceLogs || [];
+          // Build incidents from compliance logs
+          const inc: ComplianceIncident[] = logs
+            .filter((l: any) => l.severity === 'high' || l.severity === 'critical' || l.status === 'flagged')
+            .map((l: any, i: number) => ({
+              id: l._id || `INC${i}`,
+              vendorName: l.vendorName || l.vendorId?.name || 'Unknown',
+              type: l.type || 'delivery',
+              severity: l.severity || 'medium',
+              date: l.createdAt || l.date,
+              description: l.description || l.type,
+              status: l.status === 'resolved' ? 'resolved' : l.status === 'flagged' ? 'open' : 'investigating',
+              assignedTo: l.assignedTo || 'Unassigned',
+            }));
+          setIncidents(inc);
+
+          // Build alerts from all logs
+          const alt: ComplianceAlert[] = logs.slice(0, 10).map((l: any, i: number) => ({
+            id: l._id || `ALT${i}`,
+            title: l.description || `${l.type} - ${l.severity}`,
+            type: l.severity === 'critical' || l.severity === 'high' ? 'error' : l.severity === 'medium' ? 'warning' : 'info',
+            date: l.createdAt || l.date,
+            read: l.status === 'resolved',
+            priority: l.severity === 'critical' || l.severity === 'high' ? 'high' : l.severity === 'medium' ? 'medium' : 'low',
+          }));
+          setAlerts(alt);
+        }
+
+        if (blockchainRes.success && blockchainRes.data) {
+          setBlockchainData(blockchainRes.data);
+        }
+      } catch (err) {
+        console.error('Failed to load compliance data:', err);
+      }
+    };
+    fetchComplianceData();
+  }, [selectedDateRange]);
   useEffect(() => {
     setLayoutData({
       pageTitle: "Compliance Report",
@@ -88,70 +138,9 @@ const ComplianceReport: React.FC = () => {
 
     // Return a cleanup function
     return () => setLayoutData({});
-  }, [setLayoutData, exportData]); // Added exportData to dependencies for headerActions
+  }, [selectedDateRange]);
 
-  // Mock incidents data
-  const mockIncidents: ComplianceIncident[] = [
-    {
-      id: 'INC001',
-      vendorName: 'Swift Logistics',
-      type: 'delivery',
-      severity: 'high',
-      date: '2024-05-15',
-      description: 'Late delivery beyond agreed timeline',
-      status: 'investigating',
-      assignedTo: 'John Smith'
-    },
-    {
-      id: 'INC002',
-      vendorName: 'Global Supply Co',
-      type: 'documentation',
-      severity: 'medium',
-      date: '2024-05-14',
-      description: 'Missing quality certificates',
-      status: 'resolved',
-      assignedTo: 'Sarah Johnson'
-    },
-    {
-      id: 'INC003',
-      vendorName: 'Reliable Goods Inc',
-      type: 'quality',
-      severity: 'critical',
-      date: '2024-05-13',
-      description: 'Quality standards not met',
-      status: 'open',
-      assignedTo: 'Mike Davis'
-    }
-  ];
-
-  // Mock alerts data
-  const mockAlerts: ComplianceAlert[] = [
-    {
-      id: 'ALT001',
-      title: 'Compliance score below threshold for Swift Logistics',
-      type: 'warning',
-      date: '2024-05-16',
-      read: false,
-      priority: 'high'
-    },
-    {
-      id: 'ALT002',
-      title: 'Monthly compliance report generated',
-      type: 'info',
-      date: '2024-05-15',
-      read: true,
-      priority: 'low'
-    },
-    {
-      id: 'ALT003',
-      title: 'Critical compliance violation detected',
-      type: 'error',
-      date: '2024-05-14',
-      read: false,
-      priority: 'high'
-    }
-  ];
-
+  // ADDED: Memoized filtered and sorted vendor list
   const filteredVendors = useMemo(() => {
     if (!data?.vendorPerformance) return [];
 
@@ -374,7 +363,7 @@ const ComplianceReport: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Open Incidents</p>
-                <p className="text-2xl font-bold text-red-600">{mockIncidents.filter(i => i.status === 'open').length}</p>
+                <p className="text-2xl font-bold text-red-600">{incidents.filter(i => i.status === 'open').length}</p>
               </div>
               <AlertTriangle className="w-8 h-8 text-red-600" />
             </div>
@@ -387,7 +376,7 @@ const ComplianceReport: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Blockchain Verified</p>
-                <p className="text-2xl font-bold text-blue-600">99.8%</p>
+                <p className="text-2xl font-bold text-blue-600">{blockchainData?.verifiedDeliveries || data?.avgComplianceRate?.toFixed(0) || 0}%</p>
               </div>
               <Database className="w-8 h-8 text-blue-600" />
             </div>
@@ -538,7 +527,7 @@ const ComplianceReport: React.FC = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {mockIncidents.map((incident) => (
+                {incidents.map((incident) => (
                   <div key={incident.id} className="border rounded-lg p-4">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-3">
@@ -582,7 +571,7 @@ const ComplianceReport: React.FC = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {mockAlerts.map((alert) => (
+                {alerts.map((alert) => (
                   <div
                     key={alert.id}
                     className={`border rounded-lg p-4 ${!alert.read ? 'bg-blue-50 border-blue-200' : ''}`}
@@ -626,27 +615,27 @@ const ComplianceReport: React.FC = () => {
                     <div className="flex items-center gap-3">
                       <Zap className="w-5 h-5 text-green-600" />
                       <div>
-                        <div className="font-medium">Latest Block</div>
-                        <div className="text-sm text-gray-500">#847293</div>
+                        <div className="font-medium">Network Status</div>
+                        <div className="text-sm text-gray-500">{blockchainData?.connected ? 'Connected' : 'Disconnected'}</div>
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="text-sm font-medium">2,450 Transactions</div>
-                      <div className="text-xs text-gray-500">Verified 12s ago</div>
+                      <div className="text-sm font-medium">{blockchainData?.totalDeliveries?.toLocaleString() || 0} Transactions</div>
+                      <div className="text-xs text-gray-500">Total verified</div>
                     </div>
                   </div>
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
-                      <span>Transaction Hash:</span>
-                      <span className="font-mono text-blue-600">0x8a7b...9c2d</span>
+                      <span>Verified Deliveries:</span>
+                      <span className="font-mono text-blue-600">{blockchainData?.verifiedDeliveries?.toLocaleString() || 0}</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span>Verification Time:</span>
-                      <span>0.2s</span>
+                      <span>Total Vendors:</span>
+                      <span>{blockchainData?.totalVendors || 0}</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span>Gas Used:</span>
-                      <span>21,000</span>
+                      <span>Compliance Logs:</span>
+                      <span>{blockchainData?.complianceLogs || 0}</span>
                     </div>
                   </div>
                 </div>
@@ -662,21 +651,23 @@ const ComplianceReport: React.FC = () => {
               <CardContent>
                 <div className="space-y-4">
                   <div className="text-center">
-                    <div className="text-3xl font-bold text-red-600">97.5%</div>
-                    <div className="text-sm text-gray-500">Detection Accuracy</div>
+                    <div className="text-3xl font-bold text-red-600">
+                      {incidents.length > 0 ? `${((1 - incidents.filter(i => i.status === 'open').length / Math.max(incidents.length, 1)) * 100).toFixed(1)}%` : 'N/A'}
+                    </div>
+                    <div className="text-sm text-gray-500">Issue Resolution Rate</div>
                   </div>
                   <div className="space-y-3">
                     <div className="flex justify-between items-center">
-                      <span className="text-sm">Suspicious Patterns</span>
-                      <Badge className="bg-red-100 text-red-800">3 Detected</Badge>
+                      <span className="text-sm">Open Incidents</span>
+                      <Badge className="bg-red-100 text-red-800">{incidents.filter(i => i.status === 'open').length} Active</Badge>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-sm">Auto-Blocked</span>
-                      <Badge className="bg-yellow-100 text-yellow-800">12 Today</Badge>
+                      <span className="text-sm">Resolved</span>
+                      <Badge className="bg-green-100 text-green-800">{incidents.filter(i => i.status === 'resolved').length} Closed</Badge>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-sm">False Positives</span>
-                      <Badge className="bg-green-100 text-green-800">0.3%</Badge>
+                      <span className="text-sm">Under Review</span>
+                      <Badge className="bg-yellow-100 text-yellow-800">{incidents.filter(i => i.status === 'investigating').length} Pending</Badge>
                     </div>
                   </div>
                 </div>
@@ -689,38 +680,34 @@ const ComplianceReport: React.FC = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                <div className="border rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-3">
-                      <Link className="w-5 h-5 text-blue-600" />
-                      <span className="font-medium">Delivery Confirmation</span>
-                      <Badge className="bg-blue-100 text-blue-800">Verified</Badge>
+                {incidents.length === 0 && (
+                  <div className="text-center py-6 text-gray-500">
+                    No audit trail entries yet
+                  </div>
+                )}
+                {incidents.slice(0, 5).map((incident) => (
+                  <div key={incident.id} className="border rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-3">
+                        {incident.severity === 'high' || incident.severity === 'critical' ? (
+                          <AlertTriangle className="w-5 h-5 text-yellow-600" />
+                        ) : (
+                          <Link className="w-5 h-5 text-blue-600" />
+                        )}
+                        <span className="font-medium">{incident.type}</span>
+                        <Badge className={incident.status === 'resolved' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}>
+                          {incident.status === 'resolved' ? 'Verified' : 'Recorded'}
+                        </Badge>
+                      </div>
+                      <span className="text-sm text-gray-500">
+                        {formatDate(incident.date)}
+                      </span>
                     </div>
-                    <span className="text-sm text-gray-500">2 hours ago</span>
-                  </div>
-                  <div className="text-sm text-gray-600 mb-2">
-                    Swift Logistics delivery #DL-2024-0156 verified on blockchain
-                  </div>
-                  <div className="text-xs font-mono text-blue-600">
-                    Hash: 0x7a8b9c2d3e4f5g6h7i8j9k0l1m2n3o4p5q6r7s8t9u0v1w2x3y4z5a6b7c8d9e0f
-                  </div>
-                </div>
-                <div className="border rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-3">
-                      <AlertTriangle className="w-5 h-5 text-yellow-600" />
-                      <span className="font-medium">Compliance Violation</span>
-                      <Badge className="bg-yellow-100 text-yellow-800">Recorded</Badge>
+                    <div className="text-sm text-gray-600">
+                      {incident.description}
                     </div>
-                    <span className="text-sm text-gray-500">5 hours ago</span>
                   </div>
-                  <div className="text-sm text-gray-600 mb-2">
-                    Quality standards breach by Global Supply Co permanently recorded
-                  </div>
-                  <div className="text-xs font-mono text-blue-600">
-                    Hash: 0x1a2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p7q8r9s0t1u2v3w4x5y6z7a8b9c0d1e2f
-                  </div>
-                </div>
+                ))}
               </div>
             </CardContent>
           </Card>

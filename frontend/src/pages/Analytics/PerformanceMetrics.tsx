@@ -33,6 +33,7 @@ import {
 import { Shield, Database } from 'lucide-react';
 // ADDED: Import the useLayout hook
 import { useLayout } from '@/contexts/LayoutContext';
+import apiService from '@/services/api';
 
 export interface PerformanceMetric {
   id: string;
@@ -76,117 +77,9 @@ const PERFORMANCE_COLORS = {
   muted: 'hsl(var(--muted-foreground))',
 };
 
-const defaultMetrics: PerformanceMetric[] = [
-  {
-    id: 'delivery-time',
-    name: 'Avg Delivery Time',
-    value: 2.3,
-    target: 3.0,
-    unit: 'days',
-    trend: 'down',
-    change: -12.5,
-    status: 'excellent'
-  },
-  {
-    id: 'quality-score',
-    name: 'Quality Score',
-    value: 94.2,
-    target: 90.0,
-    unit: '%',
-    trend: 'up',
-    change: 3.8,
-    status: 'excellent'
-  },
-  {
-    id: 'cost-efficiency',
-    name: 'Cost Efficiency',
-    value: 87.1,
-    target: 85.0,
-    unit: '%',
-    trend: 'up',
-    change: 2.4,
-    status: 'good'
-  },
-  {
-    id: 'vendor-reliability',
-    name: 'Vendor Reliability',
-    value: 91.5,
-    target: 95.0,
-    unit: '%',
-    trend: 'stable',
-    change: 0.3,
-    status: 'warning'
-  },
-  {
-    id: 'customer-satisfaction',
-    name: 'Customer Satisfaction',
-    value: 88.7,
-    target: 90.0,
-    unit: '%',
-    trend: 'up',
-    change: 1.2,
-    status: 'good'
-  },
-  {
-    id: 'order-accuracy',
-    name: 'Order Accuracy',
-    value: 96.8,
-    target: 95.0,
-    unit: '%',
-    trend: 'up',
-    change: 0.8,
-    status: 'excellent'
-  },
-  {
-    id: 'blockchain-transparency',
-    name: 'Blockchain Transparency',
-    value: 99.8,
-    target: 95.0,
-    unit: '%',
-    trend: 'up',
-    change: 2.1,
-    status: 'excellent'
-  },
-  {
-    id: 'fraud-detection',
-    name: 'Fraud Detection Rate',
-    value: 97.5,
-    target: 95.0,
-    unit: '%',
-    trend: 'up',
-    change: 4.2,
-    status: 'excellent'
-  }
+const defaultMetrics: PerformanceMetric[] = [];
 
-
-];
-
-const defaultData: PerformanceDataPoint[] = [
-  { period: 'Jan', deliveryTime: 2.8, qualityScore: 89, costEfficiency: 82, vendorReliability: 88, customerSatisfaction: 85, orderAccuracy: 94, responseTime: 1.2, complianceScore: 91, blockchainTransparency: 99.8,
-    fraudDetectionRate: 97.5,
-    immutableRecords: 100,
-    transactionVolume: 2450 },
-  { period: 'Feb', deliveryTime: 2.6, qualityScore: 91, costEfficiency: 84, vendorReliability: 89, customerSatisfaction: 86, orderAccuracy: 95, responseTime: 1.1, complianceScore: 92, blockchainTransparency: 99.8,
-    fraudDetectionRate: 97.5,
-    immutableRecords: 100,
-    transactionVolume: 2450},
-  { period: 'Mar', deliveryTime: 2.4, qualityScore: 92, costEfficiency: 85, vendorReliability: 90, customerSatisfaction: 87, orderAccuracy: 96, responseTime: 1.0, complianceScore: 93, blockchainTransparency: 99.8,
-    fraudDetectionRate: 97.5,
-    immutableRecords: 100,
-    transactionVolume: 2450 },
-  { period: 'Apr', deliveryTime: 2.3, qualityScore: 94, costEfficiency: 87, vendorReliability: 91, customerSatisfaction: 89, orderAccuracy: 97, responseTime: 0.9, complianceScore: 94, blockchainTransparency: 99.8,
-    fraudDetectionRate: 97.5,
-    immutableRecords: 100,
-    transactionVolume: 2450 },
-  { period: 'May', deliveryTime: 2.2, qualityScore: 93, costEfficiency: 86, vendorReliability: 92, customerSatisfaction: 88, orderAccuracy: 96, responseTime: 0.8, complianceScore: 95, blockchainTransparency: 99.8,
-    fraudDetectionRate: 97.5,
-    immutableRecords: 100,
-    transactionVolume: 2450},
-  { period: 'Jun', deliveryTime: 2.3, qualityScore: 94, costEfficiency: 87, vendorReliability: 91, customerSatisfaction: 89, orderAccuracy: 97, responseTime: 0.9, complianceScore: 94, blockchainTransparency: 99.8,
-    fraudDetectionRate: 97.5,
-    immutableRecords: 100,
-    transactionVolume: 2450}
-];
+const defaultData: PerformanceDataPoint[] = [];
 
 const MetricCard: React.FC<{ metric: PerformanceMetric }> = ({ metric }) => {
   const getStatusColor = (status: string) => {
@@ -313,10 +206,65 @@ export const PerformanceMetrics: React.FC<PerformanceMetricsProps> = ({
 
   // ADDED: Internal state for timeRange and its handler
   const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d' | '1y'>('30d');
+
+  // Fetch real performance data from API
+  const [apiMetrics, setApiMetrics] = useState<PerformanceMetric[]>(metrics);
+  const [apiData, setApiData] = useState<PerformanceDataPoint[]>(data);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchPerformance = async () => {
+      try {
+        setLoading(true);
+        const [perfRes, trendRes] = await Promise.all([
+          apiService.get<any>('/analytics/performance'),
+          apiService.get<any>('/analytics/trends'),
+        ]);
+
+        if (perfRes.success && perfRes.data) {
+          const p = perfRes.data;
+          const buildMetrics: PerformanceMetric[] = [
+            { id: 'delivery-time', name: 'Avg Processing Time', value: p.averageProcessingTime || 0, target: 3.0, unit: 'days', trend: p.averageProcessingTime <= 3 ? 'down' : 'up', change: 0, status: p.averageProcessingTime <= 2 ? 'excellent' : p.averageProcessingTime <= 3 ? 'good' : 'warning' },
+            { id: 'on-time-rate', name: 'On-Time Delivery Rate', value: p.onTimeDeliveryRate || 0, target: 90, unit: '%', trend: (p.onTimeDeliveryRate || 0) >= 90 ? 'up' : 'down', change: 0, status: (p.onTimeDeliveryRate || 0) >= 90 ? 'excellent' : (p.onTimeDeliveryRate || 0) >= 70 ? 'good' : 'warning' },
+            { id: 'verification-rate', name: 'Verification Rate', value: p.verificationRate || 0, target: 95, unit: '%', trend: (p.verificationRate || 0) >= 95 ? 'up' : 'stable', change: 0, status: (p.verificationRate || 0) >= 95 ? 'excellent' : (p.verificationRate || 0) >= 80 ? 'good' : 'warning' },
+            { id: 'total-deliveries', name: 'Total Deliveries', value: p.totalDeliveries || 0, target: 100, unit: '', trend: 'up', change: 0, status: (p.totalDeliveries || 0) >= 50 ? 'excellent' : 'good' },
+          ];
+          setApiMetrics(buildMetrics);
+        }
+
+        if (trendRes.success && trendRes.data) {
+          const ct = trendRes.data.complianceTrend || [];
+          const dt = trendRes.data.deliveryTrend || [];
+          // Merge into PerformanceDataPoint format
+          const periods = [...new Set([...ct.map((c: any) => c._id), ...dt.map((d: any) => d._id)])].sort();
+          const trendData: PerformanceDataPoint[] = periods.map(period => {
+            const c = ct.find((x: any) => x._id === period);
+            const d = dt.find((x: any) => x._id === period);
+            return {
+              period: period as string,
+              deliveryTime: 0,
+              qualityScore: Math.round(c?.avgScore || 0),
+              costEfficiency: 0,
+              vendorReliability: d ? Math.round((d.onTime / Math.max(d.total, 1)) * 100) : 0,
+              customerSatisfaction: 0,
+              orderAccuracy: 0,
+              responseTime: 0,
+              complianceScore: Math.round(c?.avgScore || 0),
+            };
+          });
+          if (trendData.length > 0) setApiData(trendData);
+        }
+      } catch {
+        // Keep defaults if API fails
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchPerformance();
+  }, [timeRange]);
+
   const handleTimeRangeChange = (range: '7d' | '30d' | '90d' | '1y') => {
     setTimeRange(range);
-    // You might want to trigger data fetching here based on the new timeRange
-    // e.g., fetchData(range);
   };
 
   // ADDED: useEffect hook to set and clear layout data
@@ -353,7 +301,8 @@ export const PerformanceMetrics: React.FC<PerformanceMetricsProps> = ({
   }, [setLayoutData, timeRange]); // Added timeRange to dependencies for headerActions to update correctly
 
   const radarData = useMemo(() => {
-    const latest = data[data.length - 1];
+    const latest = apiData.length > 0 ? apiData[apiData.length - 1] : data[data.length - 1];
+    if (!latest) return [];
     return [
       { metric: 'Quality', value: latest.qualityScore, fullMark: 100 },
       { metric: 'Delivery', value: (4 - latest.deliveryTime) * 25, fullMark: 100 },
@@ -362,10 +311,11 @@ export const PerformanceMetrics: React.FC<PerformanceMetricsProps> = ({
       { metric: 'Satisfaction', value: latest.customerSatisfaction, fullMark: 100 },
       { metric: 'Accuracy', value: latest.orderAccuracy, fullMark: 100 },
     ];
-  }, [data]);
+  }, [apiData, data]);
 
   const performanceTrend = useMemo(() => {
-    return data.map(item => ({
+    const src = apiData.length > 0 ? apiData : data;
+    return src.map(item => ({
       ...item,
       overallScore: (
         item.qualityScore * 0.2 +
@@ -376,7 +326,7 @@ export const PerformanceMetrics: React.FC<PerformanceMetricsProps> = ({
         item.complianceScore * 0.15
       )
     }));
-  }, [data]);
+  }, [apiData, data]);
 
   const timeRangeOptions = [
     { value: '7d', label: '7 Days' },
@@ -392,11 +342,17 @@ export const PerformanceMetrics: React.FC<PerformanceMetricsProps> = ({
       {/* Header content moved to setLayoutData in useEffect */}
 
       {/* Key Metrics Grid */}
+      {loading ? (
+        <div className="flex items-center justify-center h-32">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        </div>
+      ) : (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {metrics.map(metric => (
+        {apiMetrics.map(metric => (
           <MetricCard key={metric.id} metric={metric} />
         ))}
       </div>
+      )}
 
       {/* Performance Overview */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -501,16 +457,16 @@ export const PerformanceMetrics: React.FC<PerformanceMetricsProps> = ({
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <div className="text-center">
-              <div className="text-2xl font-bold text-green-600">99.8%</div>
+              <div className="text-2xl font-bold text-green-600">{apiMetrics.find(m => m.id === 'verification-rate')?.value || 0}%</div>
               <div className="text-sm text-muted-foreground">Verified Transactions</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">24,567</div>
-              <div className="text-sm text-muted-foreground">Immutable Records</div>
+              <div className="text-2xl font-bold text-blue-600">{apiMetrics.find(m => m.id === 'total-deliveries')?.value || 0}</div>
+              <div className="text-sm text-muted-foreground">Total Records</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-purple-600">0.2s</div>
-              <div className="text-sm text-muted-foreground">Avg Verification Time</div>
+              <div className="text-2xl font-bold text-purple-600">{apiMetrics.find(m => m.id === 'delivery-time')?.value || 0}d</div>
+              <div className="text-sm text-muted-foreground">Avg Processing Time</div>
             </div>
           </div>
           <div className="h-64">

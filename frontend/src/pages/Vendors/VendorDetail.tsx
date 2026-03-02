@@ -19,6 +19,7 @@ import type { Column } from '@/components/common/DataTable'; // Correctly using 
 import { useVendors } from '@/hooks/useVendors';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { cn } from '@/components/lib/utils';
+import apiService from '@/services/api';
 // CORRECTED: Use a type-only import for the Vendor type
 import type { Vendor } from '@/types/vendor';
 import { Shield, ExternalLink } from 'lucide-react';
@@ -64,37 +65,51 @@ const VendorDetail: React.FC = () => {
   useEffect(() => {
     if (id) {
       fetchVendorById(id);
-      // MOCK DATA (In a real app, this would be fetched)
-      setDeliveries([
-        { id: '1', orderNumber: 'PO-2024-001', date: '2024-01-15', amount: 15000, status: 'completed', complianceCheck: true },
-        { id: '2', orderNumber: 'PO-2024-002', date: '2024-01-10', amount: 8500, status: 'completed', complianceCheck: true }
-      ]);
-      setPerformance([
-        { month: 'Jan', score: 85, deliveries: 12 },
-        { month: 'Feb', score: 92, deliveries: 15 },
-        { month: 'Mar', score: 88, deliveries: 18 }
-      ]);
+      // Fetch real delivery data for this vendor
+      apiService.get<{ deliveries: any[] }>(`/deliveries?vendorId=${id}&limit=10`)
+        .then(res => {
+          if (res.success && res.data?.deliveries) {
+            setDeliveries(res.data.deliveries.map((d: any) => ({
+              id: d._id,
+              orderNumber: d.orderId || d._id,
+              date: d.deliveryDate || d.createdAt,
+              amount: d.totalAmount || 0,
+              status: d.status === 'verified' ? 'completed' : d.status === 'rejected' ? 'failed' : 'pending',
+              complianceCheck: d.verificationStatus === 'verified'
+            })));
+          }
+        })
+        .catch(() => {});
 
-      setComplianceRecords([
-  {
-    id: '1',
-    date: '2024-01-15',
-    type: 'audit',
-    status: 'passed',
-    details: 'Annual compliance audit completed',
-    blockchainTx: '0x1234567890abcdef...',
-    immutable: true
-  },
-  {
-    id: '2',
-    date: '2024-01-10',
-    type: 'certification',
-    status: 'passed',
-    details: 'ISO 9001 certification verified',
-    blockchainTx: '0xabcdef1234567890...',
-    immutable: true
-  }
-]);
+      // Fetch real compliance logs for this vendor
+      apiService.get<{ logs: any[] }>(`/analytics/compliance-report?vendorId=${id}`)
+        .then(res => {
+          if (res.success && res.data?.logs) {
+            setComplianceRecords(res.data.logs.map((log: any) => ({
+              id: log._id,
+              date: log.createdAt,
+              type: log.type || 'verification',
+              status: log.status === 'resolved' ? 'passed' : log.status === 'flagged' ? 'failed' : 'pending',
+              details: log.description || log.type,
+              blockchainTx: log.blockchainTx || '—',
+              immutable: !!log.blockchainTx
+            })));
+          }
+        })
+        .catch(() => {});
+
+      // Fetch performance trend data
+      apiService.get<{ complianceTrend: any[] }>('/analytics/trends')
+        .then(res => {
+          if (res.success && res.data?.complianceTrend) {
+            setPerformance(res.data.complianceTrend.map((t: any) => ({
+              month: t._id,
+              score: Math.round(t.avgScore || 0),
+              deliveries: t.count || 0
+            })));
+          }
+        })
+        .catch(() => {});
     }
   }, [id, fetchVendorById]);
 
