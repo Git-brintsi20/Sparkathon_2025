@@ -32,10 +32,20 @@ async function main() {
     console.log(`✅ DeliveryLog deployed to: ${deliveryLog.address}`);
     console.log(`📄 Transaction hash: ${deliveryLog.deployTransaction.hash}`);
 
+    // Deploy ComplianceToken contract
+    console.log("\n📦 Deploying ComplianceToken contract...");
+    const ComplianceToken = await ethers.getContractFactory("ComplianceToken");
+    const complianceToken = await ComplianceToken.deploy();
+    await complianceToken.deployed();
+
+    console.log(`✅ ComplianceToken deployed to: ${complianceToken.address}`);
+    console.log(`📄 Transaction hash: ${complianceToken.deployTransaction.hash}`);
+
     // Wait for confirmations
     console.log("\n⏳ Waiting for confirmations...");
     await vendorCompliance.deployTransaction.wait(2);
     await deliveryLog.deployTransaction.wait(2);
+    await complianceToken.deployTransaction.wait(2);
 
     // Create deployment info object
     const deploymentInfo = {
@@ -52,6 +62,11 @@ async function main() {
           address: deliveryLog.address,
           transactionHash: deliveryLog.deployTransaction.hash,
           blockNumber: deliveryLog.deployTransaction.blockNumber
+        },
+        ComplianceToken: {
+          address: complianceToken.address,
+          transactionHash: complianceToken.deployTransaction.hash,
+          blockNumber: complianceToken.deployTransaction.blockNumber
         }
       }
     };
@@ -115,6 +130,10 @@ async function main() {
         DeliveryLog: {
           address: deliveryLog.address,
           abi: "DeliveryLog"
+        },
+        ComplianceToken: {
+          address: complianceToken.address,
+          abi: "ComplianceToken"
         }
       },
       network: {
@@ -145,7 +164,8 @@ async function main() {
     console.log(`Deployer: ${deployer.address}`);
     console.log(`VendorCompliance: ${vendorCompliance.address}`);
     console.log(`DeliveryLog: ${deliveryLog.address}`);
-    console.log(`Gas used: ${await getGasUsed(vendorCompliance, deliveryLog)}`);
+    console.log(`ComplianceToken: ${complianceToken.address}`);
+    console.log(`Gas used: ${await getGasUsed(vendorCompliance, deliveryLog, complianceToken)}`);
     console.log("=====================");
 
     // Environment variables reminder
@@ -153,6 +173,7 @@ async function main() {
     console.log("Add these to your backend .env file:");
     console.log(`VENDOR_COMPLIANCE_ADDRESS=${vendorCompliance.address}`);
     console.log(`DELIVERY_LOG_ADDRESS=${deliveryLog.address}`);
+    console.log(`COMPLIANCE_TOKEN_ADDRESS=${complianceToken.address}`);
     console.log(`BLOCKCHAIN_NETWORK=${networkName}`);
     console.log(`RPC_URL=${process.env.RPC_URL || "http://localhost:8545"}`);
     console.log(`PRIVATE_KEY=${process.env.PRIVATE_KEY || "your-private-key"}`);
@@ -165,7 +186,7 @@ async function main() {
   }
 }
 
-async function getGasUsed(vendorCompliance, deliveryLog) {
+async function getGasUsed(vendorCompliance, deliveryLog, complianceToken) {
   try {
     const vendorReceipt = await ethers.provider.getTransactionReceipt(
       vendorCompliance.deployTransaction.hash
@@ -173,8 +194,11 @@ async function getGasUsed(vendorCompliance, deliveryLog) {
     const deliveryReceipt = await ethers.provider.getTransactionReceipt(
       deliveryLog.deployTransaction.hash
     );
+    const tokenReceipt = await ethers.provider.getTransactionReceipt(
+      complianceToken.deployTransaction.hash
+    );
     
-    const totalGas = vendorReceipt.gasUsed.add(deliveryReceipt.gasUsed);
+    const totalGas = vendorReceipt.gasUsed.add(deliveryReceipt.gasUsed).add(tokenReceipt.gasUsed);
     return totalGas.toString();
   } catch (error) {
     return "Unable to calculate";
