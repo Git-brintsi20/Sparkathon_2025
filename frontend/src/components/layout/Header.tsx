@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { Breadcrumb } from './Breadcrumb';
+import { useSocket } from '@/contexts/WebSocketContext';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   Search,
   Bell,
@@ -40,50 +42,6 @@ interface HeaderProps {
   headerActions?: React.ReactNode;
 }
 
-interface NotificationItem {
-  id: string;
-  title: string;
-  message: string;
-  time: string;
-  type: 'info' | 'warning' | 'error' | 'success';
-  isRead: boolean;
-}
-
-const mockNotifications: NotificationItem[] = [
-  {
-    id: '1',
-    title: 'Compliance Alert',
-    message: 'Vendor ABC Corp requires document verification',
-    time: '2 minutes ago',
-    type: 'warning',
-    isRead: false,
-  },
-  {
-    id: '2',
-    title: 'Delivery Completed',
-    message: 'Order #12345 has been successfully delivered',
-    time: '1 hour ago',
-    type: 'success',
-    isRead: false,
-  },
-  {
-    id: '3',
-    title: 'System Update',
-    message: 'New fraud detection algorithms deployed',
-    time: '3 hours ago',
-    type: 'info',
-    isRead: true,
-  },
-  {
-    id: '4',
-    title: 'Critical Alert',
-    message: 'Suspicious activity detected on vendor XYZ',
-    time: '5 hours ago',
-    type: 'error',
-    isRead: false,
-  },
-];
-
 const themeOptions = [
   { value: 'default', label: 'Ocean Blue', color: 'bg-blue-500', gradient: 'from-blue-400 to-blue-600' },
   { value: 'purple', label: 'Royal Purple', color: 'bg-purple-500', gradient: 'from-purple-400 to-purple-600' },
@@ -106,6 +64,9 @@ export const Header: React.FC<HeaderProps> = ({
   breadcrumbs,
   headerActions,
 }) => {
+  const { notifications: socketNotifications, unreadCount, markAsRead: socketMarkAsRead, markAllAsRead: socketMarkAllAsRead } = useSocket();
+  const { state: authState } = useAuth();
+  const userName = authState.user?.name || 'User';
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
@@ -114,9 +75,6 @@ export const Header: React.FC<HeaderProps> = ({
   const [showThemeMenu, setShowThemeMenu] = useState(false);
   const [currentTheme, setCurrentTheme] = useState('default');
   const [isDarkMode, setIsDarkMode] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(
-    mockNotifications.filter(n => !n.isRead).length
-  );
 
   const searchRef = useRef<HTMLDivElement>(null);
   const notificationRef = useRef<HTMLDivElement>(null);
@@ -165,8 +123,8 @@ export const Header: React.FC<HeaderProps> = ({
     // Apply dark mode logic here
   };
 
-  const markNotificationAsRead = (_id: string) => {
-    setUnreadCount(prev => Math.max(0, prev - 1));
+  const markNotificationAsRead = (id: string) => {
+    socketMarkAsRead(id);
   };
 
   // Animation variants
@@ -219,6 +177,16 @@ export const Header: React.FC<HeaderProps> = ({
         ease: 'easeInOut'
       }
     }
+  };
+
+  const mapNotificationType = (type: string, severity?: string): string => {
+    if (type === 'fraud_alert') return 'error';
+    if (type === 'compliance_alert') return severity === 'critical' || severity === 'high' ? 'error' : 'warning';
+    if (type === 'delivery_status') return 'success';
+    if (type === 'error') return 'error';
+    if (type === 'warning') return 'warning';
+    if (type === 'success') return 'success';
+    return 'info';
   };
 
   const getBadgeColor = (type: string) => {
@@ -553,14 +521,21 @@ export const Header: React.FC<HeaderProps> = ({
                   <div className="p-4 border-b border-border/50">
                     <div className="flex items-center justify-between">
                       <h3 className="font-semibold text-foreground">Notifications</h3>
-                      <Button variant="ghost" size="sm" className="text-xs hover:bg-accent/50">
+                      <Button variant="ghost" size="sm" className="text-xs hover:bg-accent/50" onClick={() => socketMarkAllAsRead()}>
                         Mark all read
                       </Button>
                     </div>
                   </div>
                   
                   <div className="max-h-80 overflow-y-auto">
-                    {mockNotifications.map((notification, index) => (
+                    {socketNotifications.length === 0 ? (
+                      <div className="p-6 text-center text-muted-foreground text-sm">
+                        No notifications yet
+                      </div>
+                    ) : socketNotifications.map((notification, index) => {
+                      const uiType = mapNotificationType(notification.type, notification.severity);
+                      const timeAgo = notification.createdAt ? new Date(notification.createdAt).toLocaleString() : '';
+                      return (
                       <motion.div
                         key={notification.id}
                         variants={notificationVariants}
@@ -575,7 +550,7 @@ export const Header: React.FC<HeaderProps> = ({
                       >
                         <div className="flex items-start space-x-3">
                           <div className="flex-shrink-0 text-lg">
-                            {getNotificationIcon(notification.type)}
+                            {getNotificationIcon(uiType)}
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between mb-1">
@@ -584,16 +559,16 @@ export const Header: React.FC<HeaderProps> = ({
                               </p>
                               <span className={cn(
                                 'text-xs px-2 py-0.5 rounded-full border',
-                                getBadgeColor(notification.type)
+                                getBadgeColor(uiType)
                               )}>
-                                {notification.type}
+                                {uiType}
                               </span>
                             </div>
                             <p className="text-xs text-muted-foreground mb-2 line-clamp-2">
                               {notification.message}
                             </p>
                             <p className="text-xs text-muted-foreground/70">
-                              {notification.time}
+                              {timeAgo}
                             </p>
                           </div>
                           {!notification.isRead && (
@@ -601,7 +576,8 @@ export const Header: React.FC<HeaderProps> = ({
                           )}
                         </div>
                       </motion.div>
-                    ))}
+                      );
+                    })}
                   </div>
                   
                   <div className="p-3 border-t border-border/50">
@@ -632,7 +608,7 @@ export const Header: React.FC<HeaderProps> = ({
                 <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg">
                   <User className="h-3 w-3 text-white" />
                 </div>
-                <span className="hidden sm:inline text-sm font-medium">John Doe</span>
+                <span className="hidden sm:inline text-sm font-medium">{userName}</span>
                 <motion.div
                   animate={{ rotate: showUserMenu ? 180 : 0 }}
                   transition={{ duration: 0.2 }}

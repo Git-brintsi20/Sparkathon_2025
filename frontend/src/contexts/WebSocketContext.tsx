@@ -1,213 +1,215 @@
-import React, { 
-  createContext, 
-  useContext, 
-  useEffect, 
-  useRef, 
-  useState, 
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
   useCallback,
-  useMemo // <-- Import useMemo
+  useMemo,
 } from 'react';
-import type { WebSocketMessage, WebSocketState } from '@/types/common';
+import { io, Socket } from 'socket.io-client';
 
-// --- MockWebSocket Class (This part is well-designed, no major changes needed) ---
-// In WebSocketContext.tsx
-
-class MockWebSocket {
-  // Use properties directly, just like the real WebSocket
-  public onopen: ((ev: Event) => any) | null = null;
-  public onmessage: ((ev: MessageEvent) => any) | null = null;
-  public onclose: ((ev: CloseEvent) => any) | null = null;
-  public onerror: ((ev: Event) => any) | null = null;
-
-  public readyState = 0; // CONNECTING
-  public url: string;
-
-  constructor(url: string) {
-    this.url = url;
-    console.log('Mock WebSocket: Initialized');
-
-    // Simulate the connection opening
-    setTimeout(() => {
-      this.readyState = 1; // OPEN
-      console.log('Mock WebSocket: Connection opened');
-      // Directly call the handler if it has been set
-      if (typeof this.onopen === 'function') {
-        this.onopen(new Event('open'));
-      }
-    }, 100);
-  }
-
-  send(data: string) {
-    if (this.readyState !== 1) {
-      console.warn('Mock WebSocket: Cannot send while not OPEN');
-      return;
-    }
-    console.log('Mock WebSocket: "Sending" message:', data);
-    // Simulate a response
-    setTimeout(() => {
-      if (typeof this.onmessage === 'function') {
-        const response = { type: 'mock_response', payload: { text: 'This is a mock reply!' } };
-        this.onmessage(new MessageEvent('message', { data: JSON.stringify(response) }));
-      }
-    }, 500);
-  }
-
-  close() {
-    if (this.readyState === 3) return; // Already closed
-    this.readyState = 3; // CLOSED
-    console.log('Mock WebSocket: Connection closed');
-    // Directly call the handler if it has been set
-    if (typeof this.onclose === 'function') {
-      this.onclose(new CloseEvent('close', { wasClean: true, code: 1000 }));
-    }
-  }
+// Notification from server
+export interface ServerNotification {
+  id: string;
+  type: string;
+  title: string;
+  message: string;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  isRead: boolean;
+  metadata?: {
+    deliveryId?: string;
+    vendorId?: string;
+    link?: string;
+  };
+  createdAt: string;
 }
 
-// --- Context Definition ---
-interface WebSocketContextType {
-  state: WebSocketState;
-  sendMessage: (message: WebSocketMessage) => void;
-  subscribe: (type: string, callback: (payload: any) => void) => () => void;
-  connect: () => void;
-  disconnect: () => void;
+interface SocketContextType {
   isConnected: boolean;
-  isMock: boolean;
+  notifications: ServerNotification[];
+  unreadCount: number;
+  markAsRead: (id: string) => void;
+  markAllAsRead: () => void;
+  refreshNotifications: () => void;
 }
 
-const WebSocketContext = createContext<WebSocketContextType | undefined>(undefined);
+const SocketContext = createContext<SocketContextType | undefined>(undefined);
 
-export const useWebSocket = () => {
-  const context = useContext(WebSocketContext);
-  if (!context) throw new Error('useWebSocket must be used within a WebSocketProvider');
+export const useSocket = () => {
+  const context = useContext(SocketContext);
+  if (!context) throw new Error('useSocket must be used within a SocketProvider');
   return context;
 };
 
-interface WebSocketProviderProps {
+// Keep backward-compatible export name
+export const useWebSocket = useSocket;
+
+interface SocketProviderProps {
   children: React.ReactNode;
-  url?: string;
-  reconnectInterval?: number;
-  maxReconnectAttempts?: number;
-  autoConnect?: boolean;
-  // This prop's instability was the cause of the loop.
-  // We will handle it more carefully now.
-  mockResponseGenerator?: (message: WebSocketMessage) => WebSocketMessage | undefined;
 }
 
-export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
-  children,
-  url = import.meta.env.VITE_WS_URL || `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/ws`,
-  reconnectInterval = 5000,
-  maxReconnectAttempts = 5,
-  autoConnect = true,
-  mockResponseGenerator, // Receive the generator function
-}) => {
-  const [state, setState] = useState<WebSocketState>({ isConnected: false, lastMessage: null, error: null });
-  const [isMock, setIsMock] = useState(false);
-  const wsRef = useRef<WebSocket | null>(null);
-  const reconnectAttemptsRef = useRef(0);
-  const subscribersRef = useRef<Map<string, Set<(payload: any) => void>>>(new Map());
-  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+export const WebSocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
+  const [isConnected, setIsConnected] = useState(false);
+  const [notifications, setNotifications] = useState<ServerNotification[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const socketRef = useRef<Socket | null>(null);
 
-  const disconnect = useCallback(() => {
-    if (reconnectTimeoutRef.current) {
-      clearTimeout(reconnectTimeoutRef.current);
-      reconnectTimeoutRef.current = null;
-    }
-    if (wsRef.current) {
-      wsRef.current.onclose = null; // Prevent reconnect logic from firing on manual disconnect
-      wsRef.current.close(1000, 'Disconnected by user');
-      wsRef.current = null;
-    }
-    setState(prev => ({ ...prev, isConnected: false, error: null }));
+  // Get auth token
+  const getToken = useCallback(() => {
+    return localStorage.getItem('token');
   }, []);
 
-  const connect = useCallback(() => {
-    if (wsRef.current?.readyState === WebSocket.OPEN || wsRef.current?.readyState === WebSocket.CONNECTING) return;
-    disconnect(); // Ensure any old connection is cleaned up before starting a new one
+  // Build Socket.IO URL from API URL or use location
+  const getSocketUrl = useCallback(() => {
+    const apiUrl = import.meta.env.VITE_API_URL;
+    if (apiUrl && apiUrl.startsWith('http')) {
+      // Absolute URL — use its origin
+      return new URL(apiUrl).origin;
+    }
+    // Relative /api — connect to same origin
+    return window.location.origin;
+  }, []);
+
+  // Fetch initial notifications via REST
+  const refreshNotifications = useCallback(async () => {
+    const token = getToken();
+    if (!token) return;
 
     try {
-      let socket: WebSocket;
-      if (import.meta.env.VITE_WS_ENABLED === 'false') {
-        console.warn('Using mock WebSocket.');
-        setIsMock(true);
-        const mockWs = new MockWebSocket(url);
-        socket = mockWs as unknown as WebSocket;
-      } else {
-        setIsMock(false);
-        socket = new WebSocket(url);
-      }
-      wsRef.current = socket;
-      
-      socket.onopen = () => {
-        setState(prev => ({ ...prev, isConnected: true, error: null }));
-        reconnectAttemptsRef.current = 0;
-        if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
-      };
-
-      socket.onmessage = (event) => {
-        try {
-          const message: WebSocketMessage = JSON.parse(event.data);
-          setState(prev => ({ ...prev, lastMessage: message }));
-          const subscribers = subscribersRef.current.get(message.type);
-          subscribers?.forEach(callback => callback(message.payload));
-        } catch (error) { console.error('Error parsing WebSocket message:', error); }
-      };
-      
-      socket.onclose = (event) => {
-        // Only attempt to reconnect if it wasn't a clean, manual disconnect
-        if (wsRef.current && !event.wasClean && reconnectAttemptsRef.current < maxReconnectAttempts) {
-          reconnectAttemptsRef.current++;
-          const timeout = setTimeout(connect, reconnectInterval * Math.pow(2, reconnectAttemptsRef.current - 1));
-          reconnectTimeoutRef.current = timeout;
+      const apiBase = import.meta.env.VITE_API_URL || '/api';
+      const res = await fetch(`${apiBase}/notifications?limit=20`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && json.data?.notifications) {
+          setNotifications(json.data.notifications.map((n: any) => ({
+            id: n._id || n.id,
+            type: n.type,
+            title: n.title,
+            message: n.message,
+            severity: n.severity || 'low',
+            isRead: n.isRead,
+            metadata: n.metadata,
+            createdAt: n.createdAt,
+          })));
         }
-        setState(prev => ({ ...prev, isConnected: false, error: event.wasClean ? null : 'Connection closed unexpectedly' }));
-      };
-
-      socket.onerror = () => {
-        setState(prev => ({ ...prev, error: 'WebSocket connection error' }));
-      };
-
-    } catch (error) {
-      setState(prev => ({ ...prev, error: 'Failed to create WebSocket connection' }));
+      }
+    } catch (err) {
+      console.warn('Failed to fetch notifications:', err);
     }
-    // CORRECTED: The unstable mockResponses dependency is removed.
-    // We now pass a stable function `mockResponseGenerator` instead of an object.
-  }, [url, reconnectInterval, maxReconnectAttempts, mockResponseGenerator, disconnect]);
 
-  const sendMessage = useCallback((message: WebSocketMessage) => {
-    if (wsRef.current?.readyState === WebSocket.OPEN) {
-      wsRef.current.send(JSON.stringify(message));
-    } else { console.warn('WebSocket is not connected'); }
-  }, []);
-
-  const subscribe = useCallback((type: string, callback: (payload: any) => void) => {
-    if (!subscribersRef.current.has(type)) {
-      subscribersRef.current.set(type, new Set());
+    try {
+      const apiBase = import.meta.env.VITE_API_URL || '/api';
+      const res = await fetch(`${apiBase}/notifications/unread-count`, {
+        headers: { Authorization: `Bearer ${getToken()}` },
+      });
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success) setUnreadCount(json.data.count);
+      }
+    } catch {
+      // ignore
     }
-    const subscribers = subscribersRef.current.get(type)!;
-    subscribers.add(callback);
-    return () => { subscribers.delete(callback); };
-  }, []);
+  }, [getToken]);
 
+  // Connect / disconnect socket based on auth
   useEffect(() => {
-    if (autoConnect) connect();
-    return () => disconnect();
-  }, [autoConnect, connect, disconnect]);
+    const token = getToken();
+    if (!token) {
+      // Not logged in — disconnect if connected
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+        socketRef.current = null;
+      }
+      setIsConnected(false);
+      setNotifications([]);
+      setUnreadCount(0);
+      return;
+    }
 
-  // CORRECTED: Memoize the context value to prevent unnecessary re-renders of consumers.
+    const socketUrl = getSocketUrl();
+    const socket = io(socketUrl, {
+      auth: { token },
+      transports: ['websocket', 'polling'],
+      reconnectionAttempts: 10,
+      reconnectionDelay: 2000,
+      reconnectionDelayMax: 10000,
+    });
+
+    socketRef.current = socket;
+
+    socket.on('connect', () => {
+      setIsConnected(true);
+      socket.emit('get:unread-count');
+      // Fetch full notification list on connect
+      refreshNotifications();
+    });
+
+    socket.on('disconnect', () => {
+      setIsConnected(false);
+    });
+
+    socket.on('notification', (payload: ServerNotification) => {
+      setNotifications(prev => [payload, ...prev].slice(0, 50));
+      setUnreadCount(prev => prev + 1);
+    });
+
+    socket.on('unread-count', (data: { count: number }) => {
+      setUnreadCount(data.count);
+    });
+
+    socket.on('connect_error', (err) => {
+      console.warn('Socket connection error:', err.message);
+    });
+
+    return () => {
+      socket.disconnect();
+      socketRef.current = null;
+    };
+  }, [getToken, getSocketUrl, refreshNotifications]);
+
+  const markAsRead = useCallback((id: string) => {
+    if (socketRef.current?.connected) {
+      socketRef.current.emit('mark:read', id);
+    }
+    setNotifications(prev =>
+      prev.map(n => (n.id === id ? { ...n, isRead: true } : n))
+    );
+    setUnreadCount(prev => Math.max(0, prev - 1));
+  }, []);
+
+  const markAllAsRead = useCallback(async () => {
+    const token = getToken();
+    if (!token) return;
+
+    try {
+      const apiBase = import.meta.env.VITE_API_URL || '/api';
+      await fetch(`${apiBase}/notifications/read-all`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+    } catch {
+      // ignore
+    }
+
+    setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+    setUnreadCount(0);
+  }, [getToken]);
+
   const contextValue = useMemo(() => ({
-    state,
-    sendMessage,
-    subscribe,
-    connect,
-    disconnect,
-    isConnected: state.isConnected,
-    isMock,
-  }), [state, sendMessage, subscribe, connect, disconnect, isMock]);
+    isConnected,
+    notifications,
+    unreadCount,
+    markAsRead,
+    markAllAsRead,
+    refreshNotifications,
+  }), [isConnected, notifications, unreadCount, markAsRead, markAllAsRead, refreshNotifications]);
 
   return (
-    <WebSocketContext.Provider value={contextValue}>
+    <SocketContext.Provider value={contextValue}>
       {children}
-    </WebSocketContext.Provider>
+    </SocketContext.Provider>
   );
 };

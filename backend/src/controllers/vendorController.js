@@ -1,5 +1,6 @@
 
 const Vendor = require('../models/Vendor');
+const notificationService = require('../services/notificationService');
 
 // Get all vendors (with pagination and filters)
 exports.getVendors = async (req, res) => {
@@ -66,6 +67,12 @@ exports.updateVendor = async (req, res) => {
 	try {
 		const vendor = await Vendor.findByIdAndUpdate(req.params.id, req.body, { new: true });
 		if (!vendor) return res.status(404).json({ success: false, message: 'Vendor not found' });
+
+		// Check for low compliance after update
+		if (vendor.complianceScore !== undefined) {
+			await notificationService.notifyLowCompliance(vendor);
+		}
+
 		res.json({ success: true, data: vendor, message: 'Vendor updated successfully' });
 	} catch (err) {
 		res.status(400).json({ success: false, message: err.message });
