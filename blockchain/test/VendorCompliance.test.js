@@ -12,27 +12,26 @@ describe("VendorCompliance", function () {
     await vendorCompliance.waitForDeployment();
   });
 
+  // Helper: register and return vendorId
+  async function registerAndGetId(name, email, wallet, certs = []) {
+    const tx = await vendorCompliance.registerVendor(name, email, wallet, certs);
+    const receipt = await tx.wait();
+    const log = receipt.logs.find((l) => {
+      try { return vendorCompliance.interface.parseLog(l)?.name === "VendorRegistered"; } catch { return false; }
+    });
+    return vendorCompliance.interface.parseLog(log).args.vendorId;
+  }
+
   // ─── Registration ───────────────────────────────────────
 
   describe("Vendor Registration", function () {
     it("should register a new vendor", async function () {
-      const tx = await vendorCompliance.registerVendor(
-        "Acme Supplies",
-        "acme@supplier.com",
-        addr1.address,
-        ["ISO9001"]
-      );
-
-      const receipt = await tx.wait();
-      const event = receipt.events.find((e) => e.event === "VendorRegistered");
-      expect(event).to.not.be.undefined;
-
-      const vendorId = event.args.vendorId;
+      const vendorId = await registerAndGetId("Acme Supplies", "acme@supplier.com", addr1.address, ["ISO9001"]);
       const vendor = await vendorCompliance.getVendor(vendorId);
       expect(vendor.name).to.equal("Acme Supplies");
       expect(vendor.email).to.equal("acme@supplier.com");
       expect(vendor.walletAddress).to.equal(addr1.address);
-      expect(vendor.complianceScore).to.equal(100);
+      expect(vendor.complianceScore).to.equal(100n);
       expect(vendor.isActive).to.be.true;
     });
 
@@ -50,7 +49,7 @@ describe("VendorCompliance", function () {
 
     it("should reject zero address", async function () {
       await expect(
-        vendorCompliance.registerVendor("X", "e@e.com", ethers.constants.AddressZero, [])
+        vendorCompliance.registerVendor("X", "e@e.com", ethers.ZeroAddress, [])
       ).to.be.revertedWith("Invalid wallet address");
     });
 
@@ -74,20 +73,13 @@ describe("VendorCompliance", function () {
     let vendorId;
 
     beforeEach(async function () {
-      const tx = await vendorCompliance.registerVendor(
-        "TestCo",
-        "test@co.com",
-        addr1.address,
-        []
-      );
-      const receipt = await tx.wait();
-      vendorId = receipt.events.find((e) => e.event === "VendorRegistered").args.vendorId;
+      vendorId = await registerAndGetId("TestCo", "test@co.com", addr1.address);
     });
 
     it("should update compliance score", async function () {
       await vendorCompliance.updateComplianceScore(vendorId, 75, "Quality audit");
       const vendor = await vendorCompliance.getVendor(vendorId);
-      expect(vendor.complianceScore).to.equal(75);
+      expect(vendor.complianceScore).to.equal(75n);
     });
 
     it("should reject score > 100", async function () {
@@ -106,22 +98,22 @@ describe("VendorCompliance", function () {
       // HIGH >= 90
       await vendorCompliance.updateComplianceScore(vendorId, 95, "excellent");
       let v = await vendorCompliance.getVendor(vendorId);
-      expect(v.complianceLevel).to.equal(3); // HIGH
+      expect(v.complianceLevel).to.equal(3n); // HIGH
 
       // MEDIUM >= 70
       await vendorCompliance.updateComplianceScore(vendorId, 75, "ok");
       v = await vendorCompliance.getVendor(vendorId);
-      expect(v.complianceLevel).to.equal(2); // MEDIUM
+      expect(v.complianceLevel).to.equal(2n); // MEDIUM
 
       // LOW >= 50
       await vendorCompliance.updateComplianceScore(vendorId, 55, "needs work");
       v = await vendorCompliance.getVendor(vendorId);
-      expect(v.complianceLevel).to.equal(1); // LOW
+      expect(v.complianceLevel).to.equal(1n); // LOW
 
       // CRITICAL < 50
       await vendorCompliance.updateComplianceScore(vendorId, 30, "critical failure");
       v = await vendorCompliance.getVendor(vendorId);
-      expect(v.complianceLevel).to.equal(4); // CRITICAL
+      expect(v.complianceLevel).to.equal(4n); // CRITICAL
     });
 
     it("should record compliance history", async function () {
@@ -131,8 +123,8 @@ describe("VendorCompliance", function () {
       const history = await vendorCompliance.getVendorComplianceHistory(vendorId);
       // initial + 2 updates
       expect(history.length).to.equal(3);
-      expect(history[1].score).to.equal(80);
-      expect(history[2].score).to.equal(60);
+      expect(history[1].score).to.equal(80n);
+      expect(history[2].score).to.equal(60n);
     });
   });
 
@@ -142,9 +134,7 @@ describe("VendorCompliance", function () {
     let vendorId;
 
     beforeEach(async function () {
-      const tx = await vendorCompliance.registerVendor("D", "d@d.com", addr1.address, []);
-      const receipt = await tx.wait();
-      vendorId = receipt.events.find((e) => e.event === "VendorRegistered").args.vendorId;
+      vendorId = await registerAndGetId("D", "d@d.com", addr1.address);
     });
 
     it("should create a dispute", async function () {
@@ -154,8 +144,10 @@ describe("VendorCompliance", function () {
         "Order PO-100 was 3 days late"
       );
       const receipt = await tx.wait();
-      const event = receipt.events.find((e) => e.event === "DisputeCreated");
-      expect(event).to.not.be.undefined;
+      const log = receipt.logs.find((l) => {
+        try { return vendorCompliance.interface.parseLog(l)?.name === "DisputeCreated"; } catch { return false; }
+      });
+      expect(log).to.not.be.undefined;
     });
 
     it("should resolve a dispute", async function () {
@@ -165,17 +157,16 @@ describe("VendorCompliance", function () {
         "Received damaged goods"
       );
       const createReceipt = await createTx.wait();
-      const disputeId = createReceipt.events.find((e) => e.event === "DisputeCreated").args.disputeId;
+      const log = createReceipt.logs.find((l) => {
+        try { return vendorCompliance.interface.parseLog(l)?.name === "DisputeCreated"; } catch { return false; }
+      });
+      const disputeId = vendorCompliance.interface.parseLog(log).args.disputeId;
 
-      await vendorCompliance.resolveDispute(
-        disputeId,
-        2, // RESOLVED
-        "Vendor agreed to 10% credit"
-      );
+      await vendorCompliance.resolveDispute(disputeId, 2, "Vendor agreed to 10% credit");
 
       const disputes = await vendorCompliance.getVendorDisputes(vendorId);
-      const resolved = disputes.find((d) => d.id.eq(disputeId));
-      expect(resolved.status).to.equal(2); // RESOLVED
+      const resolved = disputes.find((d) => d.id === disputeId);
+      expect(resolved.status).to.equal(2n); // RESOLVED
     });
   });
 
@@ -185,9 +176,7 @@ describe("VendorCompliance", function () {
     let vendorId;
 
     beforeEach(async function () {
-      const tx = await vendorCompliance.registerVendor("E", "e@e.com", addr1.address, []);
-      const receipt = await tx.wait();
-      vendorId = receipt.events.find((e) => e.event === "VendorRegistered").args.vendorId;
+      vendorId = await registerAndGetId("E", "e@e.com", addr1.address);
     });
 
     it("should deactivate a vendor", async function () {
@@ -217,7 +206,6 @@ describe("VendorCompliance", function () {
     it("should return all vendor IDs", async function () {
       await vendorCompliance.registerVendor("A", "a@a.com", addr1.address, []);
       await vendorCompliance.registerVendor("B", "b@b.com", addr2.address, []);
-
       const ids = await vendorCompliance.getAllVendorIds();
       expect(ids.length).to.equal(2);
     });
@@ -225,13 +213,13 @@ describe("VendorCompliance", function () {
     it("should look up vendor by address", async function () {
       await vendorCompliance.registerVendor("A", "a@a.com", addr1.address, []);
       const id = await vendorCompliance.getVendorByAddress(addr1.address);
-      expect(id).to.be.gt(0);
+      expect(id).to.be.gt(0n);
     });
 
     it("should return total vendor count", async function () {
       await vendorCompliance.registerVendor("A", "a@a.com", addr1.address, []);
       const count = await vendorCompliance.getTotalVendors();
-      expect(count).to.equal(1);
+      expect(count).to.equal(1n);
     });
   });
 });
