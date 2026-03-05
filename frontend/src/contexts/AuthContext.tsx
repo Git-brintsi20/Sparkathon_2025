@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useReducer, useEffect} from 'react';
 import type { ReactNode } from 'react';
 import type { User, AuthState, LoginCredentials } from '../types/common';
+import apiService from '../services/api';
 
 // CORRECTED: The interface syntax is now valid.
 interface AuthContextValue {
@@ -91,29 +92,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     dispatch({ type: 'LOGIN_START' });
     
     try {
-      // Mock API call - replace with actual API service
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(credentials),
-      });
+      const response = await apiService.post<{ user: User; token: { token: string; refreshToken: string; expiresIn: string } }>('/auth/login', credentials);
+      const { user, token: tokenData } = response.data!;
 
-      if (!response.ok) {
-        throw new Error('Login failed');
-      }
-
-      const data = await response.json();
-      const { user, token } = data;
-
-      // Store token in localStorage
-      localStorage.setItem('authToken', token);
+      // Store tokens
+      apiService.setAuthToken(tokenData.token);
+      localStorage.setItem('authToken', tokenData.token);
+      localStorage.setItem('refreshToken', tokenData.refreshToken);
       localStorage.setItem('user', JSON.stringify(user));
 
       dispatch({ 
         type: 'LOGIN_SUCCESS', 
-        payload: { user, token } 
+        payload: { user, token: tokenData.token } 
       });
     } catch (error) {
       dispatch({ type: 'LOGIN_FAILURE' });
@@ -122,37 +112,27 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const logout = (): void => {
-    // Clear stored data
     localStorage.removeItem('authToken');
     localStorage.removeItem('user');
     localStorage.removeItem('refreshToken');
+    apiService.removeAuthToken();
     
     dispatch({ type: 'LOGOUT' });
   };
 
   const refreshToken = async (): Promise<void> => {
     try {
-      const refreshToken = localStorage.getItem('refreshToken');
-      if (!refreshToken) {
+      const storedRefreshToken = localStorage.getItem('refreshToken');
+      if (!storedRefreshToken) {
         throw new Error('No refresh token');
       }
 
-      const response = await fetch('/api/auth/refresh', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ refreshToken }),
-      });
+      const response = await apiService.post<{ token: string; refreshToken: string }>('/auth/refresh-token', { refreshToken: storedRefreshToken });
+      const { token, refreshToken: newRefreshToken } = response.data!;
 
-      if (!response.ok) {
-        throw new Error('Token refresh failed');
-      }
-
-      const data = await response.json();
-      const { token } = data;
-
+      apiService.setAuthToken(token);
       localStorage.setItem('authToken', token);
+      if (newRefreshToken) localStorage.setItem('refreshToken', newRefreshToken);
       dispatch({ 
         type: 'REFRESH_TOKEN_SUCCESS', 
         payload: { token } 
@@ -188,25 +168,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return;
       }
 
+      // Set token on the apiService so subsequent calls are authenticated
+      apiService.setAuthToken(token);
       const user = JSON.parse(userStr);
-      
-      // Verify token with backend
-      const response = await fetch('/api/auth/verify', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
 
-      if (response.ok) {
+      try {
+        // Verify token with backend
+        await apiService.get('/auth/me');
         dispatch({ 
           type: 'LOGIN_SUCCESS', 
           payload: { user, token } 
         });
-      } else {
+      } catch {
         // Token invalid, try to refresh
         await refreshToken();
       }
-    } catch (error) {
+    } catch {
       logout();
     } finally {
       dispatch({ type: 'SET_LOADING', payload: false });

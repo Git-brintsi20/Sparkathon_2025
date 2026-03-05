@@ -48,16 +48,6 @@ interface UseVendorsActions {
   refreshVendors: () => Promise<void>;
 }
 
-// Helper function for debouncing
-// @ts-expect-error -- kept for future debounced search
-const _debounce = (func: (...args: any[]) => void, delay: number) => {
-  let timeoutId: NodeJS.Timeout;
-  return (...args: any[]) => {
-    clearTimeout(timeoutId);
-    timeoutId = setTimeout(() => func.apply(null, args), delay);
-  };
-};
-
 export const useVendors = (): UseVendorsState & UseVendorsActions => {
   const [state, setState] = useState<Omit<UseVendorsState, 'activeVendors' | 'highRiskVendors'>>({
     vendors: [],

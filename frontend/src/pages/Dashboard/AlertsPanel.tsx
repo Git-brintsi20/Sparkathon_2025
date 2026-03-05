@@ -222,8 +222,6 @@ export const AlertsPanel: React.FC<AlertsPanelProps> = ({
   }
 
   const priorityAlerts = alerts.filter(alert => alert.priority === 'high');
-  // @ts-expect-error -- reserved for future 'other alerts' section
-  const _otherAlerts = alerts.filter(alert => alert.priority !== 'high');
 
   return (
     <Card className={cn('w-full', className)}>

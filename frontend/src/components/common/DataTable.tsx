@@ -55,7 +55,7 @@ export const DataTable = <T extends Record<string, any>>({
   const [searchTerm, setSearchTerm] = useState('');
   const [sortConfig, setSortConfig] = useState<SortConfig<T>>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [filters, setFilters] = useState<Record<string, string>>({});
+  const [filters] = useState<Record<string, string>>({});
 
   // Filter and search data
   const filteredData = useMemo(() => {
@@ -119,13 +119,6 @@ export const DataTable = <T extends Record<string, any>>({
       }
       return { key, direction: 'asc' };
     });
-  };
-
-  // Handle filter change (reserved for future filter UI)
-  // @ts-expect-error -- kept for future filter UI implementation
-  const _handleFilterChange = (key: string, value: string) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
-    setCurrentPage(1);
   };
 
   // Pagination calculations

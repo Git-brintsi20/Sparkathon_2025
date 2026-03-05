@@ -60,27 +60,6 @@ export interface BlockchainEvent {
   transactionHash: string;
 }
 
-// Simple API service interface for blockchain calls
-interface ApiService {
-  get: (url: string) => Promise<{ data: any }>;
-  post: (url: string, data: any) => Promise<{ data: any }>;
-}
-
-// Mock API service for demo mode (available for blockchain API integration)
-// @ts-expect-error -- reserved for production blockchain API calls
-const createMockApiService = (): ApiService => ({
-  get: async (url: string) => {
-    console.log(`🎭 Mock API GET: ${url}`);
-    await new Promise(resolve => setTimeout(resolve, 500)); // Simulate network delay
-    return { data: {} };
-  },
-  post: async (url: string, data: any) => {
-    console.log(`🎭 Mock API POST: ${url}`, data);
-    await new Promise(resolve => setTimeout(resolve, 500)); // Simulate network delay
-    return { data: {} };
-  }
-});
-
 class BlockchainService {
   private isDemoMode: boolean;
   private networkInfo: NetworkInfo | null = null;

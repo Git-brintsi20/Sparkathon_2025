@@ -43,43 +43,6 @@ interface DeliveryTrackerProps {
   onRefresh?: () => void;
 }
 
-// @ts-expect-error -- reserved for blockchain-enhanced delivery tracking
-const _blockchainSteps: DeliveryStep[] = [
-  {
-    id: 'blockchain-1',
-    title: 'Initial Blockchain Commit',
-    description: 'Delivery data committed to blockchain',
-    timestamp: '2024-01-15T10:35:00Z',
-    status: 'completed',
-    blockchain: {
-      id: 'bc-1',
-      type: 'blockchain_commit',
-      blockNumber: '18,742,385',
-      transactionHash: '0x1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b',
-      timestamp: '2024-01-15T10:35:00Z',
-      gasUsed: '42,150',
-      confirmations: 28,
-      description: 'Initial delivery record'
-    }
-  },
-  {
-    id: 'blockchain-2',
-    title: 'Photo Hashes Stored',
-    description: 'Photo hashes securely stored on blockchain',
-    timestamp: '2024-01-15T10:55:00Z',
-    status: 'completed',
-    blockchain: {
-      id: 'bc-2',
-      type: 'photo_hash',
-      blockNumber: '18,742,389',
-      transactionHash: '0x2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c',
-      timestamp: '2024-01-15T10:55:00Z',
-      gasUsed: '28,750',
-      confirmations: 26,
-      description: 'Photo integrity verified'
-    }
-  }
-];
 const BlockchainBadge = ({ event }: { event: BlockchainEvent }) => (
   <div className="mt-2 p-2 bg-blue-50 rounded-md border border-blue-200">
     <div className="flex items-center gap-2 mb-1">

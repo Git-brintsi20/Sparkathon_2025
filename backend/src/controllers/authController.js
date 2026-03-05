@@ -1,7 +1,7 @@
 const User = require('../models/User');
 const { generateToken, generateRefreshToken, verifyToken } = require('../config/jwt');
 const { generateRandomToken } = require('../utils/helpers');
-const { sendPasswordResetEmail, sendVerificationEmail } = require('../utils/emailService');
+const { sendPasswordResetEmail } = require('../utils/emailService');
 
 exports.register = async (req, res) => {
   try {

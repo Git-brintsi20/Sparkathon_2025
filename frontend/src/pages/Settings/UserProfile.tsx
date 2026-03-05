@@ -1,14 +1,16 @@
-import React, { useState, useEffect } from 'react'; // Added useEffect
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
-import { User, Shield, Camera, Save, Edit3 } from 'lucide-react';
-// ADDED: Import the useLayout hook
+import { User as UserIcon, Shield, Camera, Save, Edit3 } from 'lucide-react';
 import { useLayout } from '@/contexts/LayoutContext';
+import { useAuth } from '@/contexts/AuthContext';
+import apiService from '@/services/api';
+import { toast } from 'sonner';
+import type { User } from '@/types/common';
 
 interface UserProfileData {
-  id: string;
   name: string;
   email: string;
   phone: string;
@@ -24,21 +26,20 @@ interface UserProfileData {
 }
 
 const UserProfile: React.FC = () => {
-  // ADDED: Call the useLayout hook
   const { setLayoutData } = useLayout();
+  const { state: authState, updateUser } = useAuth();
 
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showPasswordForm, setShowPasswordForm] = useState(false);
 
   const [userData, setUserData] = useState<UserProfileData>({
-    id: '1',
-    name: 'John Doe',
-    email: 'john.doe@company.com',
-    phone: '+1 (555) 123-4567',
-    company: 'TechCorp Solutions',
-    role: 'Compliance Manager',
-    avatar: 'https://placehold.co/150x150/E0E0E0/616161?text=JD', // Placeholder image
+    name: authState.user?.name || '',
+    email: authState.user?.email || '',
+    phone: (authState.user as any)?.phone || '',
+    company: (authState.user as any)?.department || '',
+    role: authState.user?.role || 'viewer',
+    avatar: (authState.user as any)?.avatar || '',
     preferences: {
       notifications: true,
       emailAlerts: true,
@@ -70,26 +71,41 @@ const UserProfile: React.FC = () => {
 
   const handleSave = async () => {
     setIsLoading(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    setIsEditing(false);
-    setIsLoading(false);
-    // In a real app, you might show a toast notification here
+    try {
+      const res = await apiService.put('/auth/profile', {
+        name: userData.name,
+        phone: userData.phone,
+        department: userData.company,
+      });
+      if (res.data) updateUser(res.data as Partial<User>);
+      toast.success('Profile updated successfully');
+      setIsEditing(false);
+    } catch {
+      toast.error('Failed to update profile');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handlePasswordUpdate = async () => {
     if (passwordData.newPassword !== passwordData.confirmPassword) {
-      // Replaced alert with console.error as per instructions
-      console.error('Passwords do not match');
+      toast.error('Passwords do not match');
       return;
     }
     setIsLoading(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
-    setShowPasswordForm(false);
-    setIsLoading(false);
-    // In a real app, you might show a toast notification here
+    try {
+      await apiService.put('/auth/change-password', {
+        currentPassword: passwordData.currentPassword,
+        newPassword: passwordData.newPassword,
+      });
+      toast.success('Password changed successfully');
+      setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      setShowPasswordForm(false);
+    } catch {
+      toast.error('Failed to change password');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const containerVariants = {
@@ -108,6 +124,21 @@ const UserProfile: React.FC = () => {
     hidden: { opacity: 0, y: 10 },
     visible: { opacity: 1, y: 0 }
   };
+
+  // Sync local state when auth user changes
+  useEffect(() => {
+    if (authState.user) {
+      setUserData(prev => ({
+        ...prev,
+        name: authState.user?.name || '',
+        email: authState.user?.email || '',
+        phone: (authState.user as any)?.phone || '',
+        company: (authState.user as any)?.department || '',
+        role: authState.user?.role || 'viewer',
+        avatar: (authState.user as any)?.avatar || '',
+      }));
+    }
+  }, [authState.user]);
 
   // Define breadcrumbs and header actions for the layout context
   const breadcrumbs = [
@@ -158,7 +189,7 @@ const UserProfile: React.FC = () => {
                   {userData.avatar ? (
                     <img src={userData.avatar} alt="Profile" className="w-full h-full object-cover" />
                   ) : (
-                    <User size={32} className="text-gray-400" />
+                    <UserIcon size={32} className="text-gray-400" />
                   )}
                 </div>
                 {isEditing && (
