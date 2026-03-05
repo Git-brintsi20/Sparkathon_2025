@@ -126,16 +126,9 @@ class DeliveryService {
     return apiService.get<Delivery[]>(`${this.endpoint}/search`, { query, ...filters });
   }
 
-  // Get delivery notifications
-  async getDeliveryNotifications(): Promise<ApiResponse<Array<{
-    id: string;
-    type: 'delay' | 'fraud' | 'quality' | 'verification';
-    message: string;
-    deliveryId: string;
-    severity: 'low' | 'medium' | 'high';
-    createdAt: string;
-  }>>> {
-    return apiService.get(`${this.endpoint}/notifications`);
+  // Get delivery-related notifications (uses the shared notifications endpoint)
+  async getDeliveryNotifications(): Promise<ApiResponse<any>> {
+    return apiService.get('/notifications?limit=20');
   }
 
   // Mark delivery as fraudulent
@@ -171,25 +164,8 @@ class DeliveryService {
     return apiService.get(`${this.endpoint}/${deliveryId}/timeline`);
   }
 
-  // Real-time delivery updates via WebSocket
-  subscribeToDeliveryUpdates(
-    deliveryId: string, 
-    callback: (update: any) => void
-  ): () => void {
-    // This would integrate with WebSocket service
-    const eventSource = new EventSource(`${apiService['baseURL']}/deliveries/${deliveryId}/events`);
-    
-    eventSource.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      callback(data);
-    };
-
-    eventSource.onerror = (error) => {
-      console.error('Delivery updates error:', error);
-    };
-
-    return () => eventSource.close();
-  }
+  // Real-time delivery updates are now handled by Socket.IO context (WebSocketContext)
+  // No SSE endpoint needed — the socket emits 'notification' events for delivery status changes
 
   // Retry failed verification
   async retryVerification(deliveryId: string): Promise<ApiResponse<Delivery>> {

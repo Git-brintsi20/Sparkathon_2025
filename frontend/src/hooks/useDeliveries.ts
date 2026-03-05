@@ -557,9 +557,11 @@ export const useDeliveries = (): UseDeliveriesState & UseDeliveriesActions => {
     }
   }, [fetchDeliveries]);
 
-  // Subscribe to real-time updates
-  const subscribeToUpdates = useCallback((deliveryId: string, callback: (update: any) => void) => {
-    return deliveryService.subscribeToDeliveryUpdates(deliveryId, callback);
+  // Subscribe to real-time updates — now handled by Socket.IO context (WebSocketContext)
+  // The useSocket() hook provides notifications including delivery status changes
+  const subscribeToUpdates = useCallback((_deliveryId: string, _callback: (update: any) => void) => {
+    // No-op: real-time delivery updates come through the SocketContext notifications
+    return () => {};
   }, []);
 
   // Set filters
