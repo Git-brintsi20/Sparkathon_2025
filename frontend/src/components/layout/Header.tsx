@@ -106,10 +106,10 @@ export const Header: React.FC<HeaderProps> = ({
     if (!query.trim()) return;
     
     setIsSearching(true);
-    // Simulate API call
+    // Search is handled client-side via filter; dismiss spinner
     setTimeout(() => {
       setIsSearching(false);
-    }, 1000);
+    }, 300);
   };
 
   const handleThemeChange = (theme: string) => {
@@ -633,8 +633,8 @@ export const Header: React.FC<HeaderProps> = ({
                         <User className="h-5 w-5 text-white" />
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-foreground">John Doe</p>
-                        <p className="text-xs text-muted-foreground">john@company.com</p>
+                        <p className="text-sm font-medium text-foreground">{authState.user?.name || 'User'}</p>
+                        <p className="text-xs text-muted-foreground">{authState.user?.email || ''}</p>
                       </div>
                     </div>
                   </div>

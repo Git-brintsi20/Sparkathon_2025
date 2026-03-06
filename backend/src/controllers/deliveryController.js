@@ -50,7 +50,8 @@ exports.getDeliveryById = async (req, res) => {
 
 exports.createDelivery = async (req, res) => {
   try {
-    const delivery = await Delivery.create(req.body);
+    const { vendorId, purchaseOrderId, trackingNumber, expectedDate, items, deliveryLocation, notes } = req.body;
+    const delivery = await Delivery.create({ vendorId, purchaseOrderId, trackingNumber, expectedDate, items, deliveryLocation, notes });
 
     // Run fraud detection
     const fraudResult = await fraudDetection.analyzeDelivery(delivery);
@@ -70,7 +71,12 @@ exports.createDelivery = async (req, res) => {
 
 exports.updateDelivery = async (req, res) => {
   try {
-    const delivery = await Delivery.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+    const { status, trackingNumber, expectedDate, items, deliveryLocation, notes } = req.body;
+    const delivery = await Delivery.findByIdAndUpdate(
+      req.params.id,
+      { status, trackingNumber, expectedDate, items, deliveryLocation, notes },
+      { new: true, runValidators: true }
+    );
     if (!delivery) return res.status(404).json({ success: false, message: 'Delivery not found' });
     res.json({ success: true, data: delivery, message: 'Delivery updated successfully' });
   } catch (err) {
@@ -104,7 +110,7 @@ exports.updateDeliveryStatus = async (req, res) => {
     // Update vendor stats
     if (status === 'verified') {
       await Vendor.findByIdAndUpdate(delivery.vendorId, {
-        $inc: { totalDeliveries: 0, successfulDeliveries: 1 },
+        $inc: { totalDeliveries: 1, successfulDeliveries: 1 },
         lastDelivery: new Date().toISOString(),
       });
     }

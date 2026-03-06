@@ -296,36 +296,36 @@ const VendorList: React.FC = () => {
     </div>
   );
 
-// Metrics cards - based on actual mock data
+// Metrics cards - based on API data
 // Update the metricsCards to include blockchain metrics
 const metricsCards = [
   {
     title: 'Total Vendors',
-    value: metrics?.totalVendors || 12,
+    value: metrics?.totalVendors || 0,
     change: '+12%',
     positive: true,
-    blockchainInfo: `${metrics?.blockchainMetrics?.totalTransactions || 156} TX`
+    blockchainInfo: `${metrics?.blockchainMetrics?.totalTransactions || 0} TX`
   },
   {
     title: 'Active Vendors',
-    value: metrics?.activeVendors || 10,
+    value: metrics?.activeVendors || 0,
     change: '+8%',
     positive: true,
-    blockchainInfo: `${metrics?.blockchainMetrics?.verifiedRecords || 142} verified`
+    blockchainInfo: `${metrics?.blockchainMetrics?.verifiedRecords || 0} verified`
   },
   {
     title: 'High Risk',
-    value: metrics?.highRiskVendors || 1,
+    value: metrics?.highRiskVendors || 0,
     change: '-25%',
     positive: true,
-    blockchainInfo: `${metrics?.blockchainMetrics?.immutableRecords || 24} immutable`
+    blockchainInfo: `${metrics?.blockchainMetrics?.immutableRecords || 0} immutable`
   },
   {
     title: 'Avg Compliance',
-    value: `${metrics?.averageComplianceScore || 87}%`,
+    value: `${metrics?.averageComplianceScore || 0}%`,
     change: '+3%',
     positive: true,
-    blockchainInfo: `Block #${metrics?.blockchainMetrics?.lastBlockNumber || 18500000}`
+    blockchainInfo: `Block #${metrics?.blockchainMetrics?.lastBlockNumber || 0}`
   }
 ];
 

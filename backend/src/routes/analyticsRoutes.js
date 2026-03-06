@@ -15,6 +15,6 @@ router.get('/trends', analyticsController.getTrendAnalysis);
 router.get('/predictive', analyticsController.getPredictiveAnalytics);
 router.get('/quality', analyticsController.getQualityMetrics);
 router.get('/realtime', analyticsController.getRealTimeMetrics);
-router.get('/export', analyticsController.exportReport);
+router.get('/export', authorize('admin', 'manager'), analyticsController.exportReport);
 
 module.exports = router;

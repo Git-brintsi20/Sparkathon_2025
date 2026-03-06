@@ -195,7 +195,7 @@ async function main() {
     console.log(`COMPLIANCE_TOKEN_ADDRESS=${complianceTokenAddress}`);
     console.log(`BLOCKCHAIN_NETWORK=${networkName}`);
     console.log(`RPC_URL=${process.env.RPC_URL || "http://localhost:8545"}`);
-    console.log(`PRIVATE_KEY=${process.env.PRIVATE_KEY || "your-private-key"}`);
+    console.log(`PRIVATE_KEY=<your-deployer-private-key>`);
 
     console.log("\n✅ Deployment completed successfully!");
 

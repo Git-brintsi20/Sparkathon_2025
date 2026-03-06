@@ -1,5 +1,5 @@
 const User = require('../models/User');
-const { generateToken, generateRefreshToken, verifyToken } = require('../config/jwt');
+const { generateToken, generateRefreshToken, verifyToken, verifyRefreshToken } = require('../config/jwt');
 const { generateRandomToken } = require('../utils/helpers');
 const { sendPasswordResetEmail } = require('../utils/emailService');
 
@@ -114,7 +114,7 @@ exports.refreshToken = async (req, res) => {
     const { refreshToken } = req.body;
     if (!refreshToken) return res.status(400).json({ success: false, message: 'Refresh token required' });
 
-    const decoded = verifyToken(refreshToken);
+    const decoded = verifyRefreshToken(refreshToken);
     const user = await User.findById(decoded.id).select('+refreshToken');
     if (!user || user.refreshToken !== refreshToken) {
       return res.status(401).json({ success: false, message: 'Invalid refresh token' });

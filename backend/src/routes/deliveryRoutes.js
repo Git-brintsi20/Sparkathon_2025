@@ -3,7 +3,7 @@ const router = express.Router();
 const deliveryController = require('../controllers/deliveryController');
 const { protect, authorize } = require('../middleware/auth');
 const { validateDelivery } = require('../middleware/validation');
-const { upload } = require('../middleware/fileUpload');
+const upload = require('../middleware/fileUpload');
 
 router.use(protect);
 

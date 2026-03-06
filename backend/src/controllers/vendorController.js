@@ -54,7 +54,8 @@ exports.getVendorById = async (req, res) => {
 // Create vendor
 exports.createVendor = async (req, res) => {
 	try {
-		const vendor = new Vendor(req.body);
+		const { name, email, category, status, certifications, contacts, documents, address } = req.body;
+		const vendor = new Vendor({ name, email, category, status, certifications, contacts, documents, address });
 		await vendor.save();
 		res.status(201).json({ success: true, data: vendor, message: 'Vendor created successfully' });
 	} catch (err) {
@@ -65,7 +66,7 @@ exports.createVendor = async (req, res) => {
 // Update vendor
 exports.updateVendor = async (req, res) => {
 	try {
-		const vendor = await Vendor.findByIdAndUpdate(req.params.id, req.body, { new: true });
+		const vendor = await Vendor.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
 		if (!vendor) return res.status(404).json({ success: false, message: 'Vendor not found' });
 
 		// Check for low compliance after update

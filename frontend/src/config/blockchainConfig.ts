@@ -76,7 +76,7 @@ export const NETWORKS: Record<string, NetworkConfig> = {
   sepolia: {
     name: "Sepolia Testnet",
     chainId: 11155111,
-    rpcUrl: "https://sepolia.infura.io/v3/YOUR_INFURA_KEY",
+    rpcUrl: import.meta.env.VITE_SEPOLIA_RPC_URL || "https://sepolia.infura.io/v3/YOUR_INFURA_KEY",
     explorerUrl: "https://sepolia.etherscan.io",
     nativeCurrency: {
       name: "Sepolia Ether",
@@ -92,11 +92,11 @@ export const NETWORKS: Record<string, NetworkConfig> = {
     isTestnet: true,
   },
   
-  mumbai: {
-    name: "Polygon Mumbai",
-    chainId: 80001,
-    rpcUrl: "https://polygon-mumbai.infura.io/v3/YOUR_INFURA_KEY",
-    explorerUrl: "https://mumbai.polygonscan.com",
+  amoy: {
+    name: "Polygon Amoy",
+    chainId: 80002,
+    rpcUrl: import.meta.env.VITE_AMOY_RPC_URL || "https://rpc-amoy.polygon.technology",
+    explorerUrl: "https://amoy.polygonscan.com",
     nativeCurrency: {
       name: "MATIC",
       symbol: "MATIC",
@@ -133,7 +133,7 @@ export const NETWORKS: Record<string, NetworkConfig> = {
   mainnet: {
     name: "Ethereum Mainnet",
     chainId: 1,
-    rpcUrl: "https://mainnet.infura.io/v3/YOUR_INFURA_KEY",
+    rpcUrl: import.meta.env.VITE_MAINNET_RPC_URL || "https://mainnet.infura.io/v3/YOUR_INFURA_KEY",
     explorerUrl: "https://etherscan.io",
     nativeCurrency: {
       name: "Ether",
@@ -152,7 +152,7 @@ export const NETWORKS: Record<string, NetworkConfig> = {
   polygon: {
     name: "Polygon Mainnet",
     chainId: 137,
-    rpcUrl: "https://polygon-mainnet.infura.io/v3/YOUR_INFURA_KEY",
+    rpcUrl: import.meta.env.VITE_POLYGON_RPC_URL || "https://polygon-mainnet.infura.io/v3/YOUR_INFURA_KEY",
     explorerUrl: "https://polygonscan.com",
     nativeCurrency: {
       name: "MATIC",
@@ -183,7 +183,7 @@ export const CONTRACT_ADDRESSES: Record<string, ContractAddresses> = {
     ComplianceToken: "0x0000000000000000000000000000000000000000",
   },
   
-  mumbai: {
+  amoy: {
     VendorCompliance: "0x0000000000000000000000000000000000000000",
     DeliveryLog: "0x0000000000000000000000000000000000000000",
     ComplianceToken: "0x0000000000000000000000000000000000000000",
@@ -210,8 +210,8 @@ export const CONTRACT_ADDRESSES: Record<string, ContractAddresses> = {
 
 // Main blockchain configuration
 export const BLOCKCHAIN_CONFIG: BlockchainConfig = {
-  isDemoMode: process.env.NODE_ENV !== "production",
-  defaultNetwork: process.env.REACT_APP_DEFAULT_NETWORK || "localhost",
+  isDemoMode: !import.meta.env.PROD,
+  defaultNetwork: import.meta.env.VITE_BLOCKCHAIN_NETWORK || "localhost",
   networks: NETWORKS,
   contracts: CONTRACT_ADDRESSES,
   features: {

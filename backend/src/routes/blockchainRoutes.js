@@ -3,9 +3,9 @@ const router = express.Router();
 const blockchainController = require('../controllers/blockchainController');
 const { protect, authorize } = require('../middleware/auth');
 
-router.get('/network', blockchainController.getNetworkInfo);
+router.get('/network', protect, blockchainController.getNetworkInfo);
 router.get('/transactions', protect, blockchainController.getTransactions);
-router.get('/verify/:txHash', blockchainController.verifyTransaction);
+router.get('/verify/:txHash', protect, blockchainController.verifyTransaction);
 router.get('/compliance-history/:vendorId', protect, blockchainController.getComplianceHistory);
 
 router.use(protect);

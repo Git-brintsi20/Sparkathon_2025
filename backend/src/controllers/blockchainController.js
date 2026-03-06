@@ -36,6 +36,7 @@ exports.registerVendor = async (req, res) => {
     await ComplianceLog.create({
       vendorId: vendor._id,
       type: 'audit',
+      title: 'Blockchain Vendor Registration',
       description: 'Vendor registered on blockchain',
       blockchainTxHash: result.transactionHash,
     });
@@ -64,6 +65,7 @@ exports.updateCompliance = async (req, res) => {
     await ComplianceLog.create({
       vendorId: vendor._id,
       type: 'score_update',
+      title: 'Compliance Score Update',
       description: reason || `Compliance score updated to ${score}`,
       blockchainTxHash: result.transactionHash,
     });

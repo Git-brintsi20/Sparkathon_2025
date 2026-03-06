@@ -83,7 +83,7 @@ class BlockchainService extends EventEmitter {
     for (const url of rpcUrls) {
       try {
         console.log(`🔄 Trying RPC URL: ${url}`);
-        this.provider = new ethers.providers.JsonRpcProvider(url);
+        this.provider = new ethers.JsonRpcProvider(url);
         
         // Test connection
         const network = await this.provider.getNetwork();
@@ -142,18 +142,18 @@ class BlockchainService extends EventEmitter {
   async testConnection() {
     try {
       const network = await this.provider.getNetwork();
-      const balance = await this.signer.getBalance();
-      const gasPrice = await this.provider.getGasPrice();
+      const balance = await this.provider.getBalance(this.signer.address);
+      const feeData = await this.provider.getFeeData();
       
       console.log(`📡 Network: ${network.name} (${network.chainId})`);
-      console.log(`💰 Balance: ${ethers.utils.formatEther(balance)} ETH`);
-      console.log(`⛽ Gas Price: ${ethers.utils.formatUnits(gasPrice, 'gwei')} Gwei`);
+      console.log(`💰 Balance: ${ethers.formatEther(balance)} ETH`);
+      console.log(`⛽ Gas Price: ${ethers.formatUnits(feeData.gasPrice || 0n, 'gwei')} Gwei`);
       
       return {
         network: network.name,
-        chainId: network.chainId,
-        balance: ethers.utils.formatEther(balance),
-        gasPrice: ethers.utils.formatUnits(gasPrice, 'gwei')
+        chainId: Number(network.chainId),
+        balance: ethers.formatEther(balance),
+        gasPrice: ethers.formatUnits(feeData.gasPrice || 0n, 'gwei')
       };
     } catch (error) {
       console.error('❌ Connection test failed:', error);
@@ -220,15 +220,15 @@ class BlockchainService extends EventEmitter {
 
         // Estimate gas
         const gasEstimate = await contractMethod.estimateGas(...params);
-        const gasLimit = gasEstimate.mul(120).div(100); // 20% buffer
+        const gasLimit = gasEstimate * 120n / 100n; // 20% buffer
 
-        // Get current gas price
-        const gasPrice = await this.provider.getGasPrice();
+        // Get current fee data
+        const feeData = await this.provider.getFeeData();
 
         // Execute transaction
         const tx = await contractMethod(...params, {
           gasLimit,
-          gasPrice,
+          maxFeePerGas: feeData.maxFeePerGas,
           ...options
         });
 
@@ -240,11 +240,11 @@ class BlockchainService extends EventEmitter {
         console.log(`✅ Transaction confirmed: ${receipt.transactionHash}`);
 
         return {
-          transactionHash: receipt.transactionHash,
+          transactionHash: receipt.hash,
           blockNumber: receipt.blockNumber,
           gasUsed: receipt.gasUsed.toString(),
           status: receipt.status,
-          events: receipt.events
+          logs: receipt.logs
         };
 
       } catch (error) {
@@ -283,12 +283,12 @@ class BlockchainService extends EventEmitter {
         ]
       );
 
-      // Extract vendor ID from events
-      const vendorRegisteredEvent = result.events.find(
-        event => event.event === 'VendorRegistered'
-      );
+      // Extract vendor ID from logs (ethers v6)
+      const vendorRegisteredEvent = result.logs
+        .map(log => { try { return this.contracts.VendorCompliance.interface.parseLog(log); } catch { return null; } })
+        .find(e => e?.name === 'VendorRegistered');
       
-      const vendorId = vendorRegisteredEvent?.args?.vendorId?.toNumber();
+      const vendorId = vendorRegisteredEvent?.args?.vendorId?.toString();
 
       console.log(`✅ Vendor registered on blockchain with ID: ${vendorId}`);
 
@@ -362,12 +362,12 @@ class BlockchainService extends EventEmitter {
         ]
       );
 
-      // Extract delivery ID from events
-      const deliveryCreatedEvent = result.events.find(
-        event => event.event === 'DeliveryCreated'
-      );
+      // Extract delivery ID from logs (ethers v6)
+      const deliveryCreatedEvent = result.logs
+        .map(log => { try { return this.contracts.DeliveryLog.interface.parseLog(log); } catch { return null; } })
+        .find(e => e?.name === 'DeliveryCreated');
       
-      const deliveryId = deliveryCreatedEvent?.args?.deliveryId?.toNumber();
+      const deliveryId = deliveryCreatedEvent?.args?.deliveryId?.toString();
 
       console.log(`✅ Delivery created on blockchain with ID: ${deliveryId}`);
 

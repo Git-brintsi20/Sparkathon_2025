@@ -132,7 +132,7 @@ module.exports = {
   // TypeChain configuration for generating TypeScript types
   typechain: {
     outDir: "typechain",
-    target: "ethers-v5",
+    target: "ethers-v6",
     alwaysGenerateOverloads: false,
     externalArtifacts: ["externalArtifacts/*.json"],
   },
@@ -150,45 +150,18 @@ module.exports = {
     deployer: {
       default: 0,
       1: 0, // mainnet
-      4: 0, // rinkeby
+      11155111: 0, // sepolia
       137: 0, // polygon
-      80001: 0, // mumbai
+      80002: 0, // amoy
       31337: 0, // hardhat
     },
     admin: {
       default: 1,
       1: 1,
-      4: 1,
+      11155111: 1,
       137: 1,
-      80001: 1,
+      80002: 1,
       31337: 1,
-    },
-  },
-  
-  // Custom tasks
-  tasks: {
-    accounts: {
-      description: "Prints the list of accounts",
-      action: async (taskArgs, hre) => {
-        const accounts = await hre.ethers.getSigners();
-        for (const account of accounts) {
-          console.log(account.address);
-        }
-      },
-    },
-    balance: {
-      description: "Prints an account's balance",
-      params: {
-        account: {
-          name: "account",
-          description: "The account's address",
-        },
-      },
-      action: async (taskArgs, hre) => {
-        const account = hre.ethers.utils.getAddress(taskArgs.account);
-        const balance = await hre.ethers.provider.getBalance(account);
-        console.log(hre.ethers.utils.formatEther(balance), "ETH");
-      },
     },
   },
 };
