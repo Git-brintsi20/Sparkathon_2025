@@ -3,10 +3,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { cn } from '@/components/lib/utils';
 import { Shield, ExternalLink } from 'lucide-react';
+import apiService from '@/services/api';
+
+const truncateHash = (hash: string): string => {
+  if (hash.length <= 10) return hash;
+  return `${hash.substring(0, 6)}...${hash.substring(hash.length - 4)}`;
+};
 
 interface Activity {
   id: string;
-  type: 'delivery' | 'vendor' | 'compliance' | 'alert' | 'blockchain'; // Add blockchain type
+  type: 'delivery' | 'vendor' | 'compliance' | 'alert' | 'blockchain';
   title: string;
   description: string;
   timestamp: string;
@@ -16,9 +22,9 @@ interface Activity {
     vendorName?: string;
     deliveryId?: string;
     amount?: number;
-    blockchainHash?: string; // Add this line
-    blockNumber?: number;    // Add this line
-    verified?: boolean;      // Add this line
+    blockchainHash?: string;
+    blockNumber?: number;
+    verified?: boolean;
   };
 }
 
@@ -27,12 +33,6 @@ interface RecentActivityProps {
   maxItems?: number;
   showHeader?: boolean;
 }
-
-// Add this helper function after the imports
-const truncateHash = (hash: string): string => {
-  if (hash.length <= 10) return hash;
-  return `${hash.substring(0, 6)}...${hash.substring(hash.length - 4)}`;
-};
 
 export const RecentActivity: React.FC<RecentActivityProps> = ({
   className,
@@ -47,86 +47,44 @@ export const RecentActivity: React.FC<RecentActivityProps> = ({
     const fetchActivities = async () => {
       try {
         setLoading(true);
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-       const mockActivities: Activity[] = [
-  {
-    id: '1',
-    type: 'delivery',
-    title: 'New Delivery Verified',
-    description: 'Delivery #DEL-2024-001 has been successfully verified',
-    timestamp: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
-    user: 'John Doe',
-    status: 'success',
-    metadata: {
-      vendorName: 'ABC Suppliers',
-      deliveryId: 'DEL-2024-001',
-      amount: 15000,
-      blockchainHash: '0x742d35cc6bb89dcf5f8b4b5c9b2e4b8c5d3e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b',
-      blockNumber: 18759234,
-      verified: true
-    }
-  },
-  {
-    id: '2',
-    type: 'blockchain',
-    title: 'Blockchain Transaction Confirmed',
-    description: 'Smart contract execution for vendor compliance verification',
-    timestamp: new Date(Date.now() - 8 * 60 * 1000).toISOString(),
-    user: 'System',
-    status: 'success',
-    metadata: {
-      vendorName: 'ABC Suppliers',
-      blockchainHash: '0x851f46ec7cb96fdfa6e4d8a7b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d',
-      blockNumber: 18759235,
-      verified: true
-    }
-  },
-  {
-    id: '3',
-    type: 'vendor',
-    title: 'New Vendor Registered',
-    description: 'New vendor "XYZ Corp" registered in the system',
-    timestamp: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
-    user: 'Jane Smith',
-    status: 'info',
-    metadata: {
-      vendorName: 'XYZ Corp',
-      blockchainHash: '0x962a57fd8ea07gfeb7f5e9c8d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f',
-      blockNumber: 18759236,
-      verified: true
-    }
-  },
-  {
-    id: '4',
-    type: 'compliance',
-    title: 'Compliance Check Failed',
-    description: 'Vendor compliance check failed for missing documentation',
-    timestamp: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
-    user: 'Mike Johnson',
-    status: 'error',
-    metadata: {
-      vendorName: 'DEF Industries',
-      verified: false
-    }
-  },
-  {
-    id: '5',
-    type: 'alert',
-    title: 'Fraud Alert Triggered',
-    description: 'Suspicious activity detected in delivery verification',
-    timestamp: new Date(Date.now() - 45 * 60 * 1000).toISOString(),
-    user: 'System',
-    status: 'warning',
-    metadata: {
-      deliveryId: 'DEL-2024-002',
-      verified: false
-    }
-  }
-];
+        const res = await apiService.get<{
+          recentDeliveries: any[];
+          recentComplianceLogs: any[];
+          overview: any;
+        }>('/analytics/dashboard');
 
-        setActivities(mockActivities.slice(0, maxItems));
+        const items: Activity[] = [];
+
+        // Map recent deliveries
+        for (const d of (res.data?.recentDeliveries || [])) {
+          items.push({
+            id: d._id,
+            type: 'delivery',
+            title: `Delivery ${d.trackingNumber || d._id.slice(-6)}`,
+            description: `Status: ${d.status}${d.vendor?.name ? ` — ${d.vendor.name}` : ''}`,
+            timestamp: d.createdAt,
+            user: 'System',
+            status: d.fraudFlag ? 'error' : d.status === 'delivered' || d.status === 'verified' ? 'success' : 'info',
+            metadata: { deliveryId: d._id, vendorName: d.vendor?.name },
+          });
+        }
+
+        // Map recent compliance logs
+        for (const l of (res.data?.recentComplianceLogs || [])) {
+          items.push({
+            id: l._id,
+            type: 'compliance',
+            title: `Compliance ${l.type || 'Log'}`,
+            description: l.description || l.notes || `Score: ${l.score ?? '—'}`,
+            timestamp: l.createdAt,
+            user: 'System',
+            status: l.type === 'violation' ? 'warning' : l.type === 'remediation' ? 'success' : 'info',
+          });
+        }
+
+        // Sort by date descending and take maxItems
+        items.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+        setActivities(items.slice(0, maxItems));
         setError(null);
       } catch (err) {
         setError('Failed to load recent activities');

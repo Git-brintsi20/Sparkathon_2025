@@ -53,11 +53,11 @@ module.exports = {
       timeout: 60000,
     },
     
-    // Polygon Mumbai Testnet
-    mumbai: {
-      url: process.env.MUMBAI_RPC_URL || "https://polygon-mumbai.infura.io/v3/YOUR_INFURA_KEY",
+    // Polygon Amoy Testnet (replaced Mumbai, shut down April 2024)
+    amoy: {
+      url: process.env.AMOY_RPC_URL || "https://rpc-amoy.polygon.technology",
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
-      chainId: 80001,
+      chainId: 80002,
       gas: 2100000,
       gasPrice: 8000000000,
       timeout: 60000,
@@ -100,7 +100,7 @@ module.exports = {
       mainnet: process.env.ETHERSCAN_API_KEY || "",
       sepolia: process.env.ETHERSCAN_API_KEY || "",
       polygon: process.env.POLYGONSCAN_API_KEY || "",
-      polygonMumbai: process.env.POLYGONSCAN_API_KEY || "",
+      polygonAmoy: process.env.POLYGONSCAN_API_KEY || "",
       bscTestnet: process.env.BSCSCAN_API_KEY || "",
     },
   },

@@ -24,8 +24,8 @@ services:
       NODE_ENV: production
       PORT: 3000
       MONGODB_URI: mongodb://mongodb:27017/vendor-compliance
-      JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
-      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-change-me-refresh}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?JWT_REFRESH_SECRET is required}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
       DEMO_MODE: 'true'
 

@@ -20,10 +20,9 @@
     "blockchain",
     "mern"
   ],
-  "author": "Your Team",
+  "author": "Sparkathon 2025 Team",
   "license": "MIT",
   "devDependencies": {
-    "@types/node": "^24.0.13",
     "concurrently": "^8.2.2"
   }
 }

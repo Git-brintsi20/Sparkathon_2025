@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react'; // Added useEffect
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/components/lib/utils';
-// ADDED: Import the useLayout hook
 import { useLayout } from '@/contexts/LayoutContext';
-import { RotateCcw, Save } from 'lucide-react'; // Added imports for icons used in headerActions
+import { RotateCcw, Save } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface SystemConfigProps {
   className?: string;
@@ -42,7 +42,7 @@ const SystemConfig: React.FC<SystemConfigProps> = ({ className }) => {
           id: 'apiBaseUrl',
           label: 'API Base URL',
           type: 'text',
-          value: 'https://api.smartvendor.com',
+          value: import.meta.env.VITE_API_URL || 'http://localhost:3000/api',
           description: 'Base URL for all API calls',
           required: true
         },
@@ -174,12 +174,17 @@ const SystemConfig: React.FC<SystemConfigProps> = ({ className }) => {
   const handleSave = async () => {
     setLoading(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Client-side config — persisted in localStorage
+      const configData: Record<string, any> = {};
+      configs.forEach(section => {
+        section.settings.forEach(s => { configData[s.id] = s.value; });
+      });
+      localStorage.setItem('system-config', JSON.stringify(configData));
       setHasChanges(false);
-      console.log('Configuration saved:', configs);
+      toast.success('Configuration saved successfully');
     } catch (error) {
       console.error('Failed to save configuration:', error);
+      toast.error('Failed to save configuration');
     } finally {
       setLoading(false);
     }

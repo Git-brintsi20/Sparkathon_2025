@@ -61,7 +61,9 @@ async function registerVendor(vendorCompliance, name, email, wallet, certs) {
   console.log(`\n📝  Registering vendor "${name}"...`);
   const tx = await vendorCompliance.registerVendor(name, email, wallet, certs);
   const receipt = await tx.wait();
-  const event = receipt.events?.find((e) => e.event === "VendorRegistered");
+  const event = receipt.logs
+    .map((log) => { try { return vendorCompliance.interface.parseLog(log); } catch { return null; } })
+    .find((e) => e?.name === "VendorRegistered");
   const vendorId = event?.args?.vendorId?.toString();
   console.log(`✅  Vendor registered — ID: ${vendorId}, tx: ${tx.hash}`);
   return vendorId;
@@ -90,7 +92,9 @@ async function createDelivery(
     notes
   );
   const receipt = await tx.wait();
-  const event = receipt.events?.find((e) => e.event === "DeliveryCreated");
+  const event = receipt.logs
+    .map((log) => { try { return deliveryLog.interface.parseLog(log); } catch { return null; } })
+    .find((e) => e?.name === "DeliveryCreated");
   const deliveryId = event?.args?.deliveryId?.toString();
   console.log(`✅  Delivery created — ID: ${deliveryId}, tx: ${tx.hash}`);
   return deliveryId;
@@ -123,7 +127,7 @@ async function rewardVendor(complianceToken, vendorAddr, amount, reason) {
   console.log(`\n🎁  Rewarding vendor ${vendorAddr}...`);
   const tx = await complianceToken.rewardVendor(vendorAddr, amount, reason);
   await tx.wait();
-  console.log(`✅  Rewarded ${ethers.utils.formatEther(amount)} CMPL, tx: ${tx.hash}`);
+  console.log(`✅  Rewarded ${ethers.formatEther(amount)} CMPL, tx: ${tx.hash}`);
 }
 
 // ---------------------------------------------------------------------------
@@ -173,8 +177,8 @@ async function printStats(vendorCompliance, deliveryLog, complianceToken) {
   if (complianceToken) {
     const supply = await complianceToken.totalSupply();
     const remaining = await complianceToken.remainingMintableSupply();
-    console.log(`  CMPL Supply   : ${ethers.utils.formatEther(supply)}`);
-    console.log(`  Mintable Left : ${ethers.utils.formatEther(remaining)}`);
+    console.log(`  CMPL Supply   : ${ethers.formatEther(supply)}`);
+    console.log(`  Mintable Left : ${ethers.formatEther(remaining)}`);
   }
   console.log("══════════════════════════════════════\n");
 }
@@ -231,7 +235,7 @@ async function main() {
   await rewardVendor(
     complianceToken,
     deployer.address,
-    ethers.utils.parseEther("50"),
+    ethers.parseEther("50"),
     "On-time delivery reward"
   );
 

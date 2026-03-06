@@ -5,7 +5,6 @@ import ThemeSettings from './ThemeSettings';
 import apiService from '@/services/api';
 import { toast } from 'sonner';
 import {
-  Settings as // Renamed to avoid conflict with component name
   User,
   Bell,
   Database,

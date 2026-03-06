@@ -28,9 +28,9 @@ import {
   Clock,
   DollarSign,
   Truck,
-  Users
+  Users,
+  Database
 } from 'lucide-react';
-import { Shield, Database } from 'lucide-react';
 // ADDED: Import the useLayout hook
 import { useLayout } from '@/contexts/LayoutContext';
 import apiService from '@/services/api';
@@ -89,8 +89,6 @@ const MetricCard: React.FC<{ metric: PerformanceMetric }> = ({ metric }) => {
       case 'warning': return 'text-yellow-600 bg-yellow-50';
       case 'critical': return 'text-red-600 bg-red-50';
       default: return 'text-muted-foreground bg-muted';
-      case 'blockchain-transparency': return <Database className="h-5 w-5" />;
-      case 'fraud-detection': return <Shield className="h-5 w-5" />;
     }
   };
 

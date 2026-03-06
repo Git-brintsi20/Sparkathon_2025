@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { cn } from '@/components/lib/utils';
+import apiService from '@/services/api';
 
 interface Alert {
   id: string;
@@ -28,6 +29,25 @@ interface AlertsPanelProps {
   onAlertClick?: (alert: Alert) => void;
 }
 
+const mapNotificationType = (type: string): Alert['type'] => {
+  switch (type) {
+    case 'fraud_alert': return 'fraud';
+    case 'compliance_alert': return 'compliance';
+    case 'delivery_status': return 'delivery';
+    case 'system': return 'system';
+    default: return 'system';
+  }
+};
+
+const mapSeverity = (severity: string): Alert['priority'] => {
+  switch (severity) {
+    case 'critical':
+    case 'high': return 'high';
+    case 'medium': return 'medium';
+    default: return 'low';
+  }
+};
+
 export const AlertsPanel: React.FC<AlertsPanelProps> = ({
   className,
   maxItems = 8,
@@ -42,82 +62,23 @@ export const AlertsPanel: React.FC<AlertsPanelProps> = ({
     const fetchAlerts = async () => {
       try {
         setLoading(true);
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 800));
-        
-        const mockAlerts: Alert[] = [
-          {
-            id: '1',
-            type: 'fraud',
-            priority: 'high',
-            title: 'Suspicious Activity Detected',
-            message: 'Multiple failed verification attempts detected for vendor VEN-2024-001',
-            timestamp: new Date(Date.now() - 2 * 60 * 1000).toISOString(),
-            isRead: false,
-            isDismissed: false,
-            actionRequired: true,
-            metadata: {
-              vendorId: 'VEN-2024-001',
-              affectedCount: 3
-            }
+        const res = await apiService.get<{ notifications: any[]; total: number }>('/notifications', { limit: maxItems });
+        const mapped: Alert[] = (res.data?.notifications || []).map((n: any) => ({
+          id: n._id,
+          type: mapNotificationType(n.type),
+          priority: mapSeverity(n.severity),
+          title: n.title,
+          message: n.message,
+          timestamp: n.createdAt,
+          isRead: n.isRead,
+          isDismissed: false,
+          actionRequired: n.severity === 'high' || n.severity === 'critical',
+          metadata: {
+            vendorId: n.metadata?.vendorId,
+            deliveryId: n.metadata?.deliveryId,
           },
-          {
-            id: '2',
-            type: 'compliance',
-            priority: 'high',
-            title: 'Low Compliance Score',
-            message: 'Vendor ABC Corp compliance score dropped below 70%',
-            timestamp: new Date(Date.now() - 10 * 60 * 1000).toISOString(),
-            isRead: false,
-            isDismissed: false,
-            actionRequired: true,
-            metadata: {
-              vendorId: 'VEN-2024-002',
-              complianceScore: 68
-            }
-          },
-          {
-            id: '3',
-            type: 'delivery',
-            priority: 'medium',
-            title: 'Delivery Verification Pending',
-            message: 'Delivery DEL-2024-005 has been pending verification for 24 hours',
-            timestamp: new Date(Date.now() - 25 * 60 * 1000).toISOString(),
-            isRead: true,
-            isDismissed: false,
-            actionRequired: true,
-            metadata: {
-              deliveryId: 'DEL-2024-005'
-            }
-          },
-          {
-            id: '4',
-            type: 'system',
-            priority: 'low',
-            title: 'System Maintenance Scheduled',
-            message: 'Scheduled maintenance window: Tonight 2:00 AM - 4:00 AM',
-            timestamp: new Date(Date.now() - 45 * 60 * 1000).toISOString(),
-            isRead: true,
-            isDismissed: false,
-            actionRequired: false
-          },
-          {
-            id: '5',
-            type: 'vendor',
-            priority: 'medium',
-            title: 'New Vendor Registration',
-            message: 'Vendor XYZ Ltd requires approval for registration',
-            timestamp: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
-            isRead: false,
-            isDismissed: false,
-            actionRequired: true,
-            metadata: {
-              vendorId: 'VEN-2024-003'
-            }
-          }
-        ];
-
-        setAlerts(mockAlerts.slice(0, maxItems));
+        }));
+        setAlerts(mapped);
         setError(null);
       } catch (err) {
         setError('Failed to load alerts');

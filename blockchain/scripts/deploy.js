@@ -9,66 +9,80 @@ async function main() {
   const [deployer] = await ethers.getSigners();
   console.log(`📝 Deploying contracts with account: ${deployer.address}`);
 
-  // Check deployer balance
-  const balance = await deployer.getBalance();
-  console.log(`💰 Account balance: ${ethers.utils.formatEther(balance)} ETH`);
+  // Check deployer balance (ethers v6)
+  const balance = await ethers.provider.getBalance(deployer.address);
+  console.log(`💰 Account balance: ${ethers.formatEther(balance)} ETH`);
 
   try {
     // Deploy VendorCompliance contract
     console.log("\n📦 Deploying VendorCompliance contract...");
     const VendorCompliance = await ethers.getContractFactory("VendorCompliance");
     const vendorCompliance = await VendorCompliance.deploy();
-    await vendorCompliance.deployed();
-    
-    console.log(`✅ VendorCompliance deployed to: ${vendorCompliance.address}`);
-    console.log(`📄 Transaction hash: ${vendorCompliance.deployTransaction.hash}`);
+    await vendorCompliance.waitForDeployment();
+    const vendorComplianceAddress = await vendorCompliance.getAddress();
+    const vendorComplianceTxHash = vendorCompliance.deploymentTransaction()?.hash;
+
+    console.log(`✅ VendorCompliance deployed to: ${vendorComplianceAddress}`);
+    console.log(`📄 Transaction hash: ${vendorComplianceTxHash}`);
 
     // Deploy DeliveryLog contract
     console.log("\n📦 Deploying DeliveryLog contract...");
     const DeliveryLog = await ethers.getContractFactory("DeliveryLog");
     const deliveryLog = await DeliveryLog.deploy();
-    await deliveryLog.deployed();
-    
-    console.log(`✅ DeliveryLog deployed to: ${deliveryLog.address}`);
-    console.log(`📄 Transaction hash: ${deliveryLog.deployTransaction.hash}`);
+    await deliveryLog.waitForDeployment();
+    const deliveryLogAddress = await deliveryLog.getAddress();
+    const deliveryLogTxHash = deliveryLog.deploymentTransaction()?.hash;
+
+    console.log(`✅ DeliveryLog deployed to: ${deliveryLogAddress}`);
+    console.log(`📄 Transaction hash: ${deliveryLogTxHash}`);
 
     // Deploy ComplianceToken contract
     console.log("\n📦 Deploying ComplianceToken contract...");
     const ComplianceToken = await ethers.getContractFactory("ComplianceToken");
     const complianceToken = await ComplianceToken.deploy();
-    await complianceToken.deployed();
+    await complianceToken.waitForDeployment();
+    const complianceTokenAddress = await complianceToken.getAddress();
+    const complianceTokenTxHash = complianceToken.deploymentTransaction()?.hash;
 
-    console.log(`✅ ComplianceToken deployed to: ${complianceToken.address}`);
-    console.log(`📄 Transaction hash: ${complianceToken.deployTransaction.hash}`);
+    console.log(`✅ ComplianceToken deployed to: ${complianceTokenAddress}`);
+    console.log(`📄 Transaction hash: ${complianceTokenTxHash}`);
 
-    // Wait for confirmations
-    console.log("\n⏳ Waiting for confirmations...");
-    await vendorCompliance.deployTransaction.wait(2);
-    await deliveryLog.deployTransaction.wait(2);
-    await complianceToken.deployTransaction.wait(2);
+    // Get deployment block numbers from receipts
+    const vendorReceipt = vendorComplianceTxHash
+      ? await ethers.provider.getTransactionReceipt(vendorComplianceTxHash)
+      : null;
+    const deliveryReceipt = deliveryLogTxHash
+      ? await ethers.provider.getTransactionReceipt(deliveryLogTxHash)
+      : null;
+    const tokenReceipt = complianceTokenTxHash
+      ? await ethers.provider.getTransactionReceipt(complianceTokenTxHash)
+      : null;
+
+    // Get network info (ethers v6 returns { name, chainId })
+    const network = await ethers.provider.getNetwork();
 
     // Create deployment info object
     const deploymentInfo = {
-      network: await ethers.provider.getNetwork(),
+      network: { name: network.name, chainId: Number(network.chainId) },
       deployer: deployer.address,
       deploymentDate: new Date().toISOString(),
       contracts: {
         VendorCompliance: {
-          address: vendorCompliance.address,
-          transactionHash: vendorCompliance.deployTransaction.hash,
-          blockNumber: vendorCompliance.deployTransaction.blockNumber
+          address: vendorComplianceAddress,
+          transactionHash: vendorComplianceTxHash,
+          blockNumber: vendorReceipt?.blockNumber ?? null,
         },
         DeliveryLog: {
-          address: deliveryLog.address,
-          transactionHash: deliveryLog.deployTransaction.hash,
-          blockNumber: deliveryLog.deployTransaction.blockNumber
+          address: deliveryLogAddress,
+          transactionHash: deliveryLogTxHash,
+          blockNumber: deliveryReceipt?.blockNumber ?? null,
         },
         ComplianceToken: {
-          address: complianceToken.address,
-          transactionHash: complianceToken.deployTransaction.hash,
-          blockNumber: complianceToken.deployTransaction.blockNumber
-        }
-      }
+          address: complianceTokenAddress,
+          transactionHash: complianceTokenTxHash,
+          blockNumber: tokenReceipt?.blockNumber ?? null,
+        },
+      },
     };
 
     // Save deployment addresses to file
@@ -77,9 +91,9 @@ async function main() {
       fs.mkdirSync(deploymentPath, { recursive: true });
     }
 
-    const networkName = deploymentInfo.network.name || "unknown";
+    const networkName = network.name || "unknown";
     const deploymentFile = path.join(deploymentPath, `${networkName}-deployment.json`);
-    
+
     fs.writeFileSync(
       deploymentFile,
       JSON.stringify(deploymentInfo, null, 2)
@@ -89,7 +103,7 @@ async function main() {
 
     // Test basic functionality
     console.log("\n🧪 Testing basic contract functionality...");
-    
+
     // Test VendorCompliance
     console.log("Testing VendorCompliance...");
     const testVendorTx = await vendorCompliance.registerVendor(
@@ -99,7 +113,7 @@ async function main() {
       ["ISO9001", "FDA"]
     );
     await testVendorTx.wait();
-    
+
     const vendorCount = await vendorCompliance.getTotalVendors();
     console.log(`✅ Vendor registered successfully. Total vendors: ${vendorCount}`);
 
@@ -116,7 +130,7 @@ async function main() {
       "Test delivery"
     );
     await testDeliveryTx.wait();
-    
+
     const deliveryCount = await deliveryLog.getTotalDeliveries();
     console.log(`✅ Delivery created successfully. Total deliveries: ${deliveryCount}`);
 
@@ -124,28 +138,28 @@ async function main() {
     const backendConfig = {
       contracts: {
         VendorCompliance: {
-          address: vendorCompliance.address,
-          abi: "VendorCompliance"
+          address: vendorComplianceAddress,
+          abi: "VendorCompliance",
         },
         DeliveryLog: {
-          address: deliveryLog.address,
-          abi: "DeliveryLog"
+          address: deliveryLogAddress,
+          abi: "DeliveryLog",
         },
         ComplianceToken: {
-          address: complianceToken.address,
-          abi: "ComplianceToken"
-        }
+          address: complianceTokenAddress,
+          abi: "ComplianceToken",
+        },
       },
       network: {
         name: networkName,
-        chainId: deploymentInfo.network.chainId,
-        rpcUrl: process.env.RPC_URL || "http://localhost:8545"
-      }
+        chainId: Number(network.chainId),
+        rpcUrl: process.env.RPC_URL || "http://localhost:8545",
+      },
     };
 
     const backendConfigPath = path.join(__dirname, "../../backend/src/config/blockchain.json");
     const backendConfigDir = path.dirname(backendConfigPath);
-    
+
     if (!fs.existsSync(backendConfigDir)) {
       fs.mkdirSync(backendConfigDir, { recursive: true });
     }
@@ -157,23 +171,28 @@ async function main() {
 
     console.log(`🔧 Backend config saved to: ${backendConfigPath}`);
 
+    // Calculate total gas
+    const totalGas = (vendorReceipt?.gasUsed ?? 0n)
+      + (deliveryReceipt?.gasUsed ?? 0n)
+      + (tokenReceipt?.gasUsed ?? 0n);
+
     // Display summary
     console.log("\n🎉 DEPLOYMENT SUMMARY");
     console.log("=====================");
-    console.log(`Network: ${networkName} (Chain ID: ${deploymentInfo.network.chainId})`);
+    console.log(`Network: ${networkName} (Chain ID: ${network.chainId})`);
     console.log(`Deployer: ${deployer.address}`);
-    console.log(`VendorCompliance: ${vendorCompliance.address}`);
-    console.log(`DeliveryLog: ${deliveryLog.address}`);
-    console.log(`ComplianceToken: ${complianceToken.address}`);
-    console.log(`Gas used: ${await getGasUsed(vendorCompliance, deliveryLog, complianceToken)}`);
+    console.log(`VendorCompliance: ${vendorComplianceAddress}`);
+    console.log(`DeliveryLog: ${deliveryLogAddress}`);
+    console.log(`ComplianceToken: ${complianceTokenAddress}`);
+    console.log(`Gas used: ${totalGas.toString()}`);
     console.log("=====================");
 
     // Environment variables reminder
     console.log("\n📝 ENVIRONMENT VARIABLES NEEDED:");
     console.log("Add these to your backend .env file:");
-    console.log(`VENDOR_COMPLIANCE_ADDRESS=${vendorCompliance.address}`);
-    console.log(`DELIVERY_LOG_ADDRESS=${deliveryLog.address}`);
-    console.log(`COMPLIANCE_TOKEN_ADDRESS=${complianceToken.address}`);
+    console.log(`VENDOR_COMPLIANCE_ADDRESS=${vendorComplianceAddress}`);
+    console.log(`DELIVERY_LOG_ADDRESS=${deliveryLogAddress}`);
+    console.log(`COMPLIANCE_TOKEN_ADDRESS=${complianceTokenAddress}`);
     console.log(`BLOCKCHAIN_NETWORK=${networkName}`);
     console.log(`RPC_URL=${process.env.RPC_URL || "http://localhost:8545"}`);
     console.log(`PRIVATE_KEY=${process.env.PRIVATE_KEY || "your-private-key"}`);
@@ -183,25 +202,6 @@ async function main() {
   } catch (error) {
     console.error("❌ Deployment failed:", error);
     process.exit(1);
-  }
-}
-
-async function getGasUsed(vendorCompliance, deliveryLog, complianceToken) {
-  try {
-    const vendorReceipt = await ethers.provider.getTransactionReceipt(
-      vendorCompliance.deployTransaction.hash
-    );
-    const deliveryReceipt = await ethers.provider.getTransactionReceipt(
-      deliveryLog.deployTransaction.hash
-    );
-    const tokenReceipt = await ethers.provider.getTransactionReceipt(
-      complianceToken.deployTransaction.hash
-    );
-    
-    const totalGas = vendorReceipt.gasUsed.add(deliveryReceipt.gasUsed).add(tokenReceipt.gasUsed);
-    return totalGas.toString();
-  } catch (error) {
-    return "Unable to calculate";
   }
 }
 
