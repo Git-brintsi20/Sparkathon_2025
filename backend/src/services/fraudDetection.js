@@ -11,7 +11,7 @@ class FraudDetectionService {
     // Check 1: Quantity mismatch
     if (delivery.items) {
       for (const item of delivery.items) {
-        if (item.quantity !== item.expectedQuantity) {
+        if (item.expectedQuantity && item.quantity !== item.expectedQuantity) {
           const deviation = Math.abs(item.quantity - item.expectedQuantity) / item.expectedQuantity;
           if (deviation > 0.1) {
             flags.push({ type: 'quantity_mismatch', severity: deviation > 0.3 ? 'high' : 'medium', item: item.name, deviation: Math.round(deviation * 100) + '%' });

@@ -78,8 +78,8 @@ const RouteLoader: React.FC = () => (
   </FadeTransition>
 );
 
-// TEMPORARILY DISABLED PROTECTION - Set this to true to re-enable auth
-const DISABLE_AUTH_FOR_DEVELOPMENT = true;
+// Auth bypass only in development mode (Vite sets import.meta.env.DEV)
+const DISABLE_AUTH_FOR_DEVELOPMENT = import.meta.env.DEV;
 
 // Protected Route Component
 interface ProtectedRouteProps {

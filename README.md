@@ -1,448 +1,648 @@
-# Smart Vendor Compliance & Loss Detection System
+<div align="center">
 
-[![React](https://img.shields.io/badge/React-18.2-blue?logo=react)](https://react.dev/)
-[![Vite](https://img.shields.io/badge/Vite-5.x-646cff?logo=vite)](https://vitejs.dev/)
-[![Node.js](https://img.shields.io/badge/Node.js-18+-green?logo=node.js)](https://nodejs.org/)
-[![MongoDB](https://img.shields.io/badge/MongoDB-Atlas-green?logo=mongodb)](https://www.mongodb.com/)
-[![Solidity](https://img.shields.io/badge/Solidity-0.8.20-gray?logo=solidity)](https://soliditylang.org/)
-[![Hardhat](https://img.shields.io/badge/Hardhat-2.25-yellow?logo=ethereum)](https://hardhat.org/)
-[![License](https://img.shields.io/badge/License-MIT-blue)](LICENSE)
+# 🛡️ Smart Vendor Compliance & Loss Detection System
 
-> A full-stack, blockchain-integrated platform for real-time vendor compliance tracking, delivery verification, and fraud detection — built for the **Walmart Sparkathon 2025**.
+### *Blockchain-powered supply chain compliance for the modern enterprise*
 
----
+<br>
 
-## Table of Contents
+[![React](https://img.shields.io/badge/React-18.2-61DAFB?style=for-the-badge&logo=react&logoColor=white)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.2-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://typescriptlang.org/)
+[![Node.js](https://img.shields.io/badge/Node.js-18+-339933?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org/)
+[![MongoDB](https://img.shields.io/badge/MongoDB-Atlas-47A248?style=for-the-badge&logo=mongodb&logoColor=white)](https://www.mongodb.com/)
+[![Solidity](https://img.shields.io/badge/Solidity-0.8.20-363636?style=for-the-badge&logo=solidity&logoColor=white)](https://soliditylang.org/)
+[![Hardhat](https://img.shields.io/badge/Hardhat-2.25-FFF100?style=for-the-badge&logo=ethereum&logoColor=black)](https://hardhat.org/)
+[![Expo](https://img.shields.io/badge/Expo-49-000020?style=for-the-badge&logo=expo&logoColor=white)](https://expo.dev/)
+[![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](LICENSE)
 
-- [Problem Statement](#problem-statement)
-- [Key Features](#key-features)
-- [Architecture](#architecture)
-- [Tech Stack](#tech-stack)
-- [Project Structure](#project-structure)
-- [Getting Started](#getting-started)
-- [Environment Variables](#environment-variables)
-- [API Endpoints](#api-endpoints)
-- [Blockchain Contracts](#blockchain-contracts)
-- [Fraud Detection & ML](#fraud-detection--ml)
-- [Mobile App](#mobile-app)
-- [Deployment](#deployment)
-- [Team](#team)
-- [License](#license)
+<br>
+
+**A full-stack platform combining real-time analytics, blockchain auditability, fraud detection, and mobile verification — purpose-built for Walmart's Sparkathon 2025.**
+
+[Getting Started](#-getting-started) · [Architecture](#-architecture) · [API Docs](#-api-endpoints) · [Smart Contracts](#-blockchain-contracts) · [Team](#-team)
+
+<br>
 
 ---
 
-## Problem Statement
+</div>
 
-Walmart's supply chain handles millions of vendor interactions. This system addresses:
+## 🏆 Walmart Sparkathon 2025
 
-- **Compliance violations** — Automated scoring, audit trails, and real-time alerts reduce manual oversight.
-- **Delivery fraud** — Rule-based anomaly detection flags quantity mismatches, late deliveries, and suspicious patterns.
-- **Verification delays** — Mobile barcode scanning and photo uploads speed up gate checks.
-- **Audit integrity** — Blockchain-backed logs create tamper-proof records of every compliance event.
-
----
-
-## Key Features
-
-| Feature | How It Works |
-|---------|-------------|
-| **Real-time Dashboard** | React 18 + Recharts charts, Socket.IO live updates for vendor scores, deliveries, and alerts |
-| **Vendor Management** | Full CRUD with compliance scoring, risk-level classification, and document uploads |
-| **Delivery Tracking** | End-to-end lifecycle (pending → in_transit → delivered → verified), item-level verification |
-| **Fraud Detection Engine** | Rule-based service checking quantity deviations, late deliveries, damaged items, vendor history |
-| **ML Risk Prediction** | Heuristic model scoring vendor risk from on-time rates, fraud rates, and compliance history |
-| **Blockchain Audit Trail** | 3 Solidity smart contracts logging vendor registrations, compliance updates, and deliveries on-chain |
-| **Compliance Token (ERC-20)** | Reward/penalty token system — vendors earn tokens for compliance, lose them for violations |
-| **Real-time Notifications** | Socket.IO push + MongoDB-persisted notifications with read/unread tracking |
-| **Mobile Scanner** | React Native app with Expo Camera for barcode scanning and delivery photo capture |
-| **Role-based Access** | JWT auth with access + refresh tokens; roles: admin, manager, inspector, viewer |
-| **Email Alerts** | Nodemailer SMTP integration for compliance alerts and password resets |
-| **Image Uploads** | Cloudinary integration for delivery evidence photos and vendor documents |
+> **Track**: Supply Chain Innovation
+>
+> This system addresses Walmart's supply chain challenges by combining **real-time compliance monitoring**, **blockchain-backed audit trails**, **rule-based fraud detection**, and **mobile delivery verification** into a single unified platform.
 
 ---
 
-## Architecture
+## 🎯 Problem Statement
+
+<table>
+<tr>
+<td width="50%">
+
+### The Challenge
+
+Walmart's supply chain handles **millions** of vendor interactions annually. Current pain points include:
+
+- 📋 Manual compliance tracking prone to human error
+- 🕒 Delayed fraud detection after damage is done
+- 📱 Slow gate-check verification processes
+- 🔍 Audit trails easily disputed or tampered with
+
+</td>
+<td width="50%">
+
+### Our Solution
+
+| Problem | Solution |
+|---------|----------|
+| Manual tracking | **Automated scoring** with real-time alerts |
+| Late fraud detection | **Rule-based engine** flags anomalies instantly |
+| Slow verification | **Mobile scanner** with camera + barcode |
+| Disputed audits | **Blockchain logs** = tamper-proof records |
+
+</td>
+</tr>
+</table>
+
+---
+
+## ✨ Key Features
+
+<table>
+<tr>
+<td align="center" width="33%">
+<h3>📊 Real-time Dashboard</h3>
+<p>Live charts via React 18 + Recharts with Socket.IO WebSocket push for instant vendor score, delivery, and alert updates</p>
+</td>
+<td align="center" width="33%">
+<h3>🔗 Blockchain Audit Trail</h3>
+<p>3 Solidity smart contracts with 39 passing tests create immutable, tamper-proof records of every compliance event</p>
+</td>
+<td align="center" width="33%">
+<h3>🔍 Fraud Detection</h3>
+<p>Rule-based anomaly engine analyzes quantity deviations, late delivers, damaged goods, and vendor history in real-time</p>
+</td>
+</tr>
+<tr>
+<td align="center" width="33%">
+<h3>🏢 Vendor Management</h3>
+<p>Full CRUD with compliance scoring (0–100), risk classification, document uploads, and historical tracking</p>
+</td>
+<td align="center" width="33%">
+<h3>🪙 Compliance Token (ERC-20)</h3>
+<p>Reward/penalty token system — vendors earn tokens for high compliance and get slashed for violations</p>
+</td>
+<td align="center" width="33%">
+<h3>📱 Mobile Scanning</h3>
+<p>React Native app with Expo Camera for barcode scanning, photo evidence capture, and field verification</p>
+</td>
+</tr>
+<tr>
+<td align="center" width="33%">
+<h3>🔔 Real-time Notifications</h3>
+<p>Socket.IO push notifications with MongoDB persistence, read/unread tracking, and severity levels</p>
+</td>
+<td align="center" width="33%">
+<h3>🤖 ML Risk Prediction</h3>
+<p>Heuristic model scoring vendor risk from delivery history, on-time rates, fraud flags, and compliance trends</p>
+</td>
+<td align="center" width="33%">
+<h3>🔐 Role-based Access</h3>
+<p>JWT auth with access + refresh tokens; four roles: admin, manager, inspector, viewer</p>
+</td>
+</tr>
+</table>
+
+---
+
+## 🏗️ Architecture
 
 ```
-┌──────────────────┐     ┌──────────────────┐     ┌──────────────────┐
-│   React SPA      │────▶│  Express API     │────▶│  MongoDB Atlas   │
-│   (Vite + TS)    │◀────│  (Node.js)       │◀────│  (Mongoose ODM)  │
-│                  │     │                  │     │                  │
-│  • Shadcn UI     │     │  • JWT Auth      │     │  6 Collections:  │
-│  • Recharts      │     │  • Socket.IO     │     │  User, Vendor,   │
-│  • React Query   │     │  • Rate Limiter  │     │  Delivery, PO,   │
-│  • Zustand       │     │  • Helmet/CORS   │     │  ComplianceLog,  │
-│  • Socket.IO     │     │  • Cloudinary    │     │  Notification    │
-└──────────────────┘     │  • Nodemailer    │     └──────────────────┘
-                         │  • ethers v6     │
-┌──────────────────┐     └────────┬─────────┘     ┌──────────────────┐
-│  React Native    │              │               │  Hardhat          │
-│  (Expo ~49)      │──────────────┘               │  (Solidity 0.8.20)│
-│                  │                              │                  │
-│  • Camera/QR     │                              │  3 Contracts:    │
-│  • Geolocation   │                              │  VendorCompliance│
-│  • Async Storage │                              │  DeliveryLog     │
-└──────────────────┘                              │  ComplianceToken │
-                                                  │  39 passing tests│
-                                                  └──────────────────┘
+                          ┌─────────────────────────────────────┐
+                          │         🌐 FRONTEND (Web)           │
+                          │   React 18 · TypeScript · Vite 5    │
+                          │   Shadcn UI · Tailwind · Recharts   │
+                          │   Socket.IO · React Query · Zustand │
+                          └──────────────┬──────────────────────┘
+                                         │ REST + WebSocket
+                                         ▼
+┌─────────────────┐      ┌─────────────────────────────────────┐      ┌─────────────────┐
+│  📱 MOBILE      │      │         ⚙️  BACKEND (API)           │      │  ⛓️  BLOCKCHAIN  │
+│  React Native   │─────▶│   Node.js · Express · Socket.IO     │◀────▶│  Solidity 0.8.20│
+│  Expo ~49       │      │   JWT Auth · Rate Limiter · Helmet  │      │  Hardhat 2.25   │
+│  Camera/QR      │      │   Cloudinary · Nodemailer           │      │  OpenZeppelin   │
+│  Geolocation    │      │   Fraud Detection · ML Service      │      │  ethers v6      │
+└─────────────────┘      │   ethers v6 · Blockchain Service    │      │                 │
+                          └──────────────┬──────────────────────┘      │  3 Contracts:   │
+                                         │                             │  • VendorCompl. │
+                                         ▼                             │  • DeliveryLog  │
+                          ┌─────────────────────────────────────┐      │  • Compliance   │
+                          │       🗄️  DATABASE                  │      │    Token (ERC20)│
+                          │   MongoDB Atlas (Mongoose 8)        │      │                 │
+                          │                                     │      │  39 Tests ✅     │
+                          │   Collections: User, Vendor,        │      └─────────────────┘
+                          │   Delivery, PurchaseOrder,          │
+                          │   ComplianceLog, Notification       │
+                          └─────────────────────────────────────┘
 ```
 
 ---
 
-## Tech Stack
+## 🛠️ Tech Stack
 
-### Frontend (Web)
-| Technology | Purpose |
-|-----------|---------|
-| React 18 + TypeScript | UI framework |
-| Vite 5 | Build tool & dev server |
-| Tailwind CSS 3.4 | Utility-first styling |
-| Shadcn UI (Radix primitives) | Accessible component library |
-| React Router 6 | Client-side routing |
-| TanStack React Query 5 | Server state management & caching |
-| Zustand | Client state management |
-| Recharts + D3 | Data visualization & charts |
-| Framer Motion + GSAP | Animations |
-| Socket.IO Client | Real-time WebSocket updates |
-| Axios | HTTP client |
-| Sonner | Toast notifications |
-| React Hook Form | Form handling |
+<details>
+<summary><strong>🖥️ Frontend — React 18 + TypeScript + Vite</strong></summary>
 
-### Backend
-| Technology | Purpose |
-|-----------|---------|
-| Node.js + Express 4.18 | REST API server |
-| MongoDB Atlas (Mongoose 8) | Database with ODM |
-| Socket.IO 4.7 | Real-time bidirectional events |
-| JWT (jsonwebtoken) | Access + refresh token authentication |
-| bcryptjs | Password hashing |
-| ethers 6.9 | Blockchain interaction (Ethereum/EVM) |
-| Cloudinary | Image/document upload & CDN |
-| Nodemailer | SMTP email service |
-| Multer | Multipart file upload middleware |
-| Helmet + CORS | Security headers & cross-origin |
-| express-rate-limit | API rate limiting |
-| express-validator | Request validation |
-| Morgan + Compression | Logging & response compression |
+| Technology | Version | Purpose |
+|:-----------|:--------|:--------|
+| React | 18.2 | UI framework with hooks |
+| TypeScript | 5.2 | Type safety |
+| Vite | 5.2 | Lightning-fast build tool |
+| Tailwind CSS | 3.4 | Utility-first styling |
+| Shadcn UI | latest | Radix-based accessible components |
+| React Router | 6.23 | Client-side routing |
+| TanStack React Query | 5.37 | Server state management & caching |
+| Zustand | 4.5 | Lightweight client state |
+| Recharts + D3 | 2.12 / 7.9 | Data visualization & charts |
+| Framer Motion + GSAP | 11.2 / 3.12 | Smooth animations |
+| Socket.IO Client | 4.8 | Real-time WebSocket updates |
+| Axios | 1.7 | HTTP client |
+| Sonner | 2.0 | Toast notifications |
+| React Hook Form | 7.51 | Declarative form handling |
 
-### Blockchain
-| Technology | Purpose |
-|-----------|---------|
-| Solidity 0.8.20 | Smart contract language |
-| Hardhat 2.25 | Development framework & local node |
-| OpenZeppelin 4.9.5 | Audited contract libraries (ERC-20, Ownable, ReentrancyGuard) |
-| ethers v6 | Contract deployment & interaction |
-| Chai + Mocha | Contract unit testing |
-| solidity-coverage | Code coverage reporting |
-| hardhat-gas-reporter | Gas usage analysis |
+</details>
 
-### Mobile
-| Technology | Purpose |
-|-----------|---------|
-| React Native 0.72 | Cross-platform mobile framework |
-| Expo ~49 | Managed workflow & build tooling |
-| React Navigation 6 | Screen navigation (stack + bottom tabs) |
-| Expo Camera | Barcode/QR scanning |
-| Expo Location | GPS-tagged deliveries |
-| React Native Paper | Material Design components |
-| Async Storage | Local data persistence |
-| Axios | API communication |
+<details>
+<summary><strong>⚙️ Backend — Node.js + Express + MongoDB</strong></summary>
+
+| Technology | Version | Purpose |
+|:-----------|:--------|:--------|
+| Express | 4.18 | REST API server |
+| MongoDB Atlas (Mongoose) | 8.0 | Database with ODM |
+| Socket.IO | 4.7 | Real-time bidirectional events |
+| jsonwebtoken | 9.0 | Access + refresh token auth |
+| bcryptjs | 2.4 | Password hashing (12 salt rounds) |
+| ethers | 6.9 | Blockchain interaction |
+| Cloudinary | 1.41 | Image upload & CDN |
+| Nodemailer | 6.9 | SMTP email alerts |
+| Multer | 1.4 | File upload middleware |
+| Helmet + CORS | 7.1 / 2.8 | Security headers & cross-origin |
+| express-rate-limit | 7.1 | API rate limiting |
+| express-validator | 7.0 | Request input validation |
+
+</details>
+
+<details>
+<summary><strong>⛓️ Blockchain — Solidity + Hardhat + OpenZeppelin</strong></summary>
+
+| Technology | Version | Purpose |
+|:-----------|:--------|:--------|
+| Solidity | 0.8.20 | Smart contract language |
+| Hardhat | 2.25 | Development framework & local chain |
+| OpenZeppelin | 4.9.5 | Audited contract libraries |
+| ethers | v6 | Contract deployment & interaction |
+| Chai + Mocha | 4.3 / 10.2 | Smart contract unit testing |
+| solidity-coverage | 0.8 | Code coverage reporting |
+| hardhat-gas-reporter | 1.0 | Gas usage analysis |
+| TypeChain | 8.2 | TypeScript bindings for contracts |
+
+</details>
+
+<details>
+<summary><strong>📱 Mobile — React Native + Expo</strong></summary>
+
+| Technology | Version | Purpose |
+|:-----------|:--------|:--------|
+| React Native | 0.72 | Cross-platform mobile framework |
+| Expo | ~49 | Managed workflow & OTA builds |
+| React Navigation | 6.1 | Stack + bottom tab navigation |
+| Expo Camera | 13.4 | Barcode/QR scanning |
+| Expo Location | 16.1 | GPS-tagged deliveries |
+| React Native Paper | 5.11 | Material Design components |
+| Async Storage | 1.18 | Encrypted local data persistence |
+| Axios | 1.6 | API communication |
+
+</details>
 
 ---
 
-## Project Structure
+## 📁 Project Structure
 
 ```
 smart-vendor-compliance/
-├── package.json              # Root scripts (dev, build, install:all)
-├── backend/
-│   ├── server.js             # HTTP + Socket.IO server entry point
+│
+├── 📦 package.json                 # Root monorepo scripts
+│
+├── ⚙️  backend/
+│   ├── server.js                   # HTTP + Socket.IO entry point
 │   └── src/
-│       ├── app.js            # Express app (routes, middleware)
-│       ├── config/           # Database, JWT, Cloudinary config
-│       ├── controllers/      # Route handlers (auth, vendor, delivery, analytics, blockchain)
-│       ├── middleware/        # Auth, validation, rate limiter, file upload, error handler
-│       ├── models/           # Mongoose schemas (User, Vendor, Delivery, PO, ComplianceLog, Notification)
-│       ├── routes/           # Express route definitions (6 route files)
-│       ├── services/         # Business logic (blockchain, fraud detection, ML, notifications, image analysis)
-│       └── utils/            # Helpers, validators, logger, email service
-├── blockchain/
-│   ├── hardhat.config.js     # Hardhat config (Sepolia, Amoy networks)
+│       ├── app.js                  # Express app (routes + middleware)
+│       ├── config/                 # 🔧 Database, JWT, Cloudinary
+│       ├── controllers/            # 🎮 Auth, Vendor, Delivery, Analytics, Blockchain
+│       ├── middleware/             # 🛡️ Auth guards, validation, rate limiter, uploads
+│       ├── models/                 # 📊 User, Vendor, Delivery, PO, ComplianceLog, Notification
+│       ├── routes/                 # 🛤️  6 route files (auth, vendor, delivery, analytics, blockchain, notification)
+│       ├── services/               # 🧠 Blockchain, Fraud Detection, ML, Notifications, Image Analysis
+│       └── utils/                  # 🔨 Helpers, validators, logger, email
+│
+├── ⛓️  blockchain/
+│   ├── hardhat.config.js           # Networks: localhost, Sepolia, Amoy
 │   ├── contracts/
-│   │   ├── VendorCompliance.sol   # Vendor registration, compliance scoring, dispute resolution
-│   │   ├── DeliveryLog.sol        # Immutable delivery logging & verification
-│   │   └── ComplianceToken.sol    # ERC-20 reward/penalty token with staking
-│   ├── scripts/              # deploy.js, interact.js, verify.js
-│   └── test/                 # 39 unit tests (VendorCompliance, DeliveryLog)
-├── frontend/
+│   │   ├── VendorCompliance.sol    # 📋 Vendor registration + compliance scoring + disputes
+│   │   ├── DeliveryLog.sol         # 📦 Immutable delivery logging + verification
+│   │   └── ComplianceToken.sol     # 🪙 ERC-20 reward/penalty token + staking
+│   ├── scripts/                    # 🚀 deploy.js, interact.js, verify.js
+│   └── test/                       # ✅ 39 unit tests
+│
+├── 🖥️  frontend/
 │   └── src/
-│       ├── components/       # Reusable UI (charts, forms, layout, common)
-│       ├── config/           # Routes, theme, env, blockchain config
-│       ├── contexts/         # Auth, Theme, Notification providers
-│       ├── hooks/            # useVendors, useDeliveries, useAnalytics, useNotifications, etc.
-│       ├── pages/            # Dashboard, Vendors, Deliveries, Analytics, Settings, Auth
-│       ├── services/         # API client (Axios), blockchain service, notification service
-│       ├── types/            # TypeScript interfaces
-│       └── utils/            # Constants, formatters, helpers
-└── mobile/
-    ├── index.ts              # App entry point
+│       ├── components/             # 🧩 Charts, forms, layout, UI primitives
+│       ├── config/                 # ⚙️  Routes, theme, env, blockchain config
+│       ├── contexts/               # 🔄 Auth, Theme, Notification providers
+│       ├── hooks/                  # 🪝 useVendors, useDeliveries, useAnalytics, useNotifications
+│       ├── pages/                  # 📄 Dashboard, Vendors, Deliveries, Analytics, Settings, Auth
+│       ├── services/               # 📡 API client (Axios), blockchain, notifications
+│       ├── types/                  # 📝 TypeScript interfaces
+│       └── utils/                  # 🔨 Constants, formatters
+│
+└── 📱 mobile/
+    ├── index.ts                    # App entry point
     └── src/
-        ├── App.tsx           # Root navigator
-        ├── components/       # Shared mobile components
-        ├── navigation/       # Stack & tab navigators
-        ├── screens/          # Dashboard, Scanner, VendorList, DeliveryDetail, etc.
-        ├── services/         # API service, auth service
-        └── utils/            # Helpers, constants
+        ├── navigation/             # 🧭 Stack + Tab navigators
+        ├── screens/                # 📱 Dashboard, Scanner, Vendors, Deliveries
+        ├── services/               # 📡 API, auth, vendor, delivery services
+        └── utils/                  # 🔨 Helpers, constants
 ```
 
 ---
 
-## Getting Started
+## 🚀 Getting Started
 
 ### Prerequisites
 
-- Node.js 18+
-- npm or yarn
-- MongoDB Atlas account (free tier works)
+| Requirement | Minimum |
+|:------------|:--------|
+| Node.js | v18+ |
+| npm | v9+ |
+| MongoDB Atlas | Free tier (M0) |
+| Git | v2.30+ |
 
-### Installation
+### ⚡ Quick Start
 
 ```bash
-# Clone
+# 1️⃣  Clone the repository
 git clone https://github.com/Git-brintsi20/Sparkathon_2025.git
 cd Sparkathon_2025/smart-vendor-compliance
 
-# Install all dependencies (root + backend + frontend + blockchain + mobile)
+# 2️⃣  Install ALL dependencies (root + backend + frontend + blockchain + mobile)
 npm run install:all
 
-# Set up backend environment
+# 3️⃣  Configure environment
 cp backend/.env.example backend/.env
-# Edit backend/.env with your credentials (see Environment Variables below)
+# ✏️  Edit backend/.env with your MongoDB URI, JWT secrets, etc.
 
-# Start development (backend + frontend concurrently)
+# 4️⃣  Start development (backend + frontend concurrently)
 npm run dev
 ```
 
-The frontend dev server runs on **http://localhost:5173** and the backend API on **http://localhost:3000**.
+| Service | URL |
+|:--------|:----|
+| 🖥️ Frontend | http://localhost:5173 |
+| ⚙️ Backend API | http://localhost:3000 |
+| 🏥 Health Check | http://localhost:3000/api/health |
 
-### Blockchain (optional)
+### ⛓️ Blockchain (optional)
 
 ```bash
 cd blockchain
-npx hardhat compile           # Compile Solidity contracts
-npx hardhat test              # Run 39 unit tests
-npx hardhat node              # Start local Hardhat node
+npx hardhat compile                                    # Compile contracts
+npx hardhat test                                       # Run 39 tests
+npx hardhat node                                       # Local chain
 npx hardhat run scripts/deploy.js --network localhost   # Deploy locally
 ```
 
-### Mobile (optional)
+### 📱 Mobile (optional)
 
 ```bash
 cd mobile
 npm install
-npm start                     # Starts Expo dev server
-# Scan QR code with Expo Go app on your phone
+npm start             # Expo dev server → scan QR with Expo Go
+npm run android       # Android emulator
+npm run ios           # iOS simulator
 ```
 
 ---
 
-## Environment Variables
+## 🔐 Environment Variables
 
-Create `backend/.env` from `backend/.env.example`. Key variables:
+Create `backend/.env` from [`backend/.env.example`](backend/.env.example):
 
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `PORT` | No | Server port (default: 3000) |
-| `MONGODB_URI` | **Yes** | MongoDB Atlas connection string |
-| `JWT_SECRET` | **Yes** | Access token signing secret |
-| `JWT_REFRESH_SECRET` | **Yes** | Refresh token signing secret |
-| `JWT_EXPIRE` | No | Access token expiry (default: 7d) |
-| `JWT_REFRESH_EXPIRE` | No | Refresh token expiry (default: 30d) |
-| `FRONTEND_URL` | No | Frontend URL for CORS (default: http://localhost:5173) |
-| `CLOUDINARY_CLOUD_NAME` | No | Cloudinary cloud name for image uploads |
-| `CLOUDINARY_API_KEY` | No | Cloudinary API key |
-| `CLOUDINARY_API_SECRET` | No | Cloudinary API secret |
-| `SMTP_HOST` | No | SMTP server (default: smtp.gmail.com) |
-| `SMTP_PORT` | No | SMTP port (default: 587) |
-| `SMTP_USER` | No | Email address for sending alerts |
-| `SMTP_PASS` | No | Email app password |
-| `DEMO_MODE` | No | `true` = mock blockchain calls (default: true) |
-| `RPC_URL` | No | Ethereum RPC endpoint (Alchemy/Infura) |
-| `PRIVATE_KEY` | No | Deployer wallet private key |
+<details>
+<summary><strong>Click to expand full env var reference</strong></summary>
 
----
+| Variable | Required | Default | Description |
+|:---------|:--------:|:--------|:------------|
+| `PORT` | | `3000` | Server port |
+| `NODE_ENV` | | `development` | Environment mode |
+| **Database** | | | |
+| `MONGODB_URI` | ✅ | — | MongoDB Atlas connection string |
+| **Authentication** | | | |
+| `JWT_SECRET` | ✅ | — | Access token signing secret |
+| `JWT_REFRESH_SECRET` | ✅ | — | Refresh token signing secret |
+| `JWT_EXPIRE` | | `7d` | Access token lifetime |
+| `JWT_REFRESH_EXPIRE` | | `30d` | Refresh token lifetime |
+| **CORS** | | | |
+| `FRONTEND_URL` | | `http://localhost:5173` | Allowed frontend origin |
+| **Cloudinary** | | | |
+| `CLOUDINARY_CLOUD_NAME` | | — | Cloud name for image uploads |
+| `CLOUDINARY_API_KEY` | | — | API key |
+| `CLOUDINARY_API_SECRET` | | — | API secret |
+| **Email (SMTP)** | | | |
+| `SMTP_HOST` | | `smtp.gmail.com` | Mail server |
+| `SMTP_PORT` | | `587` | Mail port |
+| `SMTP_USER` | | — | Sender email |
+| `SMTP_PASS` | | — | App password |
+| **Blockchain** | | | |
+| `DEMO_MODE` | | `true` | `true` = mock blockchain calls |
+| `RPC_URL` | | — | Ethereum RPC (Alchemy/Infura) |
+| `PRIVATE_KEY` | | — | Deployer wallet private key |
 
-## API Endpoints
+</details>
 
-### Authentication (`/api/auth`)
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| POST | `/register` | — | Create new user account |
-| POST | `/login` | — | Login, returns access + refresh tokens |
-| POST | `/refresh-token` | — | Refresh access token |
-| POST | `/forgot-password` | — | Send password reset email |
-| GET | `/me` | JWT | Get current user profile |
-| PUT | `/profile` | JWT | Update profile |
-
-### Vendors (`/api/vendors`)
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| GET | `/` | JWT | List vendors (paginated, filterable) |
-| GET | `/:id` | JWT | Get vendor details |
-| POST | `/` | JWT + Admin/Manager | Create vendor |
-| PUT | `/:id` | JWT + Admin/Manager | Update vendor |
-| DELETE | `/:id` | JWT + Admin | Delete vendor |
-
-### Deliveries (`/api/deliveries`)
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| GET | `/` | JWT | List deliveries (paginated) |
-| GET | `/:id` | JWT | Get delivery details |
-| POST | `/` | JWT | Create delivery |
-| PUT | `/:id` | JWT | Update delivery |
-| PUT | `/:id/status` | JWT | Update delivery status |
-| PUT | `/:id/verify` | JWT | Verify delivery (runs fraud detection) |
-| POST | `/:id/upload` | JWT + File | Upload delivery evidence photo |
-
-### Analytics (`/api/analytics`)
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| GET | `/dashboard` | JWT | Dashboard stats (counts, scores, trends) |
-| GET | `/compliance` | JWT | Compliance report data |
-| GET | `/fraud` | JWT | Fraud detection analytics |
-| GET | `/performance` | JWT | Performance metrics |
-| GET | `/export` | JWT + Admin/Manager | Export report data |
-
-### Blockchain (`/api/blockchain`)
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| POST | `/vendor/register` | JWT | Register vendor on-chain |
-| POST | `/compliance/update` | JWT | Update compliance score on-chain |
-| GET | `/network` | JWT | Get network info (gas price, block number) |
-| GET | `/verify/:txHash` | JWT | Verify a transaction hash |
-
-### Notifications (`/api/notifications`)
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| GET | `/` | JWT | List user notifications |
-| PUT | `/:id/read` | JWT | Mark notification as read |
-| PUT | `/read-all` | JWT | Mark all as read |
-
-### Health Check
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/health` | Returns `{ status: 'ok', timestamp }` |
+> 💡 **Tip**: Generate JWT secrets with: `node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"`
 
 ---
 
-## Blockchain Contracts
+## 📡 API Endpoints
 
-Three Solidity 0.8.20 contracts deployed via Hardhat with OpenZeppelin:
+<details>
+<summary><strong>🔑 Authentication — <code>/api/auth</code></strong></summary>
 
-### VendorCompliance.sol
-- Registers vendors on-chain with wallet address, name, email
-- Stores compliance scores (0–100) with full history
-- Compliance levels: PENDING, LOW, MEDIUM, HIGH, CRITICAL
-- Dispute resolution system (open → under review → resolved/rejected)
-- Role-based access: only owner or authorized auditors can update scores
+| Method | Endpoint | Auth | Description |
+|:------:|:---------|:----:|:------------|
+| `POST` | `/register` | — | Create account |
+| `POST` | `/login` | — | Login → access + refresh tokens |
+| `POST` | `/refresh-token` | — | Refresh expired access token |
+| `POST` | `/forgot-password` | — | Send password reset email |
+| `GET` | `/me` | 🔒 | Current user profile |
+| `PUT` | `/profile` | 🔒 | Update profile |
 
-### DeliveryLog.sol
-- Immutable delivery records with status tracking (PENDING → IN_TRANSIT → DELIVERED → verified/rejected)
-- Verification workflow with quality scores and verifier tracking
-- Dispute mechanism for contested deliveries
-- Counter-based delivery IDs
+</details>
 
-### ComplianceToken.sol (ERC-20)
-- Reward token for compliant vendors (configurable reward rate: 10 tokens/event)
-- Penalty slashing for violations (configurable penalty rate: 5 tokens/event)
-- Staking mechanism — vendors lock tokens as compliance bond
-- Authorized minter pattern (owner controls who can mint)
-- Max supply cap: 100,000,000 tokens
+<details>
+<summary><strong>🏢 Vendors — <code>/api/vendors</code></strong></summary>
 
-### Testing
+| Method | Endpoint | Auth | Description |
+|:------:|:---------|:----:|:------------|
+| `GET` | `/` | 🔒 | List vendors (paginated, filterable) |
+| `GET` | `/:id` | 🔒 | Vendor details + compliance history |
+| `POST` | `/` | 🔒👑 | Create vendor (admin/manager) |
+| `PUT` | `/:id` | 🔒👑 | Update vendor (admin/manager) |
+| `DELETE` | `/:id` | 🔒🛡️ | Delete vendor (admin only) |
+
+</details>
+
+<details>
+<summary><strong>📦 Deliveries — <code>/api/deliveries</code></strong></summary>
+
+| Method | Endpoint | Auth | Description |
+|:------:|:---------|:----:|:------------|
+| `GET` | `/` | 🔒 | List deliveries (paginated) |
+| `GET` | `/:id` | 🔒 | Delivery details |
+| `POST` | `/` | 🔒 | Create delivery |
+| `PUT` | `/:id` | 🔒 | Update delivery |
+| `PUT` | `/:id/status` | 🔒 | Update status (pending → delivered) |
+| `PUT` | `/:id/verify` | 🔒 | Verify + run fraud detection |
+| `POST` | `/:id/upload` | 🔒📎 | Upload evidence photo |
+
+</details>
+
+<details>
+<summary><strong>📊 Analytics — <code>/api/analytics</code></strong></summary>
+
+| Method | Endpoint | Auth | Description |
+|:------:|:---------|:----:|:------------|
+| `GET` | `/dashboard` | 🔒 | Dashboard stats & KPIs |
+| `GET` | `/compliance` | 🔒 | Compliance report data |
+| `GET` | `/fraud` | 🔒 | Fraud detection analytics |
+| `GET` | `/performance` | 🔒 | Performance metrics |
+| `GET` | `/export` | 🔒👑 | Export report (admin/manager) |
+
+</details>
+
+<details>
+<summary><strong>⛓️ Blockchain — <code>/api/blockchain</code></strong></summary>
+
+| Method | Endpoint | Auth | Description |
+|:------:|:---------|:----:|:------------|
+| `POST` | `/vendor/register` | 🔒 | Register vendor on-chain |
+| `POST` | `/compliance/update` | 🔒 | Update compliance score on-chain |
+| `GET` | `/network` | 🔒 | Network info (gas, block number) |
+| `GET` | `/verify/:txHash` | 🔒 | Verify transaction hash |
+
+</details>
+
+<details>
+<summary><strong>🔔 Notifications — <code>/api/notifications</code></strong></summary>
+
+| Method | Endpoint | Auth | Description |
+|:------:|:---------|:----:|:------------|
+| `GET` | `/` | 🔒 | List user notifications |
+| `PUT` | `/:id/read` | 🔒 | Mark as read |
+| `PUT` | `/read-all` | 🔒 | Mark all as read |
+
+</details>
+
+> **Legend**: 🔒 = JWT required · 👑 = Admin/Manager role · 🛡️ = Admin only · 📎 = File upload
+
+---
+
+## ⛓️ Blockchain Contracts
+
+Three production-ready Solidity 0.8.20 contracts using OpenZeppelin:
+
+<table>
+<tr>
+<td width="33%" valign="top">
+
+### 📋 VendorCompliance
+
+**Vendor registration & compliance scoring**
+
+- Register vendors with wallet, name, email
+- Compliance scores 0–100 with full history
+- 5 levels: `PENDING` → `LOW` → `MEDIUM` → `HIGH` → `CRITICAL`
+- Dispute system with resolution workflow
+- `onlyOwner` access control on score updates
+- Activate/deactivate vendors
+
+</td>
+<td width="33%" valign="top">
+
+### 📦 DeliveryLog
+
+**Immutable delivery records**
+
+- Full lifecycle tracking:
+  `PENDING` → `IN_TRANSIT` → `DELIVERED`
+- Verification with quality scores
+- Verification codes for secure confirmation
+- Tracking number lookup
+- Delivery items storage
+- Dispute mechanism
+
+</td>
+<td width="33%" valign="top">
+
+### 🪙 ComplianceToken
+
+**ERC-20 reward/penalty system**
+
+- **Rewards**: 10 tokens per compliance event
+- **Penalties**: 5 tokens slashed per violation
+- **Staking**: Lock tokens as compliance bond
+- Authorized minter pattern
+- Token burning support
+- Max supply: 100M tokens
+
+</td>
+</tr>
+</table>
 
 ```bash
-cd blockchain
-npx hardhat test    # 39 passing tests covering all contract functions
+cd blockchain && npx hardhat test    # ✅ 39 passing tests
 ```
 
 ---
 
-## Fraud Detection & ML
+## 🤖 Fraud Detection & ML
 
-### Fraud Detection Service (`backend/src/services/fraudDetection.js`)
-A rule-based anomaly detection engine that analyzes each delivery across multiple risk dimensions:
+### 🔍 Fraud Detection Engine
 
-| Check | Trigger | Severity |
-|-------|---------|----------|
-| Quantity mismatch | Item quantity deviates >10% from expected | Medium (>10%) / High (>30%) |
-| Late delivery | Delivery arrives >3 days late | Medium (3–7 days) / High (>7 days) |
-| Low compliance vendor | Vendor score below 60 | High |
-| Damaged items | Items marked as damaged or expired | Medium / High |
-| Unusual delivery time | Delivery outside normal hours | Low |
+Real-time rule-based anomaly detection analyzing every delivery:
 
-Each check adds to a cumulative risk score (0–100). Deliveries with score ≥ 50 are flagged for manual review.
+```
+Delivery ──▶ ┌──────────────┐    ┌──────────────┐    ┌──────────────┐
+             │  Quantity     │    │  Timing      │    │  Vendor      │
+             │  Analysis     │    │  Analysis    │    │  History     │
+             │  ±10% = med   │    │  >3d = med   │    │  Score <60   │
+             │  ±30% = high  │    │  >7d = high  │    │  = high risk │
+             └──────┬───────┘    └──────┬───────┘    └──────┬───────┘
+                    │                   │                    │
+                    └───────────┬───────┘────────────────────┘
+                                ▼
+                    ┌────────────────────┐
+                    │   Risk Score 0-100 │
+                    │   ≥50 = 🚨 FLAGGED │
+                    └────────────────────┘
+```
 
-### ML Risk Prediction Service (`backend/src/services/mlService.js`)
-A heuristic scoring model that predicts vendor risk levels:
+| Check | Trigger | Score Impact |
+|:------|:--------|:-------------|
+| Quantity mismatch | >10% deviation from expected | +15 (med) / +30 (high) |
+| Late delivery | >3 days past expected date | +10 (med) / +25 (high) |
+| Low compliance vendor | Vendor score < 60 | +20 |
+| Damaged/expired items | Items flagged by inspector | +10–25 |
+| Unusual delivery time | Outside business hours | +5 |
 
-- **Inputs**: On-time delivery rate, fraud flag rate, compliance score, delivery history (last 50 deliveries)
-- **Outputs**: Risk level (low/medium/high), confidence score (0–0.95), contributing factors
-- **Compliance trend prediction**: Projects future compliance scores based on current averages with variance
-- **Anomaly detection**: Flags deliveries with unusual amounts, timing, or vendor patterns
+### 🧠 ML Risk Prediction
 
-> **Note**: The ML service uses statistical heuristics rather than a trained machine learning model. This is appropriate for the hackathon scope and demonstrates the detection logic that would feed into a production ML pipeline.
+Heuristic scoring model for vendor risk assessment:
+
+- **Inputs**: On-time rate, fraud flag rate, compliance score, last 50 deliveries
+- **Outputs**: Risk level (low/medium/high), confidence (0–0.95), contributing factors
+- **Trend Prediction**: Projects compliance scores for the next 6 months
+- **Anomaly Detection**: Z-score analysis on delivery amounts vs vendor history
+
+> 📝 The ML service uses statistical heuristics designed to demonstrate the detection pipeline for a hackathon context. In production, this would be backed by a trained model.
 
 ---
 
-## Mobile App
+## 📱 Mobile App
 
-The React Native (Expo) mobile app provides field workers with:
+<table>
+<tr>
+<td width="50%">
 
-- **Barcode Scanner** — Scan delivery barcodes using the device camera to pull up delivery details
-- **Delivery Verification** — Confirm quantities, capture photos of received goods, flag discrepancies
-- **Dashboard** — View assigned deliveries, pending verifications, and alerts
-- **Vendor Details** — Quick lookup of vendor compliance status and contact info
-- **Offline Support** — AsyncStorage caches critical data for areas with poor connectivity
+### Features
+
+- 📷 **Barcode Scanner** — Camera-based delivery barcode scanning
+- ✅ **Delivery Verification** — Confirm quantities, flag discrepancies
+- 📸 **Photo Evidence** — Capture and upload delivery photos
+- 📊 **Dashboard** — View pending verifications and alerts
+- 🏢 **Vendor Lookup** — Quick compliance status check
+- 📴 **Offline Mode** — AsyncStorage caches critical data
+- 🌐 **Cross-platform** — Android + iOS from single codebase
+
+</td>
+<td width="50%">
+
+### Quick Start
 
 ```bash
 cd mobile
+npm install
 npm start           # Expo dev server
-npm run android     # Launch on Android emulator
-npm run ios         # Launch on iOS simulator
 ```
+
+**Platform-specific:**
+```bash
+npm run android     # Android emulator
+npm run ios         # iOS simulator
+npm run web         # Web browser
+```
+
+**Environment:**
+```env
+EXPO_PUBLIC_API_URL=http://your-backend:3000/api
+```
+
+</td>
+</tr>
+</table>
 
 ---
 
-## Deployment
+## 🚢 Deployment
 
-### Vercel (Recommended for demo)
+<details>
+<summary><strong>Vercel (Recommended for demo)</strong></summary>
 
 The project includes Vercel configuration for deploying the frontend as a static SPA and the backend as serverless functions.
 
-### Docker
+</details>
+
+<details>
+<summary><strong>Docker</strong></summary>
 
 ```bash
 docker-compose up --build     # Starts backend + frontend
 ```
 
-### Manual
+</details>
+
+<details>
+<summary><strong>Manual</strong></summary>
 
 ```bash
 # Build frontend
 cd frontend && npm run build   # Output: frontend/dist/
 
-# Start backend
-cd backend && npm start        # Runs on PORT from .env
+# Start backend in production
+cd backend && NODE_ENV=production npm start
 ```
+
+</details>
 
 ---
 
-## Scripts Reference
+## 📜 Scripts Reference
 
 | Script | Location | Description |
-|--------|----------|-------------|
-| `npm run dev` | Root | Start backend + frontend concurrently |
+|:-------|:---------|:------------|
+| `npm run dev` | Root | 🟢 Start backend + frontend concurrently |
 | `npm run dev:frontend` | Root | Start Vite dev server only |
 | `npm run dev:backend` | Root | Start Express with nodemon only |
 | `npm run dev:mobile` | Root | Start Expo dev server |
@@ -452,22 +652,36 @@ cd backend && npm start        # Runs on PORT from .env
 | `npm run seed` | Backend | Seed database with sample data |
 | `npm test` | Backend | Run Jest tests |
 | `npx hardhat compile` | Blockchain | Compile Solidity contracts |
-| `npx hardhat test` | Blockchain | Run 39 contract tests |
+| `npx hardhat test` | Blockchain | ✅ Run 39 contract tests |
 | `npx hardhat node` | Blockchain | Start local Hardhat node |
 
 ---
 
-## Team
+## 👥 Team
+
+<div align="center">
 
 **Walmart Sparkathon 2025 — Supply Chain Innovation Track**
 
-- **Salugu Harshita Bhanu** — Blockchain & Frontend Developer
-- **Divanshu Bhargava** — ML Engineer
-- **Ananya Yadav** — Mobile Developer
-- **Aryan Kesarwani** — Backend Developer
+| | Name | Role |
+|:---:|:-----|:-----|
+| ⛓️ | **Salugu Harshita Bhanu** | Blockchain & Frontend Developer |
+| 🤖 | **Divanshu Bhargava** | ML Engineer |
+| 📱 | **Ananya Yadav** | Mobile Developer |
+| ⚙️ | **Aryan Kesarwani** | Backend Developer |
+
+</div>
 
 ---
 
-## License
+<div align="center">
 
-[MIT](LICENSE)
+### Built with ❤️ for Walmart Sparkathon 2025
+
+[![Made with React](https://img.shields.io/badge/Made%20with-React-61DAFB?style=flat-square&logo=react)](https://react.dev)
+[![Powered by MongoDB](https://img.shields.io/badge/Powered%20by-MongoDB-47A248?style=flat-square&logo=mongodb)](https://mongodb.com)
+[![Secured by Blockchain](https://img.shields.io/badge/Secured%20by-Blockchain-363636?style=flat-square&logo=ethereum)](https://ethereum.org)
+
+[⬆ Back to Top](#️-smart-vendor-compliance--loss-detection-system)
+
+</div>

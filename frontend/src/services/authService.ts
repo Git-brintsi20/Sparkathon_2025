@@ -111,7 +111,7 @@ class AuthService {
         this.notifyAuthListeners();
         
         // Log user activity
-        console.log(`✅ User ${user.email} logged in successfully`);
+        if (import.meta.env.DEV) console.log(`✅ User ${user.email} logged in successfully`);
       }
       
       return response;
@@ -138,7 +138,7 @@ class AuthService {
         // Notify listeners
         this.notifyAuthListeners();
         
-        console.log(`✅ User ${user.email} registered successfully`);
+        if (import.meta.env.DEV) console.log(`✅ User ${user.email} registered successfully`);
       }
       
       return response;
@@ -158,7 +158,7 @@ class AuthService {
     } finally {
       // Clear local data regardless of server response
       this.clearAuthData();
-      console.log('✅ User logged out successfully');
+      if (import.meta.env.DEV) console.log('✅ User logged out successfully');
     }
   }
 

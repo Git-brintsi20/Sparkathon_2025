@@ -2,7 +2,7 @@ import api from './api';
 
 export async function fetchVendors() {
   const res = await api.get('/vendors');
-  return res.data?.data?.data || [];
+  return res.data?.data || [];
 }
 
 export async function fetchVendorById(id: string) {

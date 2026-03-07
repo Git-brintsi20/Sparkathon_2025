@@ -56,11 +56,11 @@ class ApiService {
         // Now 'metadata' is recognized because we extended AxiosRequestConfig
         config.metadata = { startTime: new Date() };
 
-        console.log(`🚀 API Request: ${config.method?.toUpperCase()} ${config.url}`);
+        if (import.meta.env.DEV) console.log(`🚀 API Request: ${config.method?.toUpperCase()} ${config.url}`);
         return config;
       },
       (error) => {
-        console.error('❌ Request Error:', error);
+        if (import.meta.env.DEV) console.error('❌ Request Error:', error);
         return Promise.reject(error);
       }
     );
@@ -70,7 +70,7 @@ class ApiService {
       (response: AxiosResponse) => {
         // Access metadata from response.config, which is of type AxiosRequestConfig
         const duration = new Date().getTime() - (response.config.metadata?.startTime?.getTime() || 0);
-        console.log(`✅ API Response: ${response.status} in ${duration}ms`);
+        if (import.meta.env.DEV) console.log(`✅ API Response: ${response.status} in ${duration}ms`);
 
         return response;
       },
