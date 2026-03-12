@@ -17,6 +17,11 @@ class MLService {
     const fraudRate = flaggedCount / deliveries.length;
 
     let riskScore = 0;
+    // Prevent division by zero in anomaly detection
+    if (!avgDeliveries[0] || avgDeliveries[0].stdAmount === 0) {
+      return { riskLevel: 'low', confidence: 0.5, riskScore: 0, factors: { onTimeRate, fraudRate, complianceScore: vendor.complianceScore } };
+    }
+
     riskScore += (1 - onTimeRate) * 50;
     riskScore += fraudRate * 40;
     riskScore += vendor.complianceScore < 70 ? 10 : 0;

@@ -69,8 +69,9 @@ exports.updateVendor = async (req, res) => {
 		const vendor = await Vendor.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
 		if (!vendor) return res.status(404).json({ success: false, message: 'Vendor not found' });
 
-		// Check for low compliance after update
-		if (vendor.complianceScore !== undefined) {
+		// Check for low compliance after update - only notify if score actually changed
+		const oldVendor = await Vendor.findById(req.params.id);
+		if (oldVendor && vendor.complianceScore !== oldVendor.complianceScore) {
 			await notificationService.notifyLowCompliance(vendor);
 		}
 

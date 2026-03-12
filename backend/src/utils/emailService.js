@@ -10,6 +10,11 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+// Validate SMTP credentials on startup
+if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+  console.warn('\u26a0\ufe0f  WARNING: SMTP credentials not configured. Email features will be disabled.');
+}
+
 const sendEmail = async ({ to, subject, html }) => {
   try {
     const info = await transporter.sendMail({

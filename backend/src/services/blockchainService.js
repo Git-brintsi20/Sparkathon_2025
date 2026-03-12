@@ -165,6 +165,11 @@ class BlockchainService extends EventEmitter {
    * Setup event listeners for contract events
    */
   setupEventListeners() {
+    // Skip in demo mode since contracts are not initialized
+    if (this.isDemoMode || !this.contracts?.VendorCompliance || !this.contracts?.DeliveryLog) {
+      console.log('⏭️ Skipping event listeners (demo mode or contracts not initialized)');
+      return;
+    }
     try {
       // Listen for vendor registration events
       this.contracts.VendorCompliance.on('VendorRegistered', (vendorId, name, walletAddress, event) => {
@@ -240,7 +245,7 @@ class BlockchainService extends EventEmitter {
         console.log(`✅ Transaction confirmed: ${receipt.transactionHash}`);
 
         return {
-          transactionHash: receipt.hash,
+          transactionHash: receipt.transactionHash,
           blockNumber: receipt.blockNumber,
           gasUsed: receipt.gasUsed.toString(),
           status: receipt.status,

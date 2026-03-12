@@ -132,7 +132,7 @@ exports.verifyDelivery = async (req, res) => {
       verifiedBy: req.user?._id,
       verifiedAt: new Date(),
       qrCodeScanned: req.body.qrCodeScanned || false,
-      photosUploaded: req.body.photos?.length || 0,
+      photosUploaded: Array.isArray(req.body.photos) ? req.body.photos.length : 0,
       quantityVerified: req.body.quantityVerified || true,
       qualityVerified: req.body.qualityVerified || true,
       discrepancies: req.body.discrepancies || [],

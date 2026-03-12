@@ -38,10 +38,14 @@ class NotificationService {
     };
 
     if (this.io) {
-      if (userId) {
-        this.io.to(`user:${userId}`).emit('notification', payload);
-      } else {
-        this.io.emit('notification', payload);
+      try {
+        if (userId) {
+          this.io.to(`user:${userId}`).emit('notification', payload);
+        } else {
+          this.io.emit('notification', payload);
+        }
+      } catch (error) {
+        console.error('Socket emit failed:', error.message);
       }
     }
 

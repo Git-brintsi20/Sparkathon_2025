@@ -10,7 +10,10 @@ const { apiLimiter } = require('./middleware/rateLimiter');
 const errorHandler = require('./middleware/errorHandler');
 
 dotenv.config();
-connectDB();
+connectDB().catch(err => {
+  console.error('❌ Database connection failed:', err.message);
+  process.exit(1);
+});
 
 const app = express();
 
@@ -36,6 +39,7 @@ app.use(cors({
   credentials: true,
 }));
 app.use(helmet());
+app.set('trust proxy', 1);
 app.use(morgan('dev'));
 app.use(compression());
 app.use('/api', apiLimiter);

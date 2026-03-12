@@ -95,6 +95,15 @@ notificationService.setIO(io);
 // Make io accessible from req in Express routes if needed
 app.set('io', io);
 
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(`❌ Port ${PORT} already in use. Choose a different port.`);
+  } else {
+    console.error('❌ Server error:', err.message);
+  }
+  process.exit(1);
+});
+
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`Socket.IO ready on port ${PORT}`);
